@@ -7,6 +7,7 @@ public class ImportSettings {
     //Where the form starts, but not necessarily the beginning of data.
     private String formRoot;
     //Usually 0, what node stripping should start at.
+    //Default to firstChildElement. It may be possible that the form root has data,
     private int formRootIndex;
 
     private ImportSettings() {

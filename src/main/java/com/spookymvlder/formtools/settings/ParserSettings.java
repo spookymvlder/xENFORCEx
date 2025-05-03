@@ -16,14 +16,14 @@ public class ParserSettings {
     private Map<String, String[]> formSectionToFields;
     //Maps field name to filepath.
     private Map<String, String> formFieldToPath;
-    //Order of form sections, starting with first child node, navigating its children, then moving on to  the next.
+    //Order of form sections, starting with first child node, navigating its children, then moving on to  the next. Depth first searching.
     //Without this, section navigation is random because stored as set.
     private List<String> sectionOrder;
     //Helps with repeating fields.
     private String foreignKey;
     //Section to its subsections
     private Map<String, List<String>> subsections;
-    //Sections that are children of the form instance node.
+    //Sections that are children of the form instance node. Can probably just get first and figure it out. Assumes instance has no data
     private List<String> rootSections;
 
     private ParserSettings() {
