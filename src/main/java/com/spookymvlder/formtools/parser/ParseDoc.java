@@ -12,6 +12,7 @@ import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class ParseDoc {
@@ -83,7 +84,7 @@ public class ParseDoc {
         FormSection section = new FormSection(sectionName);
 
         NodeList occurrences = (NodeList) xpath.evaluate(
-                settings.getFormFieldToPath().get(sectionName),
+                settings.getSectionNameToPath().get(sectionName),
                 contextNode,
                 XPathConstants.NODESET
         );
@@ -94,7 +95,7 @@ public class ParseDoc {
             String foreignKey = ((Element) instance).getAttribute(settings.getForeignKey());
 
             // Add fields
-            for (String fieldName : settings.getFormSectionToFields().get(sectionName)) {
+            for (String fieldName : settings.getFormSectionToFields().getOrDefault(sectionName, Collections.emptyList())) {
                 String fieldValue = safeEvaluate(instance, settings.getFormFieldToPath().get(fieldName));
                 FormField formField = new FormField(fieldValue, foreignKey, fieldName);
                 section.addFields(fieldName, formField);

@@ -35,19 +35,19 @@ public class ImportXml {
         parserSettings.setForeignKey("foreignKey");
         parserSettings.setFormStart("application");
 
-        HashMap<String, String[]> sectionToFields = new HashMap<>();
-        sectionToFields.put("driverInfoHeader", new String[]{"driverFirstName", "driverLastName", "driverDob"});
-        sectionToFields.put("licenseHeader", new String[]{"licenseId", "licenseFirstName", "licenseLastName", "licenseIssueDate", "licenseExpiryDate",
-                "addressStreet", "addressTown", "addressRegion", "addressPost", "addressCountry", "licenseDob", "licenseRegion"});
-        sectionToFields.put("driverHistoryHeader", new String[]{"violationDate", "violationCode", "violationType",
-                "violationRegion", "violationVehicle", "violationLastName", "violationFirstName"});
-        sectionToFields.put("vehicleHeader", new String[]{"vehicleMake", "vehicleModel", "vehicleYear", "vehicleColor", "ownerFirstName", "ownerLastName", "vehicleId", "vehicleIdRegion", "coveredVehicle", "policyFirstName",
-                "policyLastName", "policyExpiryDate", "coveredRegion"});
-        sectionToFields.put("additionalDriversHeader", new String[]{"additionalFirstName", "additionalLastName"});
-        sectionToFields.put("vehicleIncidentHeader", new String[]{"vehicleIncidentRegion", "vehicleIncidentDate", "vehicleIncidentCode",
-                "vehicleIncidentFirstName", "vehicleIncidentLastName", "vehicleIncidentVehicle"});
-        sectionToFields.put("vehicleViolationHeader", new String[]{"violationDate", "violationCode", "violationType",
-                "violationFirstName",  "violationLastName", "violationVehicle", "violationRegion"});
+        HashMap<String, List<String>> sectionToFields = new HashMap<>();
+        sectionToFields.put("driverInfoHeader", Arrays.asList("driverFirstName", "driverLastName", "driverDob"));
+        sectionToFields.put("licenseHeader", Arrays.asList("licenseId", "licenseFirstName", "licenseLastName", "licenseIssueDate", "licenseExpiryDate",
+                "addressStreet", "addressTown", "addressRegion", "addressPost", "addressCountry", "licenseDob", "licenseRegion"));
+        sectionToFields.put("driverHistoryHeader", Arrays.asList("violationDate", "violationCode", "violationType",
+                "violationRegion", "violationVehicle", "violationLastName", "violationFirstName"));
+        sectionToFields.put("vehicleHeader", Arrays.asList("vehicleMake", "vehicleModel", "vehicleYear", "vehicleColor", "ownerFirstName", "ownerLastName", "vehicleId", "vehicleIdRegion", "coveredVehicle", "policyFirstName",
+                "policyLastName", "policyExpiryDate", "coveredRegion"));
+        sectionToFields.put("additionalDriversHeader", Arrays.asList("additionalFirstName", "additionalLastName"));
+        sectionToFields.put("vehicleIncidentHeader", Arrays.asList("vehicleIncidentRegion", "vehicleIncidentDate", "vehicleIncidentCode",
+                "vehicleIncidentFirstName", "vehicleIncidentLastName", "vehicleIncidentVehicle"));
+        sectionToFields.put("vehicleViolationHeader", Arrays.asList("violationDate", "violationCode", "violationType",
+                "violationFirstName",  "violationLastName", "violationVehicle", "violationRegion"));
         parserSettings.setFormSectionToFields(sectionToFields);
 
         HashMap<String, String> formFieldToPath = new HashMap<>();
@@ -112,6 +112,17 @@ public class ImportXml {
 
         parserSettings.setRootSections(new ArrayList<>(Arrays.asList("driver", "assets")));
 
+
+        Map<String, String> sectionNameToPath = new HashMap<>();
+        sectionNameToPath.put("driver", "descendant::driver");
+        sectionNameToPath.put("assets", "descendant::assets");
+        parserSettings.setSectionNameToPath(sectionNameToPath);
+
+        Map<String, List<String>> subsections = new HashMap<>();
+        subsections.put("driver", Arrays.asList("driverInfoHeader", "licenseHeader", "driverHistoryHeader"));
+        subsections.put("assets", Arrays.asList("licenseHeader", "vehicleHeader", "additionalDriversHeader", "vehicleIncidentHeader", "vehicleViolationHeader"));
+        parserSettings.setSubsections(subsections);
+
         try{
         Document doc = importXML();
         ParseDoc.parseDoc(doc);
@@ -135,10 +146,10 @@ public class ImportXml {
 
     private static Boolean validateXmlSettings() {
         //TODO come back to when internet and see why not working.
-        /*
-        if(!Paths.get(settings.getXmlFilePath()).endsWith(".xml")) {
+
+        if(!settings.getXmlFilePath().toLowerCase().endsWith(".xml")) {
             return false;
-        }*/
+        }
         return settings.getFormRoot() != null;
     }
 

@@ -13,7 +13,7 @@ public class ParserSettings {
     private String formStart;
 
     //Section header to all fields associated with that section.
-    private Map<String, String[]> formSectionToFields;
+    private Map<String, List<String>> formSectionToFields;
     //Maps field name to filepath.
     private Map<String, String> formFieldToPath;
     //Order of form sections, starting with first child node, navigating its children, then moving on to  the next. Depth first searching.
@@ -25,6 +25,8 @@ public class ParserSettings {
     private Map<String, List<String>> subsections;
     //Sections that are children of the form instance node. Can probably just get first and figure it out. Assumes instance has no data
     private List<String> rootSections;
+    //Path of sections
+    private Map<String,String> sectionNameToPath;
 
     private ParserSettings() {
         this.formStart = null;
@@ -33,6 +35,7 @@ public class ParserSettings {
         this.sectionOrder = null;
         this.subsections = null;
         this.rootSections = null;
+        this.sectionNameToPath = null;
     }
 
     //TODO - ensure that sectionOrder, formSectionToFields, and formFieldToPath all line up
@@ -52,11 +55,11 @@ public class ParserSettings {
         this.formStart = formStart;
     }
 
-    public Map<String, String[]> getFormSectionToFields() {
+    public Map<String, List<String>> getFormSectionToFields() {
         return formSectionToFields;
     }
 
-    public void setFormSectionToFields(Map<String, String[]> formSectionToFields) {
+    public void setFormSectionToFields(Map<String, List<String>> formSectionToFields) {
         this.formSectionToFields = formSectionToFields;
     }
 
@@ -88,6 +91,10 @@ public class ParserSettings {
         return this.subsections.get(section);
     }
 
+    public void setSubsections(Map<String, List<String>> subsections) {
+        this.subsections = subsections;
+    }
+
     public List<String> getRootSections(){
         return this.rootSections;
     }
@@ -96,4 +103,14 @@ public class ParserSettings {
     public void setRootSections(List<String> rootSections) {
         this.rootSections = rootSections;
     }
+
+    public Map<String, String> getSectionNameToPath() {
+        return this.sectionNameToPath;
+    }
+
+    public void setSectionNameToPath(Map<String, String> sectionNameToPath) {
+        this.sectionNameToPath = sectionNameToPath;
+    }
+
+
 }
