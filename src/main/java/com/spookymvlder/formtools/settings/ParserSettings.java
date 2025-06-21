@@ -91,4 +91,9 @@ public class ParserSettings {
     public List<String> getRootSections(){
         return this.rootSections;
     }
+
+    //TODO add protections?
+    public void setRootSections(List<String> rootSections) {
+        this.rootSections = rootSections;
+    }
 }
