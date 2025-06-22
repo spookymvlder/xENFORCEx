@@ -1,14 +1,13 @@
 package com.spookymvlder.formtools.datatypes;
 
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class FormSection {
     private String longName;
-    private Map<String, FormField> fields;
-    private List<FormSection> subSections;
-    private List<FormField> repeatFields;
-    private boolean restructured;
+    private Map<String, List<FormField>> fieldsByName = new LinkedHashMap<>();
+    private List<FormField> fieldAppearanceOrder = new ArrayList<>();
+    private List<FormSection> subSections = new ArrayList<>();
+
 
 
     public FormSection(String longName) {
@@ -16,52 +15,49 @@ public class FormSection {
     }
 
     public String getLongName() {
-        return longName;
+        return this.longName;
     }
 
-    public Map<String, FormField> getFields() {
-        if(!restructured) {
-            this.restructureRepeatFields();
-        }
-        return fields;
+    public void addField(String fieldName, FormField field) {
+        this.fieldsByName.computeIfAbsent(fieldName, k -> new ArrayList<>()).add(field);
+        this.fieldAppearanceOrder.add(field);
     }
 
-    public void addFields(String fieldName, FormField field) {
-        if(fields.containsKey(fieldName)) {
-            this.repeatFields.add(field);
-        } else {
-            this.fields.put(fieldName, field);
-        }
+    //TODO evaluate if necessary
+    public Map<String, List<FormField>> getAllFields() {
+        return this.fieldsByName;
     }
 
-    public void restructureRepeatFields() {
-        repeatFields.stream().map(FormField::getFieldLongName)
-                .forEach(fieldName -> {
-                    if(fields.containsKey(fieldName)) {
-                        repeatFields.addFirst(fields.get(fieldName));
-                        fields.remove(fieldName);
-                    }
-                });
-        this.restructured = true;
+    //TODO consider returning default empty list?
+    public List<FormField> getFields(String fieldName) {
+        return this.fieldsByName.get(fieldName);
+    }
+
+    public Optional<FormField> getFirstField(String fieldName) {
+        List<FormField> list = this.fieldsByName.get(fieldName);
+        return (list != null && !list.isEmpty()) ? Optional.of(list.getFirst()) : Optional.empty();
+    }
+
+    public List<FormField> getFieldAppearanceOrder() {
+        return this.fieldAppearanceOrder;
     }
 
     public List<FormSection> getSubSections() {
-        return subSections;
+        return this.subSections;
     }
 
     public void setSubSections(List<FormSection> subSections) {
         this.subSections = subSections;
     }
 
-    public List<FormField> getRepeatFields() {
-        if(!restructured) {
-            this.restructureRepeatFields();
-        }
-        return repeatFields;
+    public int getFieldCount() {
+        return this.fieldAppearanceOrder.size();
     }
 
-    public boolean isRestructured() {
-        return restructured;
+    //If there is a list for this field for this field name, return the size, else return 1.
+    public int getFieldCountByName(String fieldName) {
+        return this.fieldsByName.get(fieldName) != null ? this.fieldsByName.get(fieldName).size() : 0;
     }
+
 
 }

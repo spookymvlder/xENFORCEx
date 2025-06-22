@@ -110,7 +110,7 @@ public class ImportXml {
         formFieldToPath.put("vehicleIncidentHeader", "descendant::vehicleHistory/incident");
         parserSettings.setFormFieldToPath(formFieldToPath);
 
-        parserSettings.setRootSections(new ArrayList<>(Arrays.asList("driver", "assets")));
+        parserSettings.setTopLevelSections(new ArrayList<>(Arrays.asList("driver", "assets")));
 
 
         Map<String, String> sectionNameToPath = new HashMap<>();
@@ -172,6 +172,7 @@ public class ImportXml {
         DocumentBuilder builder = dbFactory.newDocumentBuilder();
         Document doc = builder.parse(xmlFile);
         doc.getDocumentElement().normalize();
+        //TODO ensure comments are stripped out too
         stripEmptyElements(doc.getElementsByTagName(settings.getFormRoot()).item(settings.getFormRootIndex()));
         return doc;
     }
@@ -191,7 +192,7 @@ public class ImportXml {
         for(int i = 0; i < children.getLength(); ++i) {
             Node child = children.item(i);
             if(child.getNodeType() == Node.TEXT_NODE) {
-                if (child.getTextContent().trim().length() == 0) {
+                if (child.getTextContent().trim().isEmpty()) {
                     child.getParentNode().removeChild(child);
                     i--;
                 }

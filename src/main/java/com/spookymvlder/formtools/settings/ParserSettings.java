@@ -24,7 +24,7 @@ public class ParserSettings {
     //Section to its subsections
     private Map<String, List<String>> subsections;
     //Sections that are children of the form instance node. Can probably just get first and figure it out. Assumes instance has no data
-    private List<String> rootSections;
+    private List<String> topLevelSections;
     //Path of sections
     private Map<String,String> sectionNameToPath;
 
@@ -34,7 +34,7 @@ public class ParserSettings {
         this.formFieldToPath = null;
         this.sectionOrder = null;
         this.subsections = null;
-        this.rootSections = null;
+        this.topLevelSections = null;
         this.sectionNameToPath = null;
     }
 
@@ -95,13 +95,13 @@ public class ParserSettings {
         this.subsections = subsections;
     }
 
-    public List<String> getRootSections(){
-        return this.rootSections;
+    public List<String> getTopLevelSections(){
+        return this.topLevelSections;
     }
 
     //TODO add protections?
-    public void setRootSections(List<String> rootSections) {
-        this.rootSections = rootSections;
+    public void setTopLevelSections(List<String> rootSections) {
+        this.topLevelSections = rootSections;
     }
 
     public Map<String, String> getSectionNameToPath() {

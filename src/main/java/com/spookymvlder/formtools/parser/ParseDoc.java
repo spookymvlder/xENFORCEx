@@ -3,7 +3,6 @@ package com.spookymvlder.formtools.parser;
 import com.spookymvlder.formtools.datatypes.FormField;
 import com.spookymvlder.formtools.datatypes.FormInstance;
 import com.spookymvlder.formtools.datatypes.FormSection;
-import com.spookymvlder.formtools.settings.ImportSettings;
 import com.spookymvlder.formtools.settings.ParserSettings;
 import org.w3c.dom.*;
 
@@ -21,11 +20,12 @@ public class ParseDoc {
 
     public static void parseDoc(Document doc) {
         xpath = XPathFactory.newInstance().newXPath();
-        iterateFormInstance(doc);
+        List<FormInstance> forms = buildFormInstances(doc);
     }
 
     //TODO change language to FormInstance
-    private static void iterateFormInstance(Document doc) {
+    //Containers each holding a separate completed form, if multiple exist.
+    private static List<FormInstance> buildFormInstances(Document doc) {
         List<FormInstance> parsedInstances = new ArrayList<>();
         NodeList instanceList = doc.getElementsByTagName(settings.getFormStart());
         //TODO make code below work with a single settings rather than essentially grabbing the same thing from two spots.
@@ -33,23 +33,25 @@ public class ParseDoc {
         for (int i = 0; i < instanceList.getLength(); i++) {
             Node workingInstance = instanceList.item(i);
             try{
-                parsedInstances.add(new FormInstance(workingInstance.getNodeName(), parseSections(workingInstance)));
+                parsedInstances.add(new FormInstance(workingInstance.getNodeName(), buildTopSections(workingInstance)));
             } catch (XPathExpressionException e) {
                 System.out.println("Unable to extract form start: " + e.getMessage());
             }
         }
+        return parsedInstances;
     }
 
-    //TODO, make nomenclature clear. Define rootSections as those whose only parent is the form instance.
-    private static List<FormSection> parseSections(Node instance) throws XPathExpressionException {
-        List<FormSection> rootSections = new ArrayList<>();
+    //TODO, make nomenclature clear. Define topSections as those whose only parent is the form instance.
+    //TODO investigate what happens if top sections repeat within a form instance.
+    private static List<FormSection> buildTopSections(Node instance) throws XPathExpressionException {
+        List<FormSection> topSections = new ArrayList<>();
 
         //Might not need custom getter here, should be able to iterate over the body node's children elements.
-        for(String rootSection : settings.getRootSections()) {
-            FormSection root = parseSection(instance, rootSection);
-            rootSections.add(root);
+        for(String sectionName : settings.getTopLevelSections()) {
+            FormSection topSection = buildSection(instance, sectionName);
+            topSections.add(topSection);
         }
-        return rootSections;
+        return topSections;
         /*List<FormSection> storedSections = new ArrayList<>();
 
         //Grab sections
@@ -79,9 +81,10 @@ public class ParseDoc {
         ValidateFormExtract.validateExtractMap(storedSections);*/
     }
 
-    //ChatGPT helped a lot here.
-    private static FormSection parseSection(Node contextNode, String sectionName) throws XPathExpressionException {
+
+    private static FormSection buildSection(Node contextNode, String sectionName) throws XPathExpressionException {
         FormSection section = new FormSection(sectionName);
+
 
         NodeList occurrences = (NodeList) xpath.evaluate(
                 settings.getSectionNameToPath().get(sectionName),
@@ -90,28 +93,39 @@ public class ParseDoc {
         );
 
         for (int i = 0; i < occurrences.getLength(); i++) {
-            Node instance = occurrences.item(i);
-            //TODO deprecate foreign key
-            String foreignKey = ((Element) instance).getAttribute(settings.getForeignKey());
+            Node occurrence = occurrences.item(i);
+            //TODO move to metadata
+            //String foreignKey = ((Element) instance).getAttribute(settings.getForeignKey());
+
 
             // Add fields
-            for (String fieldName : settings.getFormSectionToFields().getOrDefault(sectionName, Collections.emptyList())) {
-                String fieldValue = safeEvaluate(instance, settings.getFormFieldToPath().get(fieldName));
-                FormField formField = new FormField(fieldValue, foreignKey, fieldName);
-                section.addFields(fieldName, formField);
-            }
+            buildFields(section, sectionName, occurrence);
+
 
             // Parse child sections of this occurrence
             List<FormSection> subsections = new ArrayList<>();
             List<String> subsectionList = settings.getSubsectionsOf(sectionName);
             for (String subName : subsectionList) {
-                FormSection subsection = parseSection(instance, subName);
+                FormSection subsection = buildSection(occurrence, subName);
                 subsections.add(subsection);
             }
+            //TODO make it possible to find subsection by name. May run in to weird recursion scenarios with bad build.
             section.setSubSections(subsections);
         }
 
         return section;
+    }
+
+    private static void buildFields(FormSection section, String sectionName, Node contextNode)  {
+        for (String fieldName : settings.getFormSectionToFields().getOrDefault(sectionName, Collections.emptyList())) {
+            section.addField(fieldName, createField(section, fieldName, contextNode));
+        }
+    }
+
+    private static FormField createField(FormSection section, String fieldName, Node contextNode) {
+        String fieldValue = safeEvaluate(contextNode, settings.getFormFieldToPath().get(fieldName));
+        return new FormField(fieldValue, fieldName, section.getFieldCount(), section.getFieldCountByName(fieldName));
+
     }
 
     //Chat GPT
