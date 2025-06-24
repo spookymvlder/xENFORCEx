@@ -101,18 +101,20 @@ public class ImportXml {
         formFieldToPath.put("vehicleIncidentFirstName", "descendant::name/given");
         formFieldToPath.put("vehicleIncidentLastName", "descendant::name/family");
 
-        formFieldToPath.put("vehicleHeader", "descendant::assets/vehicle");
+        formFieldToPath.put("vehicleHeader", "vehicle");
         formFieldToPath.put("driverHistoryHeader", "descendant::driverHistory/violation");
         formFieldToPath.put("additionalDriversHeader", "descendant::additionalDrivers/driver");
         formFieldToPath.put("driverInfoHeader", "descendant::driverInfo");
         formFieldToPath.put("licenseHeader", "descendant::license");
         formFieldToPath.put("vehicleViolationHeader", "descendant::vehicleHistory/violation");
         formFieldToPath.put("vehicleIncidentHeader", "descendant::vehicleHistory/incident");
+        formFieldToPath.put("driver", "descendant::driver");
+        formFieldToPath.put("assets", "descendant::assets");
         parserSettings.setFormFieldToPath(formFieldToPath);
 
         parserSettings.setTopLevelSections(new ArrayList<>(Arrays.asList("driver", "assets")));
 
-
+    //TODO deprecate
         Map<String, String> sectionNameToPath = new HashMap<>();
         sectionNameToPath.put("driver", "descendant::driver");
         sectionNameToPath.put("assets", "descendant::assets");
@@ -120,7 +122,7 @@ public class ImportXml {
 
         Map<String, List<String>> subsections = new HashMap<>();
         subsections.put("driver", Arrays.asList("driverInfoHeader", "licenseHeader", "driverHistoryHeader"));
-        subsections.put("assets", Arrays.asList("licenseHeader", "vehicleHeader", "additionalDriversHeader", "vehicleIncidentHeader", "vehicleViolationHeader"));
+        subsections.put("assets", Arrays.asList("vehicleHeader", "additionalDriversHeader", "vehicleIncidentHeader", "vehicleViolationHeader"));
         parserSettings.setSubsections(subsections);
 
         try{
@@ -138,7 +140,8 @@ public class ImportXml {
         //TODO put in specification version ID for xml so can validate that against our xpaths saved. Also put in xml id and store that temporarily so we don't double parse.
         File xmlFile = new File(settings.getXmlFilePath());
         File xsdFile = new File(settings.getXsdFilePath());
-        validateXML(xmlFile, xsdFile);
+        //TODO toggle for testing to ignore XSD
+        //validateXML(xmlFile, xsdFile);
         return getDocument(xmlFile);
     }
 
@@ -163,6 +166,7 @@ public class ImportXml {
 
 
     public static Document getDocument(File xmlFile) throws SAXException, IOException, ParserConfigurationException {
+
         if (!validateXmlSettings()){
             throw new InvalidPropertiesFormatException("Invalid XML settings.");
         }

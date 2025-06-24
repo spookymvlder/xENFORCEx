@@ -21,6 +21,7 @@ public class ParseDoc {
     public static void parseDoc(Document doc) {
         xpath = XPathFactory.newInstance().newXPath();
         List<FormInstance> forms = buildFormInstances(doc);
+        System.out.println(forms);
     }
 
     //TODO change language to FormInstance
@@ -33,10 +34,12 @@ public class ParseDoc {
         for (int i = 0; i < instanceList.getLength(); i++) {
             Node workingInstance = instanceList.item(i);
             try{
-                parsedInstances.add(new FormInstance(workingInstance.getNodeName(), buildTopSections(workingInstance)));
+                //parsedInstances.add(new FormInstance(workingInstance.getNodeName(), buildTopSections(workingInstance)));
+                parsedInstances.add(new FormInstance(workingInstance.getNodeName(), topTest(workingInstance)));
             } catch (XPathExpressionException e) {
                 System.out.println("Unable to extract form start: " + e.getMessage());
             }
+            //System.out.println("DEBUG");
         }
         return parsedInstances;
     }
@@ -48,9 +51,16 @@ public class ParseDoc {
 
         //Might not need custom getter here, should be able to iterate over the body node's children elements.
         for(String sectionName : settings.getTopLevelSections()) {
+            //System.out.println("**New top section: " + sectionName);
+
+            //TODO issue seems to be an assumption here that top section is not repeated.
             FormSection topSection = buildSection(instance, sectionName);
+
+
             topSections.add(topSection);
+            //System.out.println("DEBUG");
         }
+        //System.out.println("DEBUG");
         return topSections;
         /*List<FormSection> storedSections = new ArrayList<>();
 
@@ -81,38 +91,89 @@ public class ParseDoc {
         ValidateFormExtract.validateExtractMap(storedSections);*/
     }
 
-
-    private static FormSection buildSection(Node contextNode, String sectionName) throws XPathExpressionException {
-        FormSection section = new FormSection(sectionName);
-
-
-        NodeList occurrences = (NodeList) xpath.evaluate(
-                settings.getSectionNameToPath().get(sectionName),
-                contextNode,
-                XPathConstants.NODESET
-        );
-
-        for (int i = 0; i < occurrences.getLength(); i++) {
-            Node occurrence = occurrences.item(i);
-            //TODO move to metadata
-            //String foreignKey = ((Element) instance).getAttribute(settings.getForeignKey());
+    private static List<FormSection> topTest(Node instance) throws XPathExpressionException {
+        List<FormSection> topSections = new ArrayList<>();
+        Node start = instance.getFirstChild();
+        while(start != null) {
+            String sectionName = start.getNodeName();
+            if (settings.getTopLevelSections().contains(sectionName)) {
+                FormSection topSection = testBuildSection(start, sectionName);
+                topSections.add(topSection);
+            }
+            start = start.getNextSibling();
+        }
 
 
-            // Add fields
-            buildFields(section, sectionName, occurrence);
+        return topSections;
+    }
 
+    private static FormSection testBuildSection(Node contextNode, String sectionName) throws XPathExpressionException {
+        FormSection section = new FormSection (sectionName);
+        buildFields(section, sectionName, contextNode);
 
-            // Parse child sections of this occurrence
+        if (settings.getSubsectionsOf(sectionName) != null) {
             List<FormSection> subsections = new ArrayList<>();
             List<String> subsectionList = settings.getSubsectionsOf(sectionName);
+
             for (String subName : subsectionList) {
-                FormSection subsection = buildSection(occurrence, subName);
-                subsections.add(subsection);
+                NodeList occurrences = (NodeList) xpath.evaluate(
+                        settings.getFormFieldToPath().get(subName),
+                        contextNode,
+                        XPathConstants.NODESET);
+
+                for (int i = 0; i < occurrences.getLength(); i++) {
+                    Node occurrence = occurrences.item(i);
+                    FormSection subsection = testBuildSection(occurrence, subName);
+                    subsections.add(subsection);
+                }
+                System.out.println(subName);
+
             }
             //TODO make it possible to find subsection by name. May run in to weird recursion scenarios with bad build.
             section.setSubSections(subsections);
         }
 
+        return section;
+    }
+
+    private static FormSection buildSection(Node contextNode, String sectionName) throws XPathExpressionException {
+        FormSection section = new FormSection(sectionName);
+
+
+        //Temporary workaround for supporting test code.
+        //TODO update once settings code is ironed out.
+        NodeList occurrences = (NodeList) xpath.evaluate(
+                settings.getFormFieldToPath().get(sectionName),
+                contextNode,
+                XPathConstants.NODESET);
+
+        //TODO problem might be here? Length 5
+        System.out.println(occurrences.getLength());
+        for (int i = 0; i < occurrences.getLength(); i++) {
+            Node occurrence = occurrences.item(i);
+            //TODO move to metadata
+            //String foreignKey = ((Element) instance).getAttribute(settings.getForeignKey());
+
+            // Add fields
+            buildFields(section, sectionName, occurrence);
+
+            // Parse child sections of this occurrence
+            if (settings.getSubsectionsOf(sectionName) != null) {
+                List<FormSection> subsections = new ArrayList<>();
+                List<String> subsectionList = settings.getSubsectionsOf(sectionName);
+                System.out.println(subsectionList);
+                for (String subName : subsectionList) {
+                    System.out.println(subName);
+                    FormSection subsection = buildSection(occurrence, subName);
+                    subsections.add(subsection);
+                }
+                //TODO make it possible to find subsection by name. May run in to weird recursion scenarios with bad build.
+                section.setSubSections(subsections);
+            }
+
+
+        }
+        System.out.println("Section: " + sectionName);
         return section;
     }
 
