@@ -9,12 +9,14 @@ public class ImportSettings {
     //Usually 0, what node stripping should start at.
     //Default to firstChildElement. It may be possible that the form root has data,
     private int formRootIndex;
+    private boolean testIgnoreXSD;
 
     private ImportSettings() {
         this.xmlFilePath = null;
         this.xsdFilePath = null;
         this.formRoot = null;
         this.formRootIndex = 0;
+        this.testIgnoreXSD = false;
     }
 
     public static ImportSettings getInstance() {
@@ -54,5 +56,13 @@ public class ImportSettings {
 
     public void setFormRootIndex(int formRootIndex) {
         this.formRootIndex = formRootIndex;
+    }
+
+    public boolean getTestIgnoreXSD() {
+        return testIgnoreXSD;
+    }
+
+    public void setTestIgnoreXSD(boolean testIgnoreXSD) {
+        this.testIgnoreXSD = testIgnoreXSD;
     }
 }

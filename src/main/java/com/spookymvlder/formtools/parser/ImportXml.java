@@ -114,6 +114,8 @@ public class ImportXml {
 
         parserSettings.setTopLevelSections(new ArrayList<>(Arrays.asList("driver", "assets")));
 
+        settings.setTestIgnoreXSD(true);
+
     //TODO deprecate
         Map<String, String> sectionNameToPath = new HashMap<>();
         sectionNameToPath.put("driver", "descendant::driver");
@@ -140,8 +142,9 @@ public class ImportXml {
         //TODO put in specification version ID for xml so can validate that against our xpaths saved. Also put in xml id and store that temporarily so we don't double parse.
         File xmlFile = new File(settings.getXmlFilePath());
         File xsdFile = new File(settings.getXsdFilePath());
-        //TODO toggle for testing to ignore XSD
-        //validateXML(xmlFile, xsdFile);
+        if(!settings.getTestIgnoreXSD()) {
+            validateXML(xmlFile, xsdFile);
+        }
         return getDocument(xmlFile);
     }
 
