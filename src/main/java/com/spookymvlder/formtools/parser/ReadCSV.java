@@ -1,5 +1,11 @@
 package com.spookymvlder.formtools.parser;
 
+import com.opencsv.CSVParserBuilder;
+import com.opencsv.CSVReader;
+import com.opencsv.CSVReaderBuilder;
+import com.opencsv.bean.CsvToBeanBuilder;
+import com.spookymvlder.formtools.datatypes.FieldProperties;
+
 import java.io.*;
 import java.util.*;
 
@@ -31,5 +37,10 @@ public class ReadCSV {
         }
 
         return processedSpec;
+    }
+
+    public static void testOpenCSV() throws FileNotFoundException {
+        List<FieldProperties> beans = new CsvToBeanBuilder(new FileReader("yourfile.csv"))
+                .withType(FieldProperties.class).build().parse();
     }
 }

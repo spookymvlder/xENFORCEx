@@ -27,6 +27,7 @@ public class ParserSettings {
     private List<String> topLevelSections;
     //Path of sections
     private Map<String,String> sectionNameToPath;
+    private String dateFormat;
 
     private ParserSettings() {
         this.formStart = null;
@@ -36,7 +37,9 @@ public class ParserSettings {
         this.subsections = null;
         this.topLevelSections = null;
         this.sectionNameToPath = null;
+        this.dateFormat = "dd-MM-yyyy";
     }
+
 
     //TODO - ensure that sectionOrder, formSectionToFields, and formFieldToPath all line up
 
@@ -112,5 +115,11 @@ public class ParserSettings {
         this.sectionNameToPath = sectionNameToPath;
     }
 
+    public String getDateFormat() {
+        return dateFormat;
+    }
 
+    public void setDateFormat(String dateFormat) {
+        this.dateFormat = dateFormat;
+    }
 }
