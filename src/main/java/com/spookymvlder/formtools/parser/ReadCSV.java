@@ -5,6 +5,9 @@ import com.opencsv.CSVReader;
 import com.opencsv.CSVReaderBuilder;
 import com.opencsv.bean.CsvToBeanBuilder;
 import com.spookymvlder.formtools.datatypes.FieldProperties;
+import com.spookymvlder.formtools.settings.ImportSettings;
+import com.spookymvlder.formtools.utilities.ErrorSeverity;
+import com.spookymvlder.formtools.utilities.ValidationError;
 
 import java.io.*;
 import java.util.*;
@@ -39,8 +42,41 @@ public class ReadCSV {
         return processedSpec;
     }
 
-    public static void testOpenCSV() throws FileNotFoundException {
-        List<FieldProperties> beans = new CsvToBeanBuilder(new FileReader("yourfile.csv"))
-                .withType(FieldProperties.class).build().parse();
+    public static List<FieldProperties> importBeanCSV(String filePath) throws FileNotFoundException {
+        List<FieldProperties> csvFields = new ArrayList<>();
+        List<ValidationError> fieldErrors = new ArrayList<>();
+        try (BufferedReader br = new BufferedReader(new FileReader(filePath))) {
+            csvFields = new CsvToBeanBuilder<FieldProperties>(br)
+                    .withType(FieldProperties.class)
+                    .withIgnoreLeadingWhiteSpace(true)
+                    .withSeparator('\t')
+                    .build()
+                    .parse();
+
+        } catch (FileNotFoundException fnfe) {
+            System.out.println("Error! File not found: " + fnfe.getMessage());
+
+        } catch (IOException ioe) {
+            System.out.println("Error! I/O Error: " + ioe.getMessage());
+
+        }
+
+        for (FieldProperties field : csvFields) {
+            fieldErrors.addAll(field.validateWithErrors());
+        }
+        boolean successCheck = true;
+        if (!fieldErrors.isEmpty()) {
+            successCheck = fieldErrors.stream().allMatch(e -> e.getSeverity() == ErrorSeverity.ERROR);
+
+            System.out.println("Validation errors found.");
+            for (ValidationError error : fieldErrors) {
+                System.out.println("   -" + error);
+            }
+        }
+
+        ImportSettings.getInstance().setSpecImported(successCheck);
+
+
+        return csvFields;
     }
 }

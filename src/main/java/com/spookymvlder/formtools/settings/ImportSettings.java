@@ -10,6 +10,7 @@ public class ImportSettings {
     //Default to firstChildElement. It may be possible that the form root has data,
     private int formRootIndex;
     private boolean testIgnoreXSD;
+    private Boolean specImported;
 
     private ImportSettings() {
         this.xmlFilePath = null;
@@ -17,6 +18,7 @@ public class ImportSettings {
         this.formRoot = null;
         this.formRootIndex = 0;
         this.testIgnoreXSD = false;
+        this.specImported = false;
     }
 
     public static ImportSettings getInstance() {
@@ -64,5 +66,13 @@ public class ImportSettings {
 
     public void setTestIgnoreXSD(boolean testIgnoreXSD) {
         this.testIgnoreXSD = testIgnoreXSD;
+    }
+
+    public Boolean getSpecImported() {
+        return specImported;
+    }
+
+    public void setSpecImported(Boolean specImported) {
+        this.specImported = specImported;
     }
 }
