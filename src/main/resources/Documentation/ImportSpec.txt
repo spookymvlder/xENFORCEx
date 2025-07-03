@@ -1,0 +1,42 @@
+fieldId (String) - If import is part of a specification, the id linking this field to that specification. Else, a unique ID for the field that can be referenced by the parentId column.
+fieldName (String) - The name of the field as it appears within the XML.
+displayName (String) - A longer, more descriptive name for the field, if necessary.
+
+order (Integer)
+parentId (String) - The FieldId of this field's direct parent. If this field is the root of form, parentId should be "root".
+hierarchyLevel (Integer) - The expected hierarchy level for this field. The root of the form should be 0.
+sectionHeaderOverride (String) - If empty, utility will attempt to build Form Sections based on hierarchy level. Set for fields to force section groupings. Should be used to collapse XML tree, vertically, not to move horizon
+
+active (Boolean) - Whether this field is in use.
+expireDate (LocalDate) - The last date when this field should be considered active, if any.
+
+fieldRepeated (Character) - Is this field expected to appear more than once? Supports T, F, and C. C for conditionally recurring.
+minOccurs (Integer)
+maxOccurs (Integer)
+
+required (Character) - Supports T, F, and C. C for conditionally required.
+condRequiredSourceIds (String[])- If this field is conditionally required, which fields determine that this field is required?
+condRequiredValues (List<String[]>) - If this field is conditionally required due to the source field, what values for the source field determine that this field is necessary. Values should be formatted as field ID colon comma separated values. If more than one source field, each value set should be encased in curly brackets and separated by an AND or OR statement. For example {12: A, B} OR {13: A, C}
+condRequiredLogic (AND, OR) -
+
+codeSystemName (String)
+codeSystemId (String) - If the value type corresponds with a specific code system, provide its ID.
+codeSystemVersion (String)
+
+dataType (String) - Data type of field. Supports label, instance identifier, boolean, date, time, string, character, coded value, custom enumeration, integer, double, telephone, email, duration, decimal, all the numeric data types.
+rangeStart (Double) - If value should be limited to a range, start of that value range.
+rangeEnd (Double) - If value should be limited to a range, end of that value range.
+rangeInclusive (Boolean) - Are the range values provided inclusive or exclusive? T for inclusive, F for exclusive.
+minLength (Integer) - If string field, minimal length of field, inclusive.
+maxLength (Integer) - If string field, maximum length of field, inclusive.
+enumeration (String[]) - If only specific values should be accepeted for the field, list those values separated by |
+unit
+regexPattern (String)
+
+xpathOverride (String)
+isAttribute (Boolean)
+attributeName (String)
+
+uiControl (String) - Helper for downstream user for how to render data.
+validationMessage (String) - A custom error message to log if this field fails to be parsed successfully, in addition to any system errors logged.
+skipImport (Boolean) - Indicates that the field should be skipped during import, for example if the field corresponds to a label that doesn't need to be parsed.

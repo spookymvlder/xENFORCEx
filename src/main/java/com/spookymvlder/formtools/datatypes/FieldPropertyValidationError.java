@@ -1,12 +1,14 @@
-package com.spookymvlder.formtools.utilities;
+package com.spookymvlder.formtools.datatypes;
 
-public class ValidationError {
-    private final int fieldId;
+import com.spookymvlder.formtools.utilities.ErrorSeverity;
+
+public class FieldPropertyValidationError {
+    private final String fieldId;
     private final String fieldName;
     private final String message;
     private final ErrorSeverity severity;
 
-    public ValidationError(int fieldId, String fieldName, String message, ErrorSeverity severity) {
+    public FieldPropertyValidationError(String fieldId, String fieldName, String message, ErrorSeverity severity) {
         this.fieldId = fieldId;
         this.fieldName = fieldName;
         this.message = message;
@@ -14,10 +16,10 @@ public class ValidationError {
     }
 
     public String getFormattedMessage() {
-        return String.format("Field ID %d (%s) - %s: %s", fieldId, fieldName, severity, message);
+        return String.format("Field ID %s (%s) - %s: %s", fieldId, fieldName, severity, message);
     }
 
-    public int getFieldId() {
+    public String getFieldId() {
         return fieldId;
     }
 

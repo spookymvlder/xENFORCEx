@@ -1,13 +1,12 @@
 package com.spookymvlder.formtools.parser;
 
-import com.opencsv.CSVParserBuilder;
-import com.opencsv.CSVReader;
-import com.opencsv.CSVReaderBuilder;
 import com.opencsv.bean.CsvToBeanBuilder;
 import com.spookymvlder.formtools.datatypes.FieldProperties;
 import com.spookymvlder.formtools.settings.ImportSettings;
+import com.spookymvlder.formtools.settings.ParserSettings;
 import com.spookymvlder.formtools.utilities.ErrorSeverity;
-import com.spookymvlder.formtools.utilities.ValidationError;
+import com.spookymvlder.formtools.datatypes.FieldPropertyValidationError;
+import com.spookymvlder.formtools.utilities.FieldPropertyValidator;
 
 import java.io.*;
 import java.util.*;
@@ -44,7 +43,10 @@ public class ReadCSV {
 
     public static List<FieldProperties> importBeanCSV(String filePath) throws FileNotFoundException {
         List<FieldProperties> csvFields = new ArrayList<>();
-        List<ValidationError> fieldErrors = new ArrayList<>();
+        List<FieldPropertyValidationError> fieldErrors = new ArrayList<>();
+
+        ParserSettings.getInstance().setConverters();
+
         try (BufferedReader br = new BufferedReader(new FileReader(filePath))) {
             csvFields = new CsvToBeanBuilder<FieldProperties>(br)
                     .withType(FieldProperties.class)
@@ -62,14 +64,14 @@ public class ReadCSV {
         }
 
         for (FieldProperties field : csvFields) {
-            fieldErrors.addAll(field.validateWithErrors());
+            fieldErrors.addAll(FieldPropertyValidator.validateWithErrors(field));
         }
         boolean successCheck = true;
         if (!fieldErrors.isEmpty()) {
             successCheck = fieldErrors.stream().allMatch(e -> e.getSeverity() == ErrorSeverity.ERROR);
 
             System.out.println("Validation errors found.");
-            for (ValidationError error : fieldErrors) {
+            for (FieldPropertyValidationError error : fieldErrors) {
                 System.out.println("   -" + error);
             }
         }

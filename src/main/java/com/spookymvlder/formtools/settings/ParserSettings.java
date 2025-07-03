@@ -1,5 +1,8 @@
 package com.spookymvlder.formtools.settings;
 
+import com.spookymvlder.formtools.utilities.FieldPropertyConverter;
+
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 
@@ -48,6 +51,10 @@ public class ParserSettings {
             instance = new ParserSettings();
         }
         return instance;
+    }
+
+    public void setConverters() {
+        FieldPropertyConverter.CustomDateConverter.setFormatter(DateTimeFormatter.ofPattern(this.dateFormat));
     }
 
     public String getFormStart() {

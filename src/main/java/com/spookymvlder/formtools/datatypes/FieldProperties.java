@@ -1,19 +1,19 @@
 package com.spookymvlder.formtools.datatypes;
 
 import com.opencsv.bean.*;
-import com.opencsv.exceptions.CsvDataTypeMismatchException;
+import com.opencsv.bean.customconverter.ConverterLanguageToBoolean;
 import com.spookymvlder.formtools.utilities.ErrorSeverity;
-import com.spookymvlder.formtools.utilities.ValidationError;
+import com.spookymvlder.formtools.utilities.FieldPropertyConverter;
 
 
+import java.time.LocalDate;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 public class FieldProperties {
     //TODO Consider field IDs that may not be numeric, maybe convert to numeric?
     @CsvBindByName (required = true)
-    private Integer fieldId;
+    private String fieldId;
     @CsvBindByName (required = true)
     private String fieldName;
     @CsvBindByName
@@ -22,23 +22,34 @@ public class FieldProperties {
     @CsvBindByName
     private Integer order;
     @CsvBindByName (required = true)
-    private Integer parentId;
+    private String parentId;
     @CsvBindByName
     private Integer hierarchyLevel;
 
     @CsvBindByName
     private Boolean active;
     //TODO figure out how to modularize
-    @CsvBindByName
-    @CsvDate("yyyy-MM-dd")
-    private Date expireDate;
+    @CsvCustomBindByName (column="expireDate", converter = FieldPropertyConverter.CustomDateConverter.class)
+    private LocalDate expireDate;
 
-    @CsvCustomBindByName(column="fieldRepeated", converter = FieldRepeatConverter.class)
+    @CsvCustomBindByName(column="fieldRepeated", converter = FieldPropertyConverter.RepeatConverter.class)
     private Character fieldRepeated;         //T, F, C
     @CsvBindByName
     private Integer minOccurs;
     @CsvBindByName
     private Integer maxOccurs;
+
+
+
+    @CsvCustomBindByName(column="required", converter = FieldPropertyConverter.RepeatConverter.class)
+    private Boolean required;
+    //TODO import separate conditionally mandatory logic if complicated.
+    @CsvBindAndSplitByName(elementType=String.class, splitOn = ",")
+    private String[] condMandatorySourceIds;
+    @CsvBindAndSplitByName(elementType=String.class, splitOn = "|")
+    private List<String[]> condMandatoryValues;
+    @CsvBindByName
+    private LinkLogic condMandatoryLogic;
 
     //Code system data type attributes
     @CsvBindByName
@@ -48,16 +59,6 @@ public class FieldProperties {
     @CsvBindByName
     private String codeSystemVersion;
 
-    @CsvBindByName  (required = true)
-    private Boolean required;
-    //TODO import separate conditionally mandatory logic if complicated.
-    @CsvBindAndSplitByName(elementType=Integer.class, splitOn = ",")
-    private Integer[] condMandatorySourceIds;
-    @CsvBindAndSplitByName(elementType=String.class, splitOn = "|")
-    private List<String[]> condMandatoryValues;
-    @CsvBindByName
-    private LinkLogic condMandatoryLogic;
-
     //Allowed values for field
     @CsvBindByName (required = true)
     private String dataType;
@@ -65,7 +66,7 @@ public class FieldProperties {
     private Double rangeStart;
     @CsvBindByName
     private Double rangeEnd;
-    @CsvBindByName
+    @CsvCustomBindByName (column="rangeInclusive", converter = ConverterLanguageToBoolean.class)
     private Boolean rangeInclusive;
     @CsvBindByName
     private Integer minLength;
@@ -80,7 +81,8 @@ public class FieldProperties {
 
     @CsvBindByName
     private String xpathOverride;
-    @CsvBindByName
+    //TODO confirm this works and doesn't need language set somewhere.
+    @CsvCustomBindByName (column="isAttribute", converter = ConverterLanguageToBoolean.class)
     private Boolean isAttribute;
     @CsvBindByName
     private String attributeName;
@@ -89,15 +91,15 @@ public class FieldProperties {
     private String uiControl;
     @CsvBindByName
     private String validationMessage;
-    @CsvBindByName
+    @CsvCustomBindByName (column="skipImport", converter = ConverterLanguageToBoolean.class)
     private Boolean skipImport;
 
 
-    public Integer getFieldId() {
+    public String getFieldId() {
         return fieldId;
     }
 
-    public void setFieldId(Integer fieldId) {
+    public void setFieldId(String fieldId) {
         this.fieldId = fieldId;
     }
 
@@ -125,11 +127,11 @@ public class FieldProperties {
         this.order = order;
     }
 
-    public Integer getParentId() {
+    public String getParentId() {
         return parentId;
     }
 
-    public void setParentId(Integer parentId) {
+    public void setParentId(String parentId) {
         this.parentId = parentId;
     }
 
@@ -149,11 +151,11 @@ public class FieldProperties {
         this.active = active;
     }
 
-    public Date getExpireDate() {
+    public LocalDate getExpireDate() {
         return expireDate;
     }
 
-    public void setExpireDate(Date expireDate) {
+    public void setExpireDate(LocalDate expireDate) {
         this.expireDate = expireDate;
     }
 
@@ -213,11 +215,11 @@ public class FieldProperties {
         this.required = required;
     }
 
-    public Integer[] getCondMandatorySourceIds() {
+    public String[] getCondMandatorySourceIds() {
         return condMandatorySourceIds;
     }
 
-    public void setCondMandatorySourceIds(Integer[] condMandatorySourceIds) {
+    public void setCondMandatorySourceIds(String[] condMandatorySourceIds) {
         this.condMandatorySourceIds = condMandatorySourceIds;
     }
 
@@ -357,54 +359,8 @@ public class FieldProperties {
         this.skipImport = skipImport;
     }
 
-    public List<ValidationError> validateWithErrors()  {
-        List<ValidationError> errors = new ArrayList<>();
-        errors.addAll(this.validateAttributes());
-        errors.addAll(this.validateRanges());
-
-        return errors;
-    }
-
-    public List<ValidationError> validateAttributes() {
-        List<ValidationError> errors = new ArrayList<>();
-        //Unless default to no or assume if attribute name is populated it is an attribute?
-        if (isAttribute == null && attributeName != null) {
-            errors.add(new ValidationError(this.fieldId, this.fieldName, "isAttribute is required when attributeName is set.", ErrorSeverity.WARNING));
-        }
-        if (attributeName == null && isAttribute != null) {
-            errors.add(new ValidationError(this.fieldId, this.fieldName, "attributeName is required when isAttribute is set.", ErrorSeverity.ERROR));
-        }
-        return errors;
-    }
 
 
-    public List<ValidationError> validateRanges() {
-        List<ValidationError> errors = new ArrayList<>();
-        boolean ranges = (this.rangeStart != null) || (this.rangeEnd != null);
-        if (ranges && this.rangeInclusive == null) {
-            errors.add(new ValidationError(this.fieldId, this.fieldName, "rangeInclusive is required if rangeStart or rangeEnd are set.", ErrorSeverity.ERROR));
-        }
-
-        if(this.rangeStart != null && this.rangeEnd != null) {
-            if (this.rangeStart > this.rangeEnd) {
-                errors.add(new ValidationError(this.fieldId, this.fieldName, "rangeStart must be less than or equal to rangeEnd.", ErrorSeverity.ERROR));
-            }
-            if (this.rangeStart.equals(this.rangeEnd) && Boolean.FALSE.equals(this.rangeInclusive)) {
-                errors.add(new ValidationError(this.fieldId, this.fieldName, "No valid values for ranges.", ErrorSeverity.ERROR));
-            }
-        }
-        return errors;
-    }
-
-    public static class FieldRepeatConverter extends AbstractBeanField<Character,String> {
-        @Override
-        protected Character convert(String value) throws CsvDataTypeMismatchException {
-            if (!value.trim().toUpperCase().matches("[TFC]")) {
-                throw new CsvDataTypeMismatchException("Invalid repeat flag: " + value);
-            }
-            return value.charAt(0);
-        }
-    }
 
 /*
     public static class FieldPropertyBuilder {

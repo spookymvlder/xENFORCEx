@@ -1,0 +1,47 @@
+package com.spookymvlder.formtools.utilities;
+
+import com.opencsv.bean.AbstractBeanField;
+import com.opencsv.exceptions.CsvDataTypeMismatchException;
+
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
+
+public class FieldPropertyConverter {
+    public static class CustomDateConverter extends AbstractBeanField<LocalDate, String> {
+        private static DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+
+        public static void setFormatter(DateTimeFormatter f) {
+            formatter = f;
+        }
+
+        @Override
+        protected LocalDate convert(String value) throws CsvDataTypeMismatchException {
+            if (value == null || value.isBlank()) return null;
+            try {
+                return LocalDate.parse(value, formatter);
+            } catch (DateTimeParseException e) {
+                throw new CsvDataTypeMismatchException("Date parse failed for: " + value);
+            }
+        }
+    }
+
+    public static class RepeatConverter extends AbstractBeanField<Character,String> {
+        @Override
+        protected Character convert(String value) throws CsvDataTypeMismatchException {
+            if (!value.trim().toUpperCase().matches("[TFC]")) {
+                throw new CsvDataTypeMismatchException("Invalid repeat flag: " + value);
+            }
+            return value.charAt(0);
+        }
+    }
+
+    public static class BooleanYNConverter extends AbstractBeanField<Boolean, String> {
+        @Override
+        protected Boolean convert(String value) throws CsvDataTypeMismatchException {
+            if ("Y".equalsIgnoreCase(value) || "YES".equalsIgnoreCase(value)) return true;
+            if ("N".equalsIgnoreCase(value) || "NO".equalsIgnoreCase(value)) return false;
+            throw new CsvDataTypeMismatchException("Invalid Y/N value: " + value);
+        }
+    }
+}
