@@ -13,6 +13,7 @@ import java.util.*;
 
 public class ReadCSV {
 
+    /*
     public static Map<Integer, String[]> importCSV(String filePath) {
         List<String[]> rawLines = new ArrayList<>();
         String delimiter = ",";
@@ -39,7 +40,7 @@ public class ReadCSV {
         }
 
         return processedSpec;
-    }
+    }*/
 
     public static List<FieldProperties> importBeanCSV(String filePath) throws FileNotFoundException {
         List<FieldProperties> csvFields = new ArrayList<>();
@@ -73,6 +74,21 @@ public class ReadCSV {
             System.out.println("Validation errors found.");
             for (FieldPropertyValidationError error : fieldErrors) {
                 System.out.println("   -" + error);
+            }
+        }
+
+        Map<String, List<String>> parentMap = new HashMap<>();
+        for (FieldProperties field : csvFields) {
+            parentMap.computeIfAbsent(field.getParentId(), k -> new ArrayList<>()).add(field.getFieldName());
+        }
+        for (String parent : parentMap.keySet()) {
+            List<String> parents = new ArrayList<>();
+            for (String child : parentMap.get(parent)) {
+                if (parentMap.containsKey(child)) {
+                    System.out.println("Error! Duplicate field parent: " + parent);
+                } else {
+                    parents.add(child);
+                }
             }
         }
 

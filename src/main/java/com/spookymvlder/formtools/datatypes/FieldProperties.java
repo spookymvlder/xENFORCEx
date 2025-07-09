@@ -25,6 +25,10 @@ public class FieldProperties {
     private String parentId;
     @CsvBindByName
     private Integer hierarchyLevel;
+    @CsvBindByName
+    private String sectionHeaderOverride;
+
+
 
     @CsvBindByName
     private Boolean active;
@@ -38,6 +42,13 @@ public class FieldProperties {
     private Integer minOccurs;
     @CsvBindByName
     private Integer maxOccurs;
+    @CsvBindAndSplitByName(elementType=String.class, splitOn = ",")
+    private String[] condRepeatedSourceIds;
+    //TODO update logic here to split list level here and condRequiredValues on curly braces and array level via pipe
+    @CsvBindAndSplitByName(elementType=String.class, splitOn = "|")
+    private List<String[]> condRepeatedValues;
+    @CsvBindByName
+    private LinkLogic condRepeatedLogic;
 
 
 
@@ -45,11 +56,11 @@ public class FieldProperties {
     private Boolean required;
     //TODO import separate conditionally mandatory logic if complicated.
     @CsvBindAndSplitByName(elementType=String.class, splitOn = ",")
-    private String[] condMandatorySourceIds;
+    private String[] condRequiredSourceIds;
     @CsvBindAndSplitByName(elementType=String.class, splitOn = "|")
-    private List<String[]> condMandatoryValues;
+    private List<String[]> condRequiredValues;
     @CsvBindByName
-    private LinkLogic condMandatoryLogic;
+    private LinkLogic condRequiredLogic;
 
     //Code system data type attributes
     @CsvBindByName
@@ -58,6 +69,8 @@ public class FieldProperties {
     private String codeSystemId;
     @CsvBindByName
     private String codeSystemVersion;
+    @CsvBindByName
+    private String codeSystemCode;
 
     //Allowed values for field
     @CsvBindByName (required = true)
@@ -143,6 +156,14 @@ public class FieldProperties {
         this.hierarchyLevel = hierarchyLevel;
     }
 
+    public String getSectionHeaderOverride() {
+        return sectionHeaderOverride;
+    }
+
+    public void setSectionHeaderOverride(String sectionHeaderOverride) {
+        this.sectionHeaderOverride = sectionHeaderOverride;
+    }
+
     public Boolean getActive() {
         return active;
     }
@@ -183,6 +204,30 @@ public class FieldProperties {
         this.maxOccurs = maxOccurs;
     }
 
+    public String[] getCondRepeatedSourceIds() {
+        return condRepeatedSourceIds;
+    }
+
+    public void setCondRepeatedSourceIds(String[] condRepeatedSourceIds) {
+        this.condRepeatedSourceIds = condRepeatedSourceIds;
+    }
+
+    public List<String[]> getCondRepeatedValues() {
+        return condRepeatedValues;
+    }
+
+    public void setCondRepeatedValues(List<String[]> condRepeatedValues) {
+        this.condRepeatedValues = condRepeatedValues;
+    }
+
+    public LinkLogic getCondRepeatedLogic() {
+        return condRepeatedLogic;
+    }
+
+    public void setCondRepeatedLogic(LinkLogic condRepeatedLogic) {
+        this.condRepeatedLogic = condRepeatedLogic;
+    }
+
     public String getCodeSystemName() {
         return codeSystemName;
     }
@@ -207,6 +252,14 @@ public class FieldProperties {
         this.codeSystemVersion = codeSystemVersion;
     }
 
+    public String getCodeSystemCode() {
+        return codeSystemCode;
+    }
+
+    public void setCodeSystemCode(String codeSystemCode) {
+        this.codeSystemCode = codeSystemCode;
+    }
+
     public Boolean getRequired() {
         return required;
     }
@@ -215,28 +268,28 @@ public class FieldProperties {
         this.required = required;
     }
 
-    public String[] getCondMandatorySourceIds() {
-        return condMandatorySourceIds;
+    public String[] getCondRequiredSourceIds() {
+        return condRequiredSourceIds;
     }
 
-    public void setCondMandatorySourceIds(String[] condMandatorySourceIds) {
-        this.condMandatorySourceIds = condMandatorySourceIds;
+    public void setCondRequiredSourceIds(String[] condRequiredSourceIds) {
+        this.condRequiredSourceIds = condRequiredSourceIds;
     }
 
-    public List<String[]> getCondMandatoryValues() {
-        return condMandatoryValues;
+    public List<String[]> getCondRequiredValues() {
+        return condRequiredValues;
     }
 
-    public void setCondMandatoryValues(List<String[]> condMandatoryValues) {
-        this.condMandatoryValues = condMandatoryValues;
+    public void setCondRequiredValues(List<String[]> condRequiredValues) {
+        this.condRequiredValues = condRequiredValues;
     }
 
-    public LinkLogic getCondMandatoryLogic() {
-        return condMandatoryLogic;
+    public LinkLogic getCondRequiredLogic() {
+        return condRequiredLogic;
     }
 
-    public void setCondMandatoryLogic(LinkLogic condMandatoryLogic) {
-        this.condMandatoryLogic = condMandatoryLogic;
+    public void setCondRequiredLogic(LinkLogic condRequiredLogic) {
+        this.condRequiredLogic = condRequiredLogic;
     }
 
     public String getDataType() {

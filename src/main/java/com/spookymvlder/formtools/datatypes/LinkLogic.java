@@ -1,5 +1,5 @@
 package com.spookymvlder.formtools.datatypes;
 
 public enum LinkLogic {
-    AND, OR
+    AND, OR, NOT
 }

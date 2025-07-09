@@ -1,42 +1,60 @@
-fieldId (String) - If import is part of a specification, the id linking this field to that specification. Else, a unique ID for the field that can be referenced by the parentId column.
-fieldName (String) - The name of the field as it appears within the XML.
-displayName (String) - A longer, more descriptive name for the field, if necessary.
+fieldId (String, Required) - If import is part of a specification, the id linking this field to that specification. Else, a unique ID for the field that can be referenced by the parentId column. The id should not contain commas.
+fieldName (String, Required) - The name of the field as it appears within the XML.
+displayName (String, Optional) - A longer, more descriptive name for the field, if necessary. fieldName is used if left blank.
 
-order (Integer)
-parentId (String) - The FieldId of this field's direct parent. If this field is the root of form, parentId should be "root".
-hierarchyLevel (Integer) - The expected hierarchy level for this field. The root of the form should be 0.
-sectionHeaderOverride (String) - If empty, utility will attempt to build Form Sections based on hierarchy level. Set for fields to force section groupings. Should be used to collapse XML tree, vertically, not to move horizon
+displayOrder (Integer, Optional) - The order the fields should appear in. Will be respected if possible. A node's children should have a lower value than any unprocessed sibling nodes.
+parentId (String, Required) - The FieldId of this field's direct parent. If this field is the root of form, parentId should be "root".
+hierarchyLevel (Integer, Optional) - The expected hierarchy level for this field. The root of the form should have a value of 0. If empty, the utility will rely on parent/child node relationships to form a hierarchy.
+sectionHeaderOverride (String, Optional) - If empty, utility will attempt to build Form Sections based on hierarchy level. Set for fields to force section groupings. Should be used to condense XML tree vertically, not to move a field's position horizontally within the structure.
 
-active (Boolean) - Whether this field is in use.
-expireDate (LocalDate) - The last date when this field should be considered active, if any.
+active (Boolean, Optional) - Whether this field is in use. Allows for specification to deprecate fields. If empty, fields are assumed to be active.
+expireDate (LocalDate, Required if "active" == FALSE) - The last date when this field should be considered active, if any. Required if active is set to False
 
-fieldRepeated (Character) - Is this field expected to appear more than once? Supports T, F, and C. C for conditionally recurring.
-minOccurs (Integer)
-maxOccurs (Integer)
+fieldRepeated (Character, Optional) - Is this field expected to appear more than once? Supports T, F, and C. C for conditionally recurring.
+minOccurs (Integer, Optional) - The minimum number of times the field must appear. Only referenced if fieldRepeated does not equal F.
+maxOccurs (Integer, Optional) - The maximum number of times the field may appear. Only referenced if fieldRepeated does not equal F.
+condRepeatedSourceIds (String[], Required if "fieldRepeated" == C) - Indicates the fieldIds of the source fields that should be referenced to determine if this field is conditionally repeated. Field Ids should be comma-delimited.
+condRepeatedValues (List<String[]>, Required if "fieldRepeated" == C) - Which values in a source field determine that this field is necessary. If more than one source field, each value set should be piped-delimited and encased in curly braces.
+    -If any value in the source field would cause this field to be repeated, enter **ANY
+    -If the source field is numeric, a requirement threshold can be indicated via <, >, <=, >= followed by a numeric value, such as {<4}.
+    -An inclusive range can be indicated by a hyphen separating two numeric values. Inclusivity can be indicated by the presence of greater-than or less-than symbols. The condition {>2-5} would indicate values of 2.01 up to and including 5 would conditionally repeat the field being evaluated.
+    -To specify any value except for the value indicated, use **!. Any value for the source field other than the specified value will trigger this field to be conditionally repeated.
+    -If the source field had specified enumerations, numeric values will correspond to the enumeration at the specified position, 0-indexed.
 
-required (Character) - Supports T, F, and C. C for conditionally required.
-condRequiredSourceIds (String[])- If this field is conditionally required, which fields determine that this field is required?
-condRequiredValues (List<String[]>) - If this field is conditionally required due to the source field, what values for the source field determine that this field is necessary. Values should be formatted as field ID colon comma separated values. If more than one source field, each value set should be encased in curly brackets and separated by an AND or OR statement. For example {12: A, B} OR {13: A, C}
-condRequiredLogic (AND, OR) -
+condRepeatedLogic (Enum [AND, OR], Required if condRepeatedSourceIds indicates more than one field and those fields can be present at the same time.) - logic to connect multiple conditional requirements.
 
-codeSystemName (String)
-codeSystemId (String) - If the value type corresponds with a specific code system, provide its ID.
-codeSystemVersion (String)
 
-dataType (String) - Data type of field. Supports label, instance identifier, boolean, date, time, string, character, coded value, custom enumeration, integer, double, telephone, email, duration, decimal, all the numeric data types.
-rangeStart (Double) - If value should be limited to a range, start of that value range.
-rangeEnd (Double) - If value should be limited to a range, end of that value range.
-rangeInclusive (Boolean) - Are the range values provided inclusive or exclusive? T for inclusive, F for exclusive.
-minLength (Integer) - If string field, minimal length of field, inclusive.
-maxLength (Integer) - If string field, maximum length of field, inclusive.
-enumeration (String[]) - If only specific values should be accepeted for the field, list those values separated by |
-unit
-regexPattern (String)
+required (Character, Required) - Supports T, F, and C. C for conditionally required based on the value present in another field. If a field is marked as required, it will only trigger an error if the section it belongs to is populated and the field is not present, or present and empty. If a section is listed as required,
+    the section must appear but each field within the section will need to be marked individually.
+condRequiredSourceIds (String[], Required if "required" == C) - Indicates the fieldIds of the source fields that should be referenced to determine if this field is conditionally required. Field Ids should be comma-delimited.
+condRequiredValues (List<String[]>, Required if "required" == C) - Which values in a source field determine that this field is necessary. If more than one source field, each value set should be piped-delimited and encased in curly braces.
+    -If any value in the source field would cause this field to be required, enter **ANY
+    -If the source field is numeric, a requirement threshold can be indicated via <, >, <=, >= followed by a numeric value, such as {<4}.
+    -An inclusive range can be indicated by a hyphen separating two numeric values. Inclusivity can be indicated by the presence of greater-than or less-than symbols. The condition {>2-5} would indicate values of 2.01 up to and including 5 would conditionally require the field being evaluated.
+    -To specify any value except for the value indicated, use **!. Any value for the source field other than the specified value will trigger this field to be conditionally required.
+    -If the source field had specified enumerations, numeric values will correspond to the enumeration at the specified position, 0-indexed.
 
-xpathOverride (String)
-isAttribute (Boolean)
-attributeName (String)
+condRequiredLogic (Enum [AND, OR], Required if condRequiredSourceIds indicates more than one field and those fields can be present at the same time.) - logic to connect multiple conditional requirements.
 
-uiControl (String) - Helper for downstream user for how to render data.
-validationMessage (String) - A custom error message to log if this field fails to be parsed successfully, in addition to any system errors logged.
-skipImport (Boolean) - Indicates that the field should be skipped during import, for example if the field corresponds to a label that doesn't need to be parsed.
+codeSystemName (String, Optional) - The name of the code system as it would appear in the XML. If populated, the name that should be stored to metadata.
+codeSystemId (String, Optional) - If the value type corresponds with a specific code system, provide the code system's ID.
+codeSystemVersion (String, Optional) - The version of the code system to expect.
+codeSystemCode (String, Optional) - If the fieldId does not correspond with a corresponding code in the code system, provide the field's code.
+
+dataType (String, Required) - Data type of field. Supports label, instance identifier, boolean, date, time, string, character, coded value, custom enumeration, integer, double, telephone, email, duration, decimal, all the numeric data types.
+rangeStart (Double, Optional) - If value should be limited to a range, start of that value range.
+rangeEnd (Double, Optional) - If value should be limited to a range, end of that value range.
+rangeInclusive (Boolean, Required if rangeStart or rangeEnd) - Are the range values provided inclusive or exclusive? T for inclusive, F for exclusive.
+minLength (Integer, Optional) - If string field, minimal length of field, inclusive.
+maxLength (Integer, Optional) - If string field, maximum length of field, inclusive.
+enumeration (String[], Optional) - If only specific values should be accepted for the field, list those values separated by |
+unit (String, Optional) - The unit corresponding to the field, used for display.
+regexPattern (String, Optional) - If the field should match a pattern, provide that pattern.
+
+xpathOverride (String, Optional) - The relative path to use as the XPATH for a field. Useful if the name of the field storing a value is located in multiple locations in order to guarantee the correct field is selected.
+isAttribute (Boolean, Optional) - If the value for the field is retrieved from a node's attribute rather than as a text field value.
+attributeName (String, Required if "isAttribute" == T) - Required if the value is found in an attribute tag, list the name of the appropriate tag.
+
+uiControl (String, Optional) - Helper for downstream user for how to render data.
+validationMessage (String, Optional) - A custom error message to log if this field fails to be parsed successfully, in addition to any system errors logged.
+skipImport (Boolean, Optional) - Indicates that the field should be skipped during import, for example if the field corresponds to a label that doesn't need to be parsed.
