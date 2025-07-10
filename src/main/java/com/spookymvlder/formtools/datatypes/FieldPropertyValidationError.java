@@ -1,20 +1,22 @@
 package com.spookymvlder.formtools.datatypes;
 
 import com.spookymvlder.formtools.utilities.ErrorSeverity;
+import com.spookymvlder.formtools.utilities.ErrorSource;
 
-public class FieldPropertyValidationError {
+import java.util.Objects;
+
+public class FieldPropertyValidationError extends ErrorEntry {
     private final String fieldId;
     private final String fieldName;
-    private final String message;
-    private final ErrorSeverity severity;
 
-    public FieldPropertyValidationError(String fieldId, String fieldName, String message, ErrorSeverity severity) {
+    public FieldPropertyValidationError(ErrorSource source, String message, ErrorSeverity severity, String fieldId, String fieldName) {
+        super(source, message, severity);
         this.fieldId = fieldId;
         this.fieldName = fieldName;
-        this.message = message;
-        this.severity = severity;
     }
 
+
+    @Override
     public String getFormattedMessage() {
         return String.format("Field ID %s (%s) - %s: %s", fieldId, fieldName, severity, message);
     }
@@ -27,16 +29,16 @@ public class FieldPropertyValidationError {
         return fieldName;
     }
 
-    public String getMessage() {
-        return message;
-    }
-
-    public ErrorSeverity getSeverity() {
-        return severity;
+    @Override
+    public boolean equals(Object o) {
+        if (o == null || getClass() != o.getClass()) return false;
+        if (!super.equals(o)) return false;
+        FieldPropertyValidationError that = (FieldPropertyValidationError) o;
+        return Objects.equals(getFieldId(), that.getFieldId()) && Objects.equals(getFieldName(), that.getFieldName());
     }
 
     @Override
-    public String toString() {
-        return getFormattedMessage();
+    public int hashCode() {
+        return Objects.hash(super.hashCode(), getFieldId(), getFieldName());
     }
 }

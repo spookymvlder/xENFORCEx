@@ -1,0 +1,10 @@
+package com.spookymvlder.formtools.utilities;
+
+public enum ErrorSource {
+    IMPORT_SCHEME,
+    XML_IMPORT,
+    XSD_IMPORT,
+    PARSE_ERROR,
+    SCHEME_FIELD_PROPERTY_VALIDATION,
+    SCHEME_HIERARCHY_CHECK
+}

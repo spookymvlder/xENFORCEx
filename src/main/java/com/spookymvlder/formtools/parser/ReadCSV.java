@@ -1,11 +1,13 @@
 package com.spookymvlder.formtools.parser;
 
 import com.opencsv.bean.CsvToBeanBuilder;
+import com.spookymvlder.formtools.datatypes.ErrorEntry;
 import com.spookymvlder.formtools.datatypes.FieldProperties;
 import com.spookymvlder.formtools.settings.ImportSettings;
 import com.spookymvlder.formtools.settings.ParserSettings;
 import com.spookymvlder.formtools.utilities.ErrorSeverity;
-import com.spookymvlder.formtools.datatypes.FieldPropertyValidationError;
+import com.spookymvlder.formtools.utilities.ErrorSource;
+import com.spookymvlder.formtools.utilities.FieldHierarchyValidator;
 import com.spookymvlder.formtools.utilities.FieldPropertyValidator;
 
 import java.io.*;
@@ -42,9 +44,10 @@ public class ReadCSV {
         return processedSpec;
     }*/
 
-    public static List<FieldProperties> importBeanCSV(String filePath) throws FileNotFoundException {
+    public static List<FieldProperties> importBeanCSV(String filePath) {
         List<FieldProperties> csvFields = new ArrayList<>();
-        List<FieldPropertyValidationError> fieldErrors = new ArrayList<>();
+        //TODO send error log somewhere
+        List<ErrorEntry> errors = new ArrayList<>();
 
         ParserSettings.getInstance().setConverters();
 
@@ -57,40 +60,30 @@ public class ReadCSV {
                     .parse();
 
         } catch (FileNotFoundException fnfe) {
-            System.out.println("Error! File not found: " + fnfe.getMessage());
-
+            errors.add(new ErrorEntry(ErrorSource.IMPORT_SCHEME,"Error! File not found: " + fnfe.getMessage(), ErrorSeverity.FATAL));
         } catch (IOException ioe) {
-            System.out.println("Error! I/O Error: " + ioe.getMessage());
-
+            errors.add(new ErrorEntry(ErrorSource.IMPORT_SCHEME,"Error! I/O Error: " + ioe.getMessage(), ErrorSeverity.FATAL));
         }
+        boolean successCheck = errors.isEmpty();
 
-        for (FieldProperties field : csvFields) {
-            fieldErrors.addAll(FieldPropertyValidator.validateWithErrors(field));
+        if(successCheck) {
+            for (FieldProperties field : csvFields) {
+                errors.addAll(FieldPropertyValidator.validateWithErrors(field));
+            }
+            errors.addAll(FieldHierarchyValidator.validateHierarchy(csvFields));
         }
-        boolean successCheck = true;
-        if (!fieldErrors.isEmpty()) {
-            successCheck = fieldErrors.stream().allMatch(e -> e.getSeverity() == ErrorSeverity.ERROR);
+        //Only if we added something during validation.
+        //TODO remove this code and make it accessible via CLI log or error log
+        if (successCheck && !errors.isEmpty()) {
+            //TODO add check for fatal as well.
+            successCheck = errors.stream().allMatch(e -> e.getSeverity() == ErrorSeverity.ERROR);
 
             System.out.println("Validation errors found.");
-            for (FieldPropertyValidationError error : fieldErrors) {
+            for (ErrorEntry error : errors) {
                 System.out.println("   -" + error);
             }
         }
 
-        Map<String, List<String>> parentMap = new HashMap<>();
-        for (FieldProperties field : csvFields) {
-            parentMap.computeIfAbsent(field.getParentId(), k -> new ArrayList<>()).add(field.getFieldName());
-        }
-        for (String parent : parentMap.keySet()) {
-            List<String> parents = new ArrayList<>();
-            for (String child : parentMap.get(parent)) {
-                if (parentMap.containsKey(child)) {
-                    System.out.println("Error! Duplicate field parent: " + parent);
-                } else {
-                    parents.add(child);
-                }
-            }
-        }
 
         ImportSettings.getInstance().setSpecImported(successCheck);
 
