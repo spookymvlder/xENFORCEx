@@ -3,6 +3,7 @@ package com.spookymvlder.formtools.utilities;
 import com.spookymvlder.formtools.datatypes.ErrorEntry;
 import com.spookymvlder.formtools.datatypes.FieldProperties;
 import com.spookymvlder.formtools.datatypes.FieldPropertyValidationError;
+import com.spookymvlder.formtools.settings.ImportSettings;
 
 import java.util.*;
 
@@ -12,7 +13,7 @@ public class FieldHierarchyValidator {
         Map<String, FieldProperties> fieldMap = new HashMap<>();
         Set<String> visited = new HashSet<>();
         Set<String> visiting = new HashSet<>();
-        Set<String> roots = new HashSet<>();
+        List<FieldProperties> roots = new ArrayList<>();
 
         // Step 1: Build map for fast lookup
         for (FieldProperties field : fields) {
@@ -32,8 +33,8 @@ public class FieldHierarchyValidator {
             }
 
             // Track root nodes (optional check)
-            if ("root".equals(field.getParentId())) {
-                roots.add(fieldId);
+            if (field.getParentId().equalsIgnoreCase("root")) {
+                roots.add(field);
             }
         }
 
@@ -47,6 +48,10 @@ public class FieldHierarchyValidator {
         if (roots.size() > 1) {
             errors.add(new ErrorEntry(ErrorSource.SCHEME_HIERARCHY_CHECK,"Multiple root fields found: " + roots, ErrorSeverity.FATAL));
         }
+
+        //TODO - putting this here so ImportSpecification can reach a form root and eliminate at least one loop. Need to validate that name is unique
+        ImportSettings.getInstance().setRootField(roots.getFirst());
+
         return errors;
     }
 

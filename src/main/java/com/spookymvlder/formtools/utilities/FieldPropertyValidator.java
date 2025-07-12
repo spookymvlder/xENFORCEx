@@ -7,6 +7,7 @@ import com.spookymvlder.formtools.datatypes.FieldPropertyValidationError;
 import java.util.ArrayList;
 import java.util.List;
 
+//TODO add validation that name is unique
 public class FieldPropertyValidator {
 
     public static List<ErrorEntry> validateWithErrors(FieldProperties field)  {

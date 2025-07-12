@@ -2,13 +2,17 @@ package com.spookymvlder.formtools.datatypes;
 
 import com.opencsv.bean.*;
 import com.opencsv.bean.customconverter.ConverterLanguageToBoolean;
+import com.spookymvlder.formtools.settings.ErrorSettings;
 import com.spookymvlder.formtools.utilities.ErrorSeverity;
+import com.spookymvlder.formtools.utilities.ErrorSource;
 import com.spookymvlder.formtools.utilities.FieldPropertyConverter;
 
 
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class FieldProperties {
     //TODO Consider field IDs that may not be numeric, maybe convert to numeric?
@@ -27,8 +31,6 @@ public class FieldProperties {
     private Integer hierarchyLevel;
     @CsvBindByName
     private String sectionHeaderOverride;
-
-
 
     @CsvBindByName
     private Boolean active;
@@ -107,6 +109,52 @@ public class FieldProperties {
     @CsvCustomBindByName (column="skipImport", converter = ConverterLanguageToBoolean.class)
     private Boolean skipImport;
 
+    private Set<FieldProperties> childFields = new HashSet<>();
+    private FieldProperties parentField = null;
+
+    public Set<FieldProperties> getChildFields() {
+        return childFields;
+    }
+
+    public void setChildFields(Set<FieldProperties> childFields) {
+        this.childFields = childFields;
+    }
+
+    public void appendChildField(FieldProperties childField) {
+        this.childFields.add(childField);
+    }
+
+    public void removeFieldFromTree() {
+        if (this.parentId.equalsIgnoreCase("root")) {
+            ErrorSettings.getInstance().addToCurrentLog(new FieldPropertyValidationError(ErrorSource.FIELD_TREE_RESTRUCTURING, "Attempting to remove root node field.", ErrorSeverity.FATAL, fieldId, fieldName));
+        } else {
+            if (!this.childFields.isEmpty()) {
+                for (FieldProperties childField : this.childFields) {
+                    childField.setParentField(this.parentField);
+                    this.parentField.appendChildField(childField);
+                }
+            }
+            this.parentField.removeChildField(this);
+
+        }
+    }
+
+    public void removeChildField(FieldProperties childField) {
+        this.childFields.remove(childField);
+    }
+
+    public FieldProperties getParentField() {
+        return parentField;
+    }
+
+    public void setParentField(FieldProperties parentField) {
+        this.parentField = parentField;
+    }
+
+    public void createConnections(FieldProperties parentField) {
+        this.parentField = parentField;
+        parentField.appendChildField(this);
+    }
 
     public String getFieldId() {
         return fieldId;

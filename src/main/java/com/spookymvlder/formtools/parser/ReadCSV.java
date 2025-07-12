@@ -84,6 +84,12 @@ public class ReadCSV {
             }
         }
 
+        //TODO move someplace else
+        ParserSettings settings = ParserSettings.getInstance();
+        for (FieldProperties field : csvFields) {
+            settings.addToFieldIdToName(field.getFieldId(), field.getFieldName());
+            settings.addToFieldFromId(field.getFieldId(), field);
+        }
 
         ImportSettings.getInstance().setSpecImported(successCheck);
 
