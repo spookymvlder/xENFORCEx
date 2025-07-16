@@ -5,11 +5,10 @@ import com.opencsv.bean.customconverter.ConverterLanguageToBoolean;
 import com.spookymvlder.formtools.settings.ErrorSettings;
 import com.spookymvlder.formtools.utilities.ErrorSeverity;
 import com.spookymvlder.formtools.utilities.ErrorSource;
-import com.spookymvlder.formtools.utilities.FieldPropertyConverter;
+import com.spookymvlder.formtools.processsor.FieldPropertyConverter;
 
 
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;

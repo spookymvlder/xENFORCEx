@@ -3,14 +3,13 @@ package com.spookymvlder.formtools.parser;
 import com.opencsv.bean.CsvToBeanBuilder;
 import com.spookymvlder.formtools.datatypes.ErrorEntry;
 import com.spookymvlder.formtools.datatypes.FieldProperties;
-import com.spookymvlder.formtools.datatypes.FieldPropertyValidationError;
+import com.spookymvlder.formtools.processsor.ProcessFieldProperties;
 import com.spookymvlder.formtools.settings.ErrorSettings;
 import com.spookymvlder.formtools.settings.ImportSettings;
 import com.spookymvlder.formtools.settings.ParserSettings;
 import com.spookymvlder.formtools.utilities.*;
 
 import java.io.*;
-import java.time.LocalDate;
 import java.util.*;
 
 public class ReadCSV {

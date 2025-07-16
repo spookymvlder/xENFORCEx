@@ -1,13 +1,12 @@
-package com.spookymvlder.formtools.utilities;
+package com.spookymvlder.formtools.processsor;
 
-import com.spookymvlder.formtools.datatypes.ErrorEntry;
 import com.spookymvlder.formtools.datatypes.FieldProperties;
 import com.spookymvlder.formtools.datatypes.FieldPropertyValidationError;
 import com.spookymvlder.formtools.settings.ErrorSettings;
+import com.spookymvlder.formtools.utilities.ErrorSeverity;
+import com.spookymvlder.formtools.utilities.ErrorSource;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
 
 //TODO add validation that name is unique
 public class FieldPropertyValidator {

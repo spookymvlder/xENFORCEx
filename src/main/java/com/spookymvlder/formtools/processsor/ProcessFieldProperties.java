@@ -1,4 +1,4 @@
-package com.spookymvlder.formtools.utilities;
+package com.spookymvlder.formtools.processsor;
 
 
 import com.spookymvlder.formtools.datatypes.ErrorEntry;
@@ -7,72 +7,33 @@ import com.spookymvlder.formtools.datatypes.FieldPropertyValidationError;
 import com.spookymvlder.formtools.settings.ErrorSettings;
 import com.spookymvlder.formtools.settings.ImportSettings;
 import com.spookymvlder.formtools.settings.ParserSettings;
+import com.spookymvlder.formtools.utilities.ErrorSeverity;
+import com.spookymvlder.formtools.utilities.ErrorSource;
 
-import java.time.LocalDate;
 import java.util.*;
 
 //Doing too much in too many places, use this as a controller to coordinate fieldproperty validation
 public class ProcessFieldProperties {
     static final ErrorSettings errors = ErrorSettings.getInstance();
-    /*
-    Map<String, FieldProperties> idToField;
-    Set<FieldProperties> skippableFields;
-    Set<FieldProperties> inactivatedFields;
 
-    ProcessFieldProperties() {
-        idToField = new HashMap<>();
-        skippableFields = new HashSet<>();
-        inactivatedFields = new HashSet<>();
-    }*/
 
     public static void processFieldProperties(List<FieldProperties> csvFields) {
-        //ProcessFieldProperties processor = new ProcessFieldProperties();
+        FieldProcessorContext context = new FieldProcessorContext();
+        context.setAllFields(csvFields);
+
+
         //Treat these as class variables to modularize?
         Map<String, FieldProperties> idToField = new HashMap<>();
         List<FieldProperties> skippableFields = new ArrayList<>();
         List<String> inactiveIds = new ArrayList<>();
-        List<String> fieldNames = new ArrayList<>();
         FieldProperties root = null;
 
+        //Perform all actions that are field specific rather than based on the whole list.
+        iterateFields(context);
 
 
-        //Step 1 - build a map of all active fields and perform field specific validation
-        for (FieldProperties field : csvFields) {
-            //If inactive, do some validation, but then skip field so it doesn't end up on idToField map.
-            if (!field.getActive()){
-                inactiveIds.add(field.getFieldId());
-                //Field won't be going through other validation, but could have something funky with expire date.
-                FieldPropertyValidator.validateActiveRange(field);
-                //Take out inactive field so we can then treat it as a list of active fields
-                csvFields.remove(field);
-                continue;
-            }
 
-            FieldPropertyValidator.validateWithErrors(field);
 
-            //Get fields being skipped to preserve links when building a tree. Also validate name while we know the field isn't being skipped.
-            if (field.getSkipImport()) {
-                skippableFields.add(field);
-            } else if (fieldNames.contains(field.getFieldName())) {
-                errors.addToCurrentLog(new FieldPropertyValidationError(ErrorSource.SCHEME_HIERARCHY_CHECK, "Multiple active fields with the same name exist, which may cause unintended behavior.", ErrorSeverity.WARNING, field.getFieldId(), field.getFieldName()));
-            } else {
-                fieldNames.add(field.getFieldName());
-            }
-
-            //TODO populate idToField at field creation to possibly make this more efficient.
-            if (idToField.containsKey(field.getFieldId())) {
-                errors.addToCurrentLog(new FieldPropertyValidationError(ErrorSource.SCHEME_HIERARCHY_CHECK, "A field with the same ID has already been processed, this field is a duplicate. Duplicate has a name of " + idToField.get(field.getFieldId()).getFieldName() + ".", ErrorSeverity.FATAL, field.getFieldId(), field.getFieldName()));
-            } else {
-                idToField.put(field.getFieldId(), field);
-            }
-            if (field.getParentId().equalsIgnoreCase("root")) {
-                if (root != null) {
-                    errors.addToCurrentLog(new FieldPropertyValidationError(ErrorSource.SCHEME_HIERARCHY_CHECK, "Attempting to set this field as root after another root with id " + root.getFieldId() + " has been found .", ErrorSeverity.FATAL, field.getFieldId(), field.getFieldName()));
-                } else {
-                    root = field;
-                }
-            }
-        }
         if (root == null) {
             errors.addToCurrentLog(new ErrorEntry(ErrorSource.SCHEME_HIERARCHY_CHECK,"No root field found in schema, there must be a field where parentId = 'root'.", ErrorSeverity.FATAL));
         } else {
@@ -80,7 +41,6 @@ public class ProcessFieldProperties {
             ImportSettings.getInstance().setRootField(root);
         }
 
-        //errors.addAll(FieldHierarchyValidator.validateHierarchy(csvFields));
 
         //Build tree structure and then bridge the gap for any fields being skipped.
         setFieldRelations(idToField, inactiveIds);
@@ -111,6 +71,64 @@ public class ProcessFieldProperties {
         }
     }
 
+    public static void iterateFields(FieldProcessorContext context) {
+        Map<String, FieldProperties> idToField = new HashMap<>();
+        List<FieldProperties> skippableFields = new ArrayList<>();
+        List<FieldProperties> inactiveFields = new ArrayList<>();
+        List<String> fieldNames = new ArrayList<>();
+        List<FieldProperties> roots = new ArrayList<>();
+
+        //Step 1 - build a map of all active fields and perform field specific validation
+        for (FieldProperties field : context.getAllFields()) {
+            //If inactive, do some validation, but then skip field so it doesn't end up on idToField map.
+            if (!field.getActive()){
+                inactiveFields.add(field);
+                //Field won't be going through other validation, but could have something funky with expire date.
+                FieldPropertyValidator.validateActiveRange(field);
+                continue;
+            }
+
+            //Perform all field specific validation
+            FieldPropertyValidator.validateWithErrors(field);
+
+            //Get fields being skipped to preserve links when building a tree. Also validate name while we know the field isn't being skipped.
+            if (field.getSkipImport()) {
+                skippableFields.add(field);
+            } else if (fieldNames.contains(field.getFieldName())) {
+                errors.addToCurrentLog(new FieldPropertyValidationError(ErrorSource.SCHEME_HIERARCHY_CHECK, "Multiple active fields with the same name exist, which may cause unintended behavior.", ErrorSeverity.WARNING, field.getFieldId(), field.getFieldName()));
+            } else {
+                fieldNames.add(field.getFieldName());
+            }
+
+            //TODO populate idToField at field creation to possibly make this more efficient.
+            if (idToField.containsKey(field.getFieldId())) {
+                errors.addToCurrentLog(new FieldPropertyValidationError(ErrorSource.SCHEME_HIERARCHY_CHECK, "A field with the same ID has already been processed, this field is a duplicate. Duplicate has a name of " + idToField.get(field.getFieldId()).getFieldName() + ".", ErrorSeverity.FATAL, field.getFieldId(), field.getFieldName()));
+            } else {
+                idToField.put(field.getFieldId(), field);
+            }
+            if (field.getParentId().equalsIgnoreCase("root")) {
+                roots.add(field);
+            }
+            /*
+            if (field.getParentId().equalsIgnoreCase("root")) {
+                if (root != null) {
+                    errors.addToCurrentLog(new FieldPropertyValidationError(ErrorSource.SCHEME_HIERARCHY_CHECK, "Attempting to set this field as root after another root with id " + root.getFieldId() + " has been found .", ErrorSeverity.FATAL, field.getFieldId(), field.getFieldName()));
+                } else {
+                    root = field;
+                }
+            }*/
+        }
+
+        //Remove inactive ids from list now that loop is complete
+        for (FieldProperties field : inactiveFields) {
+            context.removeFromActiveFields(field);
+        }
+
+        context.setIdToField(idToField);
+        context.setSkippableFields(skippableFields);
+        context.setInactiveFields(inactiveFields);
+        context.setRootList(roots);
+    }
 
     public static void setFieldRelations(Map<String, FieldProperties> idToField, List<String> inactiveIds) {
         for(FieldProperties field : idToField.values()) {
