@@ -1,6 +1,7 @@
 package com.spookymvlder.formtools.settings;
 
 import com.spookymvlder.formtools.datatypes.ErrorEntry;
+import com.spookymvlder.formtools.utilities.ErrorSeverity;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -42,5 +43,23 @@ public class ErrorSettings {
 
     public void addToCurrentLog(ErrorEntry errorEntry) {
         addErrorLog(this.logCount, errorEntry);
+    }
+
+    public List<ErrorEntry> getCurrentLog() {
+        return errorLogs.get(this.logCount);
+    }
+
+    public int getSeverityOfLog(Integer logNumber) {
+        int level = 0;
+        for (ErrorEntry error : getErrorLog(logNumber)) {
+            if (error.getSeverity().getSeverityLevel() > level) {
+                level = error.getSeverity().getSeverityLevel();
+            }
+        }
+        return level;
+    }
+
+    public int getSeverityOfCurrentLog() {
+        return getSeverityOfLog(this.logCount);
     }
 }

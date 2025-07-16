@@ -3,14 +3,14 @@ package com.spookymvlder.formtools.parser;
 import com.opencsv.bean.CsvToBeanBuilder;
 import com.spookymvlder.formtools.datatypes.ErrorEntry;
 import com.spookymvlder.formtools.datatypes.FieldProperties;
+import com.spookymvlder.formtools.datatypes.FieldPropertyValidationError;
+import com.spookymvlder.formtools.settings.ErrorSettings;
 import com.spookymvlder.formtools.settings.ImportSettings;
 import com.spookymvlder.formtools.settings.ParserSettings;
-import com.spookymvlder.formtools.utilities.ErrorSeverity;
-import com.spookymvlder.formtools.utilities.ErrorSource;
-import com.spookymvlder.formtools.utilities.FieldHierarchyValidator;
-import com.spookymvlder.formtools.utilities.FieldPropertyValidator;
+import com.spookymvlder.formtools.utilities.*;
 
 import java.io.*;
+import java.time.LocalDate;
 import java.util.*;
 
 public class ReadCSV {
@@ -46,9 +46,8 @@ public class ReadCSV {
 
     public static List<FieldProperties> importBeanCSV(String filePath) {
         List<FieldProperties> csvFields = new ArrayList<>();
-        //TODO send error log somewhere
-        List<ErrorEntry> errors = new ArrayList<>();
-
+        ErrorSettings errors = ErrorSettings.getInstance();
+        errors.startNewLog();
         ParserSettings.getInstance().setConverters();
 
         try (BufferedReader br = new BufferedReader(new FileReader(filePath))) {
@@ -60,36 +59,16 @@ public class ReadCSV {
                     .parse();
 
         } catch (FileNotFoundException fnfe) {
-            errors.add(new ErrorEntry(ErrorSource.IMPORT_SCHEME,"Error! File not found: " + fnfe.getMessage(), ErrorSeverity.FATAL));
+            errors.addToCurrentLog(new ErrorEntry(ErrorSource.IMPORT_SCHEME,"Error! File not found: " + fnfe.getMessage(), ErrorSeverity.FATAL));
         } catch (IOException ioe) {
-            errors.add(new ErrorEntry(ErrorSource.IMPORT_SCHEME,"Error! I/O Error: " + ioe.getMessage(), ErrorSeverity.FATAL));
+            errors.addToCurrentLog(new ErrorEntry(ErrorSource.IMPORT_SCHEME,"Error! I/O Error: " + ioe.getMessage(), ErrorSeverity.FATAL));
         }
-        boolean successCheck = errors.isEmpty();
-
-        if(successCheck) {
-            for (FieldProperties field : csvFields) {
-                errors.addAll(FieldPropertyValidator.validateWithErrors(field));
-            }
-            errors.addAll(FieldHierarchyValidator.validateHierarchy(csvFields));
+        //TODO check for specific error level.
+        boolean successCheck = errors.getSeverityOfCurrentLog() < 3;
+        if (successCheck) {
+            ProcessFieldProperties.processFieldProperties(csvFields);
         }
-        //Only if we added something during validation.
-        //TODO remove this code and make it accessible via CLI log or error log
-        if (successCheck && !errors.isEmpty()) {
-            //TODO add check for fatal as well.
-            successCheck = errors.stream().allMatch(e -> e.getSeverity() == ErrorSeverity.ERROR);
-
-            System.out.println("Validation errors found.");
-            for (ErrorEntry error : errors) {
-                System.out.println("   -" + error);
-            }
-        }
-
-        //TODO move someplace else
-        ParserSettings settings = ParserSettings.getInstance();
-        for (FieldProperties field : csvFields) {
-            settings.addToFieldIdToName(field.getFieldId(), field.getFieldName());
-            settings.addToFieldFromId(field.getFieldId(), field);
-        }
+        successCheck = errors.getSeverityOfCurrentLog() < 3;
 
         ImportSettings.getInstance().setSpecImported(successCheck);
 

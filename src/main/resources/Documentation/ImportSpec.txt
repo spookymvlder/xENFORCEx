@@ -8,7 +8,7 @@ hierarchyLevel (Integer, Optional) - The expected hierarchy level for this field
 sectionHeaderOverride (String, Optional) - If empty, utility will attempt to build Form Sections based on hierarchy level. Set for fields to force section groupings. Should be used to condense XML tree vertically, not to move a field's position horizontally within the structure.
 
 active (Boolean, Optional) - Whether this field is in use. Allows for specification to deprecate fields. If empty, fields are assumed to be active.
-expireDate (LocalDate, Required if "active" == FALSE) - The last date when this field should be considered active, if any. Required if active is set to False
+expireDate (LocalDate, Required if "active" == FALSE) - The last date when this field should be considered active, if any. Required if active is set to False. Other active fields should not reference this field.
 
 fieldRepeated (Character, Optional) - Is this field expected to appear more than once? Supports T, F, and C. C for conditionally recurring.
 minOccurs (Integer, Optional) - The minimum number of times the field must appear. Only referenced if fieldRepeated does not equal F.
@@ -57,4 +57,4 @@ attributeName (String, Required if "isAttribute" == T) - Required if the value i
 
 uiControl (String, Optional) - Helper for downstream user for how to render data.
 validationMessage (String, Optional) - A custom error message to log if this field fails to be parsed successfully, in addition to any system errors logged.
-skipImport (Boolean, Optional) - Indicates that the field should be skipped during import, for example if the field corresponds to a label that doesn't need to be parsed.
+skipImport (Boolean, Optional) - Indicates that the field should be skipped during import, for example if the field corresponds to a label that doesn't need to be parsed. This differs from an inactive field in that the skippable field's relationships will be bridged (the parent of this field will receive this record's children and vice versa).

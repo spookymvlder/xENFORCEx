@@ -37,6 +37,7 @@ public class FieldProperties {
     //TODO figure out how to modularize
     @CsvCustomBindByName (column="expireDate", converter = FieldPropertyConverter.CustomDateConverter.class)
     private LocalDate expireDate;
+    //TODO make active date to make updates easier.
 
     @CsvCustomBindByName(column="fieldRepeated", converter = FieldPropertyConverter.RepeatConverter.class)
     private Character fieldRepeated;         //T, F, C
@@ -128,14 +129,11 @@ public class FieldProperties {
         if (this.parentId.equalsIgnoreCase("root")) {
             ErrorSettings.getInstance().addToCurrentLog(new FieldPropertyValidationError(ErrorSource.FIELD_TREE_RESTRUCTURING, "Attempting to remove root node field.", ErrorSeverity.FATAL, fieldId, fieldName));
         } else {
-            if (!this.childFields.isEmpty()) {
-                for (FieldProperties childField : this.childFields) {
-                    childField.setParentField(this.parentField);
-                    this.parentField.appendChildField(childField);
-                }
+            for (FieldProperties childField : this.childFields) {
+                childField.setParentField(this.parentField);
+                this.parentField.appendChildField(childField);
             }
             this.parentField.removeChildField(this);
-
         }
     }
 
@@ -463,161 +461,5 @@ public class FieldProperties {
 
 
 
-/*
-    public static class FieldPropertyBuilder {
-        private int fieldId;
-        private String fieldName;
-        private String displayName;
-
-        private int order;
-        private int parentId;
-        private int hierarchyLevel;
-
-        private boolean active;
-        private Date expireDate;
-
-        private char fieldRepeated;         //T, F, C
-        private int minOccurs;
-        private int maxOccurs;
-
-        //Code system data type attributes
-        private String codeSystemName;
-        private String codeSystemId;
-        private String codeSystemVersion;
-
-        private boolean required;
-        private int[] condMandatorySourceIds;
-        private List<String[]> condMandatoryValues;
-        private LinkLogic condMandatoryLogic;
-
-        //Allowed values for field
-        private String dataType;
-        private int rangeStart;
-        private int rangeEnd;
-        private boolean rangeInclusive;
-        private int minLength;
-        private int maxLength;
-        private List<String> enumerations;
-        private String unit;
-        private String regexPattern;
-
-
-        private String xpathOverride;
-        private boolean isAttribute;
-        private String attributeName;
-
-
-        private String uiControl;
-        private String validationMessage;
-        private boolean skipImport;
-        
-        public static FieldPropertyBuilder newBuilder() {
-            return new FieldPropertyBuilder();
-        }
-
-        public void setFieldId(int fieldId) {
-            this.fieldId = fieldId;
-        }
-        public void setFieldName(String fieldName) {
-            this.fieldName = fieldName;
-        }
-        public void setDisplayName(String displayName) {
-            this.displayName = displayName;
-        }
-        public void setOrder(int order) {
-            this.order = order;
-        }
-        public void setParentId(int parentId) {
-            this.parentId = parentId;
-        }
-        public void setHierarchyLevel(int hierarchyLevel) {
-            this.hierarchyLevel = hierarchyLevel;
-        }
-        public void setActive(boolean active) {
-            this.active = active;
-        }
-        public void setExpireDate(Date expireDate) {
-            this.expireDate = expireDate;
-        }
-        public void setFieldRepeated(char fieldRepeated) {
-            this.fieldRepeated = fieldRepeated;
-        }
-        public void setMinOccurs(int minOccurs) {
-            this.minOccurs = minOccurs;
-        }
-        public void setMaxOccurs(int maxOccurs) {
-            this.maxOccurs = maxOccurs;
-        }
-        public void setCodeSystemName(String codeSystemName) {
-            this.codeSystemName = codeSystemName;
-        }
-        public void setCodeSystemId(String codeSystemId) {
-            this.codeSystemId = codeSystemId;
-        }
-        public void setCodeSystemVersion(String codeSystemVersion) {
-            this.codeSystemVersion = codeSystemVersion;
-        }
-        public void setRequired(boolean required) {
-            this.required = required;
-        }
-        public void setCondMandatorySourceIds(int[] condMandatorySourceIds) {
-            this.condMandatorySourceIds = condMandatorySourceIds;
-        }
-        public void setCondMandatoryValues(List<String[]> condMandatoryValues) {
-            this.condMandatoryValues = condMandatoryValues;
-        }
-        public void setCondMandatoryLogic(LinkLogic condMandatoryLogic) {
-            this.condMandatoryLogic = condMandatoryLogic;
-        }
-        public void setDataType(String dataType) {
-            this.dataType = dataType;
-        }
-        public void setRangeStart(int rangeStart) {
-            this.rangeStart = rangeStart;
-        }
-        public void setRangeEnd(int rangeEnd) {
-            this.rangeEnd = rangeEnd;
-        }
-        public void setRangeInclusive(boolean rangeInclusive) {
-            this.rangeInclusive = rangeInclusive;
-        }
-        public void setMinLength(int minLength) {
-            this.minLength = minLength;
-        }
-        public void setMaxLength(int maxLength) {
-            this.maxLength = maxLength;
-        }
-        public void setEnumerations(List<String> enumerations) {
-            this.enumerations = enumerations;
-        }
-        public void setUnit(String unit) {
-            this.unit = unit;
-        }
-        public void setRegexPattern(String regexPattern) {
-            this.regexPattern = regexPattern;
-        }
-        public void setXpathOverride(String xpathOverride) {
-            this.xpathOverride = xpathOverride;
-        }
-        public void setIsAttribute(boolean isAttribute) {
-            this.isAttribute = isAttribute;
-        }
-        public void setAttributeName(String attributeName) {
-            this.attributeName = attributeName;
-        }
-        public void setUiControl(String uiControl) {
-            this.uiControl = uiControl;
-        }
-        public void setValidationMessage(String validationMessage) {
-            this.validationMessage = validationMessage;
-        }
-        public void setSkipImport(boolean skipImport) {
-            this.skipImport = skipImport;
-        }
-        public FieldProperties build() {
-            return new FieldProperties(this);
-        }
-    }
-*/
 
 }
