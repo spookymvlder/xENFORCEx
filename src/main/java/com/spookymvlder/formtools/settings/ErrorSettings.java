@@ -12,9 +12,12 @@ public class ErrorSettings {
     private static ErrorSettings instance;
     private Integer logCount;
     private Map<Integer, List<ErrorEntry>> errorLogs;
+    private Map<Integer, Integer> logSeverity;
+    private Integer errorThreshold;
 
     private ErrorSettings() {
         this.logCount = 0;
+        this.errorThreshold = ErrorSeverity.ERROR.getSeverityLevel();
         this.errorLogs = new HashMap<>();
     }
 
@@ -37,12 +40,14 @@ public class ErrorSettings {
         return errorLogs.get(logNumber);
     }
 
-    public void addErrorLog(Integer logNumber, ErrorEntry errorEntry) {
+    //TODO consider forcing use of currentLog for everything else will need to worry about logNumber < logCount
+    public void addErrorToLog(Integer logNumber, ErrorEntry errorEntry) {
+        this.updateLogSeverity(logNumber, errorEntry);
         this.errorLogs.computeIfAbsent(logNumber, k -> new ArrayList<>()).add(errorEntry);
     }
 
     public void addToCurrentLog(ErrorEntry errorEntry) {
-        addErrorLog(this.logCount, errorEntry);
+        addErrorToLog(this.logCount, errorEntry);
     }
 
     public List<ErrorEntry> getCurrentLog() {
@@ -50,16 +55,29 @@ public class ErrorSettings {
     }
 
     public int getSeverityOfLog(Integer logNumber) {
-        int level = 0;
-        for (ErrorEntry error : getErrorLog(logNumber)) {
-            if (error.getSeverity().getSeverityLevel() > level) {
-                level = error.getSeverity().getSeverityLevel();
-            }
-        }
-        return level;
+        return this.logSeverity.get(logNumber);
     }
 
     public int getSeverityOfCurrentLog() {
         return getSeverityOfLog(this.logCount);
+    }
+
+    private void updateLogSeverity(int logNumber, ErrorEntry errorEntry) {
+        int severity = errorEntry.getSeverity().getSeverityLevel();
+        if (this.logSeverity.get(logNumber) == null || severity > this.logSeverity.get(logNumber)) {
+            this.logSeverity.put(logNumber, severity);
+        }
+    }
+
+    public Integer getErrorThreshold() {
+        return errorThreshold;
+    }
+
+    public void setErrorThreshold(Integer errorThreshold) {
+        this.errorThreshold = errorThreshold;
+    }
+
+    public void setErrorThreshold(ErrorSeverity severity) {
+        this.errorThreshold = severity.getSeverityLevel();
     }
 }

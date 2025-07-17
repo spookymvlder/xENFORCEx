@@ -5,7 +5,6 @@ import com.spookymvlder.formtools.datatypes.ErrorEntry;
 import com.spookymvlder.formtools.datatypes.FieldProperties;
 import com.spookymvlder.formtools.datatypes.FieldPropertyValidationError;
 import com.spookymvlder.formtools.settings.ErrorSettings;
-import com.spookymvlder.formtools.settings.ImportSettings;
 import com.spookymvlder.formtools.settings.ParserSettings;
 import com.spookymvlder.formtools.utilities.ErrorSeverity;
 import com.spookymvlder.formtools.utilities.ErrorSource;
@@ -18,51 +17,36 @@ public class ProcessFieldProperties {
 
 
     public static void processFieldProperties(List<FieldProperties> csvFields) {
+        //Initialize a wrapper to maintain the schema fields
         FieldProcessorContext context = new FieldProcessorContext();
         context.setAllFields(csvFields);
 
-
-        //Treat these as class variables to modularize?
-        Map<String, FieldProperties> idToField = new HashMap<>();
-        List<FieldProperties> skippableFields = new ArrayList<>();
-        List<String> inactiveIds = new ArrayList<>();
-        FieldProperties root = null;
-
-        //Perform all actions that are field specific rather than based on the whole list.
-        iterateFields(context);
-
-
-
-
-        if (root == null) {
-            errors.addToCurrentLog(new ErrorEntry(ErrorSource.SCHEME_HIERARCHY_CHECK,"No root field found in schema, there must be a field where parentId = 'root'.", ErrorSeverity.FATAL));
-        } else {
-            //TODO consider returning root instead.
-            ImportSettings.getInstance().setRootField(root);
-        }
-
-
-        //Build tree structure and then bridge the gap for any fields being skipped.
-        setFieldRelations(idToField, inactiveIds);
-        bridgeSkippable(idToField, skippableFields);
-        //Now that we don't need skippable fields, remove them from list so they won't interfere with hierarchy check.
-        for (FieldProperties field : skippableFields) {
-            csvFields.remove(field);
-        }
-        //Commenting this out for now as a reminder that it needs done, but this is not the place for it.
-        /*
-        //Only if we added something during validation.
-        //TODO remove this code and make it accessible via CLI log or error log
-        if (successCheck && !errors.isEmpty()) {
-            //TODO add check for fatal as well.
-            successCheck = errors.stream().allMatch(e -> e.getSeverity() == ErrorSeverity.ERROR);
-
-            System.out.println("Validation errors found.");
-            for (ErrorEntry error : errors) {
-                System.out.println("   -" + error);
+        //
+        List<Runnable> validationSteps = List.of(
+                //Perform all actions that are field specific rather than based on the whole list.
+                () -> iterateFields(context),
+                //Ensure that there is a single root
+                () -> GroupFieldPropertyValidator.validateSingleRoot(context),
+                //Build tree structure
+                () -> setFieldRelations(context),
+                //Remove skippable fields from tree while preserving links
+                () -> bridgeSkippable(context),
+                //Remove skippable from active list and id to field map to not interfere with hierarchy check
+                () -> removeSkippableFields(context),
+                () -> traverseTree(context)
+        );
+        for (Runnable step : validationSteps) {
+            step.run();
+            if (errors.getSeverityOfCurrentLog() < errors.getErrorThreshold()) {
+                break;
             }
-        }*/
-        traverseTree(root, csvFields);
+        }
+
+
+
+
+            //TODO consider returning root instead.
+
         //TODO move someplace else
         ParserSettings settings = ParserSettings.getInstance();
         for (FieldProperties field : csvFields) {
@@ -78,18 +62,19 @@ public class ProcessFieldProperties {
         List<String> fieldNames = new ArrayList<>();
         List<FieldProperties> roots = new ArrayList<>();
 
+
         //Step 1 - build a map of all active fields and perform field specific validation
         for (FieldProperties field : context.getAllFields()) {
             //If inactive, do some validation, but then skip field so it doesn't end up on idToField map.
             if (!field.getActive()){
                 inactiveFields.add(field);
                 //Field won't be going through other validation, but could have something funky with expire date.
-                FieldPropertyValidator.validateActiveRange(field);
+                SingleFieldPropertyValidator.validateActiveRange(field);
                 continue;
             }
 
             //Perform all field specific validation
-            FieldPropertyValidator.validateWithErrors(field);
+            SingleFieldPropertyValidator.validateWithErrors(field);
 
             //Get fields being skipped to preserve links when building a tree. Also validate name while we know the field isn't being skipped.
             if (field.getSkipImport()) {
@@ -109,14 +94,6 @@ public class ProcessFieldProperties {
             if (field.getParentId().equalsIgnoreCase("root")) {
                 roots.add(field);
             }
-            /*
-            if (field.getParentId().equalsIgnoreCase("root")) {
-                if (root != null) {
-                    errors.addToCurrentLog(new FieldPropertyValidationError(ErrorSource.SCHEME_HIERARCHY_CHECK, "Attempting to set this field as root after another root with id " + root.getFieldId() + " has been found .", ErrorSeverity.FATAL, field.getFieldId(), field.getFieldName()));
-                } else {
-                    root = field;
-                }
-            }*/
         }
 
         //Remove inactive ids from list now that loop is complete
@@ -130,13 +107,20 @@ public class ProcessFieldProperties {
         context.setRootList(roots);
     }
 
-    public static void setFieldRelations(Map<String, FieldProperties> idToField, List<String> inactiveIds) {
-        for(FieldProperties field : idToField.values()) {
+    public static void setFieldRelations(FieldProcessorContext context) {
+        List<String> inactiveIds = new ArrayList<>();
+        for(FieldProperties field : context.getActiveFields()) {
             String parentId = field.getParentId();
-            FieldProperties parent = idToField.get(parentId);
+            FieldProperties parent = context.getField(parentId);
             //Parent is null if missing from table OR if field is root. Neither needs to make connections, but if not root log error.
             if (parent == null) {
                 if (!parentId.equalsIgnoreCase("root")) {
+                    //Don't need inactiveIds unless this specific case comes up, so don't build it unless we need it.
+                    if (inactiveIds.isEmpty()) {
+                        for (FieldProperties inactive : context.getInactiveFields()) {
+                            inactiveIds.add(inactive.getFieldId());
+                        }
+                    }
                     String message;
                     //If the id that doesn't map to an active field does belong to an inactive field, log a more specific version of the error message.
                     if (inactiveIds.contains(parentId)) {
@@ -152,16 +136,23 @@ public class ProcessFieldProperties {
         }
     }
 
-    public static void bridgeSkippable(Map<String, FieldProperties> idToField, List<FieldProperties> skippableFields) {
-        for (FieldProperties skipField : skippableFields) {
+    public static void bridgeSkippable(FieldProcessorContext context) {
+        for (FieldProperties skipField : context.getSkippableFields()) {
             skipField.removeFieldFromTree();
-            idToField.remove(skipField.getFieldId());
         }
     }
 
-    public static void traverseTree(FieldProperties root, List<FieldProperties> unvisitedFields) {
+    public static void removeSkippableFields(FieldProcessorContext context) {
+        for (FieldProperties skipField : context.getSkippableFields()) {
+            context.removeIdFromMap(skipField.getFieldId());
+            context.removeFromActiveFields(skipField);
+        }
+    }
+
+    public static void traverseTree(FieldProcessorContext context) {
+        List<FieldProperties> unvisitedFields = context.getActiveFields();
         List<FieldProperties> visited = new ArrayList<>();
-        detectCycle(root, unvisitedFields, visited);
+        detectCycle(context.getRoot(), unvisitedFields, visited);
         for (FieldProperties field : unvisitedFields) {
             errors.addToCurrentLog(new FieldPropertyValidationError(ErrorSource.SCHEME_HIERARCHY_CHECK, "Orphaned field detected.", ErrorSeverity.ERROR, field.getFieldId(), field.getFieldName()));
         }

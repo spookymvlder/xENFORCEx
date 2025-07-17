@@ -9,7 +9,7 @@ import com.spookymvlder.formtools.utilities.ErrorSource;
 import java.time.LocalDate;
 
 //TODO add validation that name is unique
-public class FieldPropertyValidator {
+public class SingleFieldPropertyValidator {
     static final ErrorSettings errors = ErrorSettings.getInstance();
     //TODO store to error settings and return highest error level for field.
 

@@ -40,6 +40,10 @@ public class FieldProcessorContext {
         idToField.put(id, field);
     }
 
+    public void removeIdFromMap(String id) {
+        idToField.remove(id);
+    }
+
     public List<FieldProperties> getSkippableFields() {
         return skippableFields;
     }
@@ -63,15 +67,6 @@ public class FieldProcessorContext {
     public void appendInactiveIds(FieldProperties field) {
         this.inactiveFields.add(field);
     }
-
-    /*
-    public List<String> getFieldNames() {
-        return fieldNames;
-    }
-
-    public void setFieldNames(List<String> fieldNames) {
-        this.fieldNames = fieldNames;
-    }*/
 
     public FieldProperties getRoot() {
         return root;
