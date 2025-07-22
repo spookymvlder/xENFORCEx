@@ -40,6 +40,9 @@ public class ParserSettings {
     private Map<String, FieldProperties> idToField;
 
 
+    //Start of revamp
+    private List<FieldProperties> topFieldSections;
+    private FieldProperties formStartField;
 
     private ParserSettings() {
         this.formStart = null;
@@ -52,6 +55,23 @@ public class ParserSettings {
         this.dateFormat = "dd-MM-yyyy";
         this.fieldIdToName = new HashMap<>();
         this.idToField = new HashMap<>();
+        this.formStartField = null;
+    }
+
+    public List<FieldProperties> getTopFieldSections() {
+        return topFieldSections;
+    }
+
+    public void setTopFieldSections(List<FieldProperties> topFieldSections) {
+        this.topFieldSections = topFieldSections;
+    }
+
+    public FieldProperties getFormStartField() {
+        return formStartField;
+    }
+
+    public void setFormStartField(FieldProperties formStartField) {
+        this.formStartField = formStartField;
     }
 
     public Map<String, String> getFieldIdToName() {

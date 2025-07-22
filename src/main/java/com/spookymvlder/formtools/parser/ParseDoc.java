@@ -1,5 +1,6 @@
 package com.spookymvlder.formtools.parser;
 
+import com.spookymvlder.formtools.datatypes.FieldProperties;
 import com.spookymvlder.formtools.datatypes.FormField;
 import com.spookymvlder.formtools.datatypes.FormInstance;
 import com.spookymvlder.formtools.datatypes.FormSection;
@@ -12,6 +13,7 @@ import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 public class ParseDoc {
@@ -135,6 +137,29 @@ public class ParseDoc {
 
         return section;
     }
+
+    private static List<FormSection> topTest2(Node instance) throws XPathExpressionException {
+        List<FormSection> topSections = new ArrayList<>();
+        //TODO if keeping, swap this in to caller so we don't look up root here.
+        FieldProperties startField = settings.getFormStartField();
+        //TODO check if root has any values?
+        List<FieldProperties> topSectionFields = startField.getChildFields().stream().sorted(Comparator.comparingInt(FieldProperties::getOrder)).toList();
+
+        Node start = instance.getFirstChild();
+
+        while(start != null) {
+            String sectionName = start.getNodeName();
+            if (settings.getTopLevelSections().contains(sectionName)) {
+                FormSection topSection = testBuildSection(start, sectionName);
+                topSections.add(topSection);
+            }
+            start = start.getNextSibling();
+        }
+
+
+        return topSections;
+    }
+
 
     private static FormSection buildSection(Node contextNode, String sectionName) throws XPathExpressionException {
         FormSection section = new FormSection(sectionName);
