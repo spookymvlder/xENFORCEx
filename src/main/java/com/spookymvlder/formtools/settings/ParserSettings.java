@@ -39,6 +39,8 @@ public class ParserSettings {
     //TODO replace fieldIdToName with idToField.
     private Map<String, FieldProperties> idToField;
 
+
+
     private ParserSettings() {
         this.formStart = null;
         this.formSectionToFields = null;
