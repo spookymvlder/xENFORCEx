@@ -43,6 +43,8 @@ public class ParserSettings {
     //Start of revamp
     private List<FieldProperties> topFieldSections;
     private FieldProperties formStartField;
+    private List<String> duplicateNames;
+    private Map<String, Integer> hashcodes;
 
     private ParserSettings() {
         this.formStart = null;
@@ -56,6 +58,8 @@ public class ParserSettings {
         this.fieldIdToName = new HashMap<>();
         this.idToField = new HashMap<>();
         this.formStartField = null;
+        this.duplicateNames = new ArrayList<>();
+        this.hashcodes = new HashMap<>();
     }
 
     public List<FieldProperties> getTopFieldSections() {
@@ -187,5 +191,25 @@ public class ParserSettings {
 
     public void setDateFormat(String dateFormat) {
         this.dateFormat = dateFormat;
+    }
+
+    public List<String> getDuplicateNames() {
+        return duplicateNames;
+    }
+
+    public void setDuplicateNames(List<String> duplicateNames) {
+        this.duplicateNames = duplicateNames;
+    }
+
+    public boolean isDuplicateName(String fieldName) {
+        return this.duplicateNames.contains(fieldName);
+    }
+
+    public Map<String, Integer> getHashcodes() {
+        return hashcodes;
+    }
+
+    public void setHashcodes(Map<String, Integer> hashcodes) {
+        this.hashcodes = hashcodes;
     }
 }

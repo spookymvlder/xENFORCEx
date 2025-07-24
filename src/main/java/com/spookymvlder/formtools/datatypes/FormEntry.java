@@ -2,6 +2,7 @@ package com.spookymvlder.formtools.datatypes;
 
 import java.util.Objects;
 
+//TODO - remove
 /**
  * Class FormEntry is a data type encapsulating a field's value and the foreign key associated with that value.
  */

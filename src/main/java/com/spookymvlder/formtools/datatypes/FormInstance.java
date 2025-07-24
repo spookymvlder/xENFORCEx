@@ -3,7 +3,7 @@ package com.spookymvlder.formtools.datatypes;
 import java.util.List;
 
 //TODO make abstract form piece and inherit.
-public class FormInstance {
+public class FormInstance implements FormStructure {
     private String longName;
     private List<FormSection> sections;
     private String metadata;

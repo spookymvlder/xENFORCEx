@@ -2,6 +2,7 @@ package com.spookymvlder.formtools.processsor;
 
 import com.spookymvlder.formtools.datatypes.FieldProperties;
 import com.spookymvlder.formtools.datatypes.FieldPropertyValidationError;
+import com.spookymvlder.formtools.datatypes.GroupingType;
 import com.spookymvlder.formtools.settings.ErrorSettings;
 import com.spookymvlder.formtools.utilities.ErrorSeverity;
 import com.spookymvlder.formtools.utilities.ErrorSource;
@@ -18,6 +19,7 @@ public class SingleFieldPropertyValidator {
         validateRanges(field);
         validateRepeatOccurrences(field);
         validateActiveRange(field);
+        validateGroupingType(field);
 
     }
 
@@ -78,6 +80,16 @@ public class SingleFieldPropertyValidator {
         }
         if (!field.getActive() && field.getExpireDate().isAfter(LocalDate.now())) {
             errors.addToCurrentLog(new FieldPropertyValidationError(ErrorSource.SCHEME_FIELD_PROPERTY_VALIDATION, "Field is inactive, but expires in the future. Field was not treated as active by import", ErrorSeverity.WARNING, field.getFieldId(), field.getFieldName()));
+        }
+    }
+
+    //TODO update with data types when enum built out.
+    public static void validateGroupingType(FieldProperties field) {
+        if (field.getGroupingType() == GroupingType.COMPOSITE
+        && !field.getDataType().equals("label")) {
+            errors.addToCurrentLog(new FieldPropertyValidationError(ErrorSource.SCHEME_FIELD_PROPERTY_VALIDATION,
+                    "Composite field not associated with a non-value data type", ErrorSeverity.ERROR,
+                    field.getFieldId(), field.getFieldName()));
         }
     }
 }

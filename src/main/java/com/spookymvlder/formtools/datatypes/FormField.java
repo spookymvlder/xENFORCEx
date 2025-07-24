@@ -1,13 +1,19 @@
 package com.spookymvlder.formtools.datatypes;
 
-public class FormField {
+import java.util.List;
+
+public class FormField implements FormStructure {
     private String value;
-    //TODO move foreignKey to a metadata class if necessary.
-    //private String fKey;
+
 
     private String fieldLongName; //Used to map import settings to field type.
     private int sectionOrderIndex;
     private int repeatOrderIndex;
+    private FieldProperties properties;
+    private List<FormField> children;
+    //To allow root to reference formInstance
+    private FormStructure parent;
+    private String relativePath = null;
 
     public FormField(String value, String fieldLongName, int sectionOrderIndex, int repeatOrderIndex) {
         this.value = value;
@@ -30,5 +36,13 @@ public class FormField {
 
     public int getRepeatOrderIndex() {
         return repeatOrderIndex;
+    }
+
+    public String getRelativePath() {
+        return relativePath;
+    }
+
+    public void setRelativePath(String relativePath) {
+        this.relativePath = relativePath;
     }
 }

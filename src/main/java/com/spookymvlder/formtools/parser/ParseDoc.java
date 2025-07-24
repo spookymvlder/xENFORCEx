@@ -1,10 +1,10 @@
 package com.spookymvlder.formtools.parser;
 
-import com.spookymvlder.formtools.datatypes.FieldProperties;
-import com.spookymvlder.formtools.datatypes.FormField;
-import com.spookymvlder.formtools.datatypes.FormInstance;
-import com.spookymvlder.formtools.datatypes.FormSection;
+import com.spookymvlder.formtools.datatypes.*;
+import com.spookymvlder.formtools.settings.ErrorSettings;
 import com.spookymvlder.formtools.settings.ParserSettings;
+import com.spookymvlder.formtools.utilities.ErrorSeverity;
+import com.spookymvlder.formtools.utilities.ErrorSource;
 import org.w3c.dom.*;
 
 import javax.xml.xpath.XPath;
@@ -18,6 +18,7 @@ import java.util.List;
 
 public class ParseDoc {
     private static final ParserSettings settings = ParserSettings.getInstance();
+    static final ErrorSettings errors = ErrorSettings.getInstance();
     private static XPath xpath;
 
     public static void parseDoc(Document doc) {
@@ -138,14 +139,63 @@ public class ParseDoc {
         return section;
     }
 
-    private static List<FormSection> topTest2(Node instance) throws XPathExpressionException {
-        List<FormSection> topSections = new ArrayList<>();
+    //Get the root property and also the root of the document, then get form start of each to pass along.
+    private static List<FormInstance> buildTempFormInstances(Document doc) throws XPathExpressionException {
+        List<FormInstance> parsedInstances = new ArrayList<>();
+
+
+        //TODO double check form start field is set correctly, may not be root.
+        //TODO ensure that form start field does not have siblings.
+        //Starting field if not root of tree.
+        FieldProperties startField = settings.getFormStartField();
+
+        NodeList instanceList = doc.getElementsByTagName(settings.getFormStart());
+        //TODO make code below work with a single settings rather than essentially grabbing the same thing from two spots.
+        //NodeList instanceList = doc.getElementsByTagName((ImportSettings.getInstance().getFormRoot()));
+        for (int i = 0; i < instanceList.getLength(); i++) {
+            Node workingInstance = instanceList.item(i);
+            try{
+                //parsedInstances.add(new FormInstance(workingInstance.getNodeName(), buildTopSections(workingInstance)));
+                parsedInstances.add(new FormInstance(workingInstance.getNodeName(), topTest(workingInstance)));
+            } catch (XPathExpressionException e) {
+                System.out.println("Unable to extract form start: " + e.getMessage());
+            }
+            //System.out.println("DEBUG");
+        }
+        return parsedInstances;
+    }
+
+    //Given a starting point and a tree, build sections and fields based on what the fieldProperties tree says should be present.
+    //Instance should be form start
+    private static FormField parseStartNode(Node instance, FieldProperties property) throws XPathExpressionException {
+        //First node of a form
+        /*
+        //Should be checked by caller
+        if (!instance.getNodeName().equals(property.getFieldName())) {
+            errors.addToCurrentLog(new ParserError(ErrorSource.PARSE_ERROR,"Mismatch between form start FieldProperty and initial XML node.", ErrorSeverity.FATAL, instance.getNodeName(), instance.));
+        }*/
+        List<FormField> top = new ArrayList<>();
+        //Placeholder for the tree we're about to build.
+        FormField field = null;
+        String path = null;
+        if (property.getXpathOverride() != null) {
+            path = property.getXpathOverride();
+        } else {
+            path = property.getRelativePath();
+        }
+        //Should only be one since we're at the start.
+        NodeList matches = (NodeList) xpath.evaluate(path, instance, XPathConstants.NODESET);
         //TODO if keeping, swap this in to caller so we don't look up root here.
         FieldProperties startField = settings.getFormStartField();
-        //TODO check if root has any values?
+
+
         List<FieldProperties> topSectionFields = startField.getChildFields().stream().sorted(Comparator.comparingInt(FieldProperties::getOrder)).toList();
 
         Node start = instance.getFirstChild();
+        while (start != null) {
+            String sectionName = start.getNodeName();
+
+        }
 
         while(start != null) {
             String sectionName = start.getNodeName();
@@ -157,9 +207,41 @@ public class ParseDoc {
         }
 
 
-        return topSections;
+        return field;
     }
 
+    private static FormField parseNode(Node contextNode, FieldProperties property) throws XPathExpressionException {
+        FormField field;
+        String path;
+        if (property.getXpathOverride() != null) {
+            path = property.getXpathOverride();
+        } else {
+            path = property.getRelativePath();
+        }
+        /**
+         * Check type of field.
+         * -Check if skipped.
+         * -If composite, continue to constituents
+         * -If label, continue down
+         * -If attribute, get attribute value
+         * -Otherwise get value
+         */
+        switch(property.getGroupingType()) {
+            case GroupingType.CONSTITUENT:
+                //
+                break;
+            case GroupingType.COMPOSITE:
+                //
+            break;
+            //No need for none
+            default:
+                //
+            break;
+        }
+        if (property.getDataType().equals("Label")) {
+
+        }
+    }
 
     private static FormSection buildSection(Node contextNode, String sectionName) throws XPathExpressionException {
         FormSection section = new FormSection(sectionName);

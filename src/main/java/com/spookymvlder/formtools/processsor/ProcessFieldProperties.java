@@ -29,10 +29,11 @@ public class ProcessFieldProperties {
                 () -> GroupFieldPropertyValidator.validateSingleRoot(context),
                 //Build tree structure
                 () -> setFieldRelations(context),
+                //*For now, retaining skippable in field tree so can build relative xpaths.
                 //Remove skippable fields from tree while preserving links
-                () -> bridgeSkippable(context),
+                //() -> bridgeSkippable(context),
                 //Remove skippable from active list and id to field map to not interfere with hierarchy check
-                () -> removeSkippableFields(context),
+                //() -> removeSkippableFields(context),
                 () -> traverseTree(context)
         );
         for (Runnable step : validationSteps) {
@@ -61,6 +62,7 @@ public class ProcessFieldProperties {
         List<FieldProperties> inactiveFields = new ArrayList<>();
         List<String> fieldNames = new ArrayList<>();
         List<FieldProperties> roots = new ArrayList<>();
+        List<String> duplicateNames = new ArrayList<>();
 
 
         //Step 1 - build a map of all active fields and perform field specific validation
@@ -80,6 +82,7 @@ public class ProcessFieldProperties {
             if (field.getSkipImport()) {
                 skippableFields.add(field);
             } else if (fieldNames.contains(field.getFieldName())) {
+                duplicateNames.add(field.getFieldName());
                 errors.addToCurrentLog(new FieldPropertyValidationError(ErrorSource.SCHEME_HIERARCHY_CHECK, "Multiple active fields with the same name exist, which may cause unintended behavior.", ErrorSeverity.WARNING, field.getFieldId(), field.getFieldName()));
             } else {
                 fieldNames.add(field.getFieldName());
@@ -105,6 +108,7 @@ public class ProcessFieldProperties {
         context.setSkippableFields(skippableFields);
         context.setInactiveFields(inactiveFields);
         context.setRootList(roots);
+        context.setDuplicateNames(duplicateNames);
     }
 
     public static void setFieldRelations(FieldProcessorContext context) {
@@ -135,7 +139,7 @@ public class ProcessFieldProperties {
             field.createConnections(parent);
         }
     }
-
+/*
     public static void bridgeSkippable(FieldProcessorContext context) {
         for (FieldProperties skipField : context.getSkippableFields()) {
             skipField.removeFieldFromTree();
@@ -148,7 +152,7 @@ public class ProcessFieldProperties {
             context.removeFromActiveFields(skipField);
         }
     }
-
+*/
     public static void traverseTree(FieldProcessorContext context) {
         List<FieldProperties> unvisitedFields = context.getActiveFields();
         List<FieldProperties> visited = new ArrayList<>();

@@ -2,25 +2,35 @@ package com.spookymvlder.formtools.datatypes;
 
 import com.opencsv.bean.*;
 import com.opencsv.bean.customconverter.ConverterLanguageToBoolean;
+import com.opencsv.bean.processor.ConvertEmptyOrBlankStringsToDefault;
+import com.opencsv.bean.processor.PreAssignmentProcessor;
 import com.spookymvlder.formtools.settings.ErrorSettings;
+import com.spookymvlder.formtools.settings.ParserSettings;
 import com.spookymvlder.formtools.utilities.ErrorSeverity;
 import com.spookymvlder.formtools.utilities.ErrorSource;
 import com.spookymvlder.formtools.processsor.FieldPropertyConverter;
 
 
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathExpression;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+
+
 
 public class FieldProperties {
     //TODO Consider field IDs that may not be numeric, maybe convert to numeric?
     @CsvBindByName (required = true)
     private String fieldId;
+    //TODO error checking if the fieldName is a duplicate for something at the same hierarchy level and is not repeating.
     @CsvBindByName (required = true)
     private String fieldName;
     @CsvBindByName
     private String displayName;
+
 
     @CsvBindByName
     private Integer order;
@@ -109,8 +119,19 @@ public class FieldProperties {
     @CsvCustomBindByName (column="skipImport", converter = ConverterLanguageToBoolean.class)
     private Boolean skipImport;
 
+    //TODO namespace support
+
     private Set<FieldProperties> childFields = new HashSet<>();
     private FieldProperties parentField = null;
+    private XPathExpression compiledPath = null;
+    private String relativePath = null;
+    //TODO - add to import spec
+    private boolean treatAsSection;
+    @CsvBindByName(column = "groupingType")
+    @PreAssignmentProcessor(processor = ConvertEmptyOrBlankStringsToDefault.class, paramString = "NONE")
+    private GroupingType groupingType;
+    private List<FieldProperties> constituents = new ArrayList<>();
+
 
     public Set<FieldProperties> getChildFields() {
         return childFields;
@@ -458,7 +479,70 @@ public class FieldProperties {
     }
 
 
+    public XPathExpression getCompiledPath() {
 
+        return compiledPath;
+    }
 
+    public void setCompiledPath(XPathExpression compiledPath) {
+        this.compiledPath = compiledPath;
+    }
 
+    private String buildStringPath() {
+        String path = "";
+        if (ParserSettings.getInstance().isDuplicateName(this.fieldName)) {
+            StringBuilder sb = new StringBuilder();
+            sb.append(this.fieldName);
+            sb.append(buildAttributePath());
+            do {
+                sb.insert(0,"/");
+                sb.insert(0, this.parentField.fieldName);
+            } while (ParserSettings.getInstance().isDuplicateName(this.parentField.fieldName));
+        } else {
+            path = "/" + this.fieldName;
+        }
+
+        return path;
+    }
+
+    private String buildAttributePath() {
+        String pathEnd = "";
+        if (this.isAttribute) {
+            pathEnd = "/@" + this.attributeName;
+        }
+        return pathEnd;
+    }
+
+    public GroupingType getGroupingType() {
+        return groupingType;
+    }
+
+    public void setGroupingType(GroupingType groupingType) {
+        //TODO might need to take a string and convert to enum
+        this.groupingType = groupingType;
+    }
+
+    public boolean isTreatAsSection() {
+        return treatAsSection;
+    }
+
+    public void setTreatAsSection(boolean treatAsSection) {
+        this.treatAsSection = treatAsSection;
+    }
+
+    public String getRelativePath() {
+        return relativePath;
+    }
+
+    public void setRelativePath(String relativePath) {
+        this.relativePath = relativePath;
+    }
+
+    public List<FieldProperties> getConstituents() {
+        return constituents;
+    }
+
+    public void setConstituents(List<FieldProperties> constituents) {
+        this.constituents = constituents;
+    }
 }

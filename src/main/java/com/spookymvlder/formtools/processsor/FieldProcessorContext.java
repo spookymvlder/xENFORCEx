@@ -16,6 +16,8 @@ public class FieldProcessorContext {
     List<FieldProperties> activeFields = new ArrayList<>();
     List<FieldProperties> allFields = new ArrayList<>();
     List<FieldProperties> rootList = new ArrayList<>();
+    List<String> duplicateNames = new ArrayList<>();
+
 
     public List<FieldProperties> getAllFields() {
         return allFields;
@@ -98,5 +100,13 @@ public class FieldProcessorContext {
 
     public void setRootList(List<FieldProperties> rootList) {
         this.rootList = rootList;
+    }
+
+    public List<String> getDuplicateNames() {
+        return duplicateNames;
+    }
+
+    public void setDuplicateNames(List<String> duplicateNames) {
+        this.duplicateNames = duplicateNames;
     }
 }
