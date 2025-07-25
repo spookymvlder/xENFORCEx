@@ -5,20 +5,20 @@ import java.util.List;
 //TODO make abstract form piece and inherit.
 public class FormInstance implements FormStructure {
     private String longName;
-    private List<FormSection> sections;
+    private FormField startField;
     private String metadata;
 
-    public FormInstance(String longName, List<FormSection> sections) {
+    public FormInstance(String longName, FormField startField) {
         this.longName = longName;
-        this.sections = sections;
+        this.startField = startField;
     }
 
     public String getLongName() {
         return longName;
     }
 
-    public List<FormSection> getSections() {
-        return sections;
+    public FormField getStartField() {
+        return startField;
     }
 
 }

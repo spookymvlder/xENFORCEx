@@ -11,7 +11,6 @@ import com.spookymvlder.formtools.utilities.ErrorSource;
 import com.spookymvlder.formtools.processsor.FieldPropertyConverter;
 
 
-import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathExpression;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -21,7 +20,7 @@ import java.util.Set;
 
 
 
-public class FieldProperties {
+public class FieldProperty {
     //TODO Consider field IDs that may not be numeric, maybe convert to numeric?
     @CsvBindByName (required = true)
     private String fieldId;
@@ -121,8 +120,8 @@ public class FieldProperties {
 
     //TODO namespace support
 
-    private Set<FieldProperties> childFields = new HashSet<>();
-    private FieldProperties parentField = null;
+    private Set<FieldProperty> childFields = new HashSet<>();
+    private FieldProperty parentField = null;
     private XPathExpression compiledPath = null;
     private String relativePath = null;
     //TODO - add to import spec
@@ -130,18 +129,18 @@ public class FieldProperties {
     @CsvBindByName(column = "groupingType")
     @PreAssignmentProcessor(processor = ConvertEmptyOrBlankStringsToDefault.class, paramString = "NONE")
     private GroupingType groupingType;
-    private List<FieldProperties> constituents = new ArrayList<>();
+    private List<FieldProperty> constituents = new ArrayList<>();
 
 
-    public Set<FieldProperties> getChildFields() {
+    public Set<FieldProperty> getChildFields() {
         return childFields;
     }
 
-    public void setChildFields(Set<FieldProperties> childFields) {
+    public void setChildFields(Set<FieldProperty> childFields) {
         this.childFields = childFields;
     }
 
-    public void appendChildField(FieldProperties childField) {
+    public void appendChildField(FieldProperty childField) {
         this.childFields.add(childField);
     }
 
@@ -149,7 +148,7 @@ public class FieldProperties {
         if (this.parentId.equalsIgnoreCase("root")) {
             ErrorSettings.getInstance().addToCurrentLog(new FieldPropertyValidationError(ErrorSource.FIELD_TREE_RESTRUCTURING, "Attempting to remove root node field.", ErrorSeverity.FATAL, fieldId, fieldName));
         } else {
-            for (FieldProperties childField : this.childFields) {
+            for (FieldProperty childField : this.childFields) {
                 childField.setParentField(this.parentField);
                 this.parentField.appendChildField(childField);
             }
@@ -157,19 +156,19 @@ public class FieldProperties {
         }
     }
 
-    public void removeChildField(FieldProperties childField) {
+    public void removeChildField(FieldProperty childField) {
         this.childFields.remove(childField);
     }
 
-    public FieldProperties getParentField() {
+    public FieldProperty getParentField() {
         return parentField;
     }
 
-    public void setParentField(FieldProperties parentField) {
+    public void setParentField(FieldProperty parentField) {
         this.parentField = parentField;
     }
 
-    public void createConnections(FieldProperties parentField) {
+    public void createConnections(FieldProperty parentField) {
         this.parentField = parentField;
         parentField.appendChildField(this);
     }
@@ -531,6 +530,9 @@ public class FieldProperties {
     }
 
     public String getRelativePath() {
+        if (xpathOverride != null) {
+            return xpathOverride;
+        }
         return relativePath;
     }
 
@@ -538,11 +540,11 @@ public class FieldProperties {
         this.relativePath = relativePath;
     }
 
-    public List<FieldProperties> getConstituents() {
+    public List<FieldProperty> getConstituents() {
         return constituents;
     }
 
-    public void setConstituents(List<FieldProperties> constituents) {
+    public void setConstituents(List<FieldProperty> constituents) {
         this.constituents = constituents;
     }
 }

@@ -1,6 +1,6 @@
 package com.spookymvlder.formtools.settings;
 
-import com.spookymvlder.formtools.datatypes.FieldProperties;
+import com.spookymvlder.formtools.datatypes.FieldProperty;
 import com.spookymvlder.formtools.processsor.FieldPropertyConverter;
 
 import java.time.format.DateTimeFormatter;
@@ -37,12 +37,12 @@ public class ParserSettings {
     private String dateFormat;
     private Map<String,String> fieldIdToName;
     //TODO replace fieldIdToName with idToField.
-    private Map<String, FieldProperties> idToField;
+    private Map<String, FieldProperty> idToField;
 
 
     //Start of revamp
-    private List<FieldProperties> topFieldSections;
-    private FieldProperties formStartField;
+    private List<FieldProperty> topFieldSections;
+    private FieldProperty formStartField;
     private List<String> duplicateNames;
     private Map<String, Integer> hashcodes;
 
@@ -62,19 +62,19 @@ public class ParserSettings {
         this.hashcodes = new HashMap<>();
     }
 
-    public List<FieldProperties> getTopFieldSections() {
+    public List<FieldProperty> getTopFieldSections() {
         return topFieldSections;
     }
 
-    public void setTopFieldSections(List<FieldProperties> topFieldSections) {
+    public void setTopFieldSections(List<FieldProperty> topFieldSections) {
         this.topFieldSections = topFieldSections;
     }
 
-    public FieldProperties getFormStartField() {
+    public FieldProperty getFormStartField() {
         return formStartField;
     }
 
-    public void setFormStartField(FieldProperties formStartField) {
+    public void setFormStartField(FieldProperty formStartField) {
         this.formStartField = formStartField;
     }
 
@@ -87,11 +87,11 @@ public class ParserSettings {
     }
 
     //TODO null handle
-    public FieldProperties getFieldFromId(String fieldId) {
+    public FieldProperty getFieldFromId(String fieldId) {
         return idToField.get(fieldId);
     }
 
-    public void addToFieldFromId(String fieldId, FieldProperties field) {
+    public void addToFieldFromId(String fieldId, FieldProperty field) {
         this.idToField.put(fieldId, field);
     }
 

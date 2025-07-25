@@ -1,14 +1,13 @@
 package com.spookymvlder.formtools.processsor;
 
 import com.spookymvlder.formtools.datatypes.ErrorEntry;
-import com.spookymvlder.formtools.datatypes.FieldProperties;
+import com.spookymvlder.formtools.datatypes.FieldProperty;
 import com.spookymvlder.formtools.settings.ErrorSettings;
 import com.spookymvlder.formtools.utilities.ErrorSeverity;
 import com.spookymvlder.formtools.utilities.ErrorSource;
 
 import java.util.List;
 import java.util.StringJoiner;
-import java.util.stream.Collectors;
 
 public class GroupFieldPropertyValidator {
     static final ErrorSettings errors = ErrorSettings.getInstance();
@@ -18,10 +17,10 @@ public class GroupFieldPropertyValidator {
         if (!validateRootPresence(context)) {
             return;
         }
-        List<FieldProperties> roots = context.getRootList();
+        List<FieldProperty> roots = context.getRootList();
         if (roots.size() != 1) {
             String message = "Multiple root fields found: " + roots.size() + ", offending fields: ";
-            List<String> fieldIds = roots.stream().map(FieldProperties::getFieldId).toList();
+            List<String> fieldIds = roots.stream().map(FieldProperty::getFieldId).toList();
             StringJoiner rootIds = new StringJoiner(", ", "(", ")");
             for (String id : fieldIds) {
                 rootIds.add(id);

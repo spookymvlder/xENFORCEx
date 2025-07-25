@@ -1,6 +1,6 @@
 package com.spookymvlder.formtools.processsor;
 
-import com.spookymvlder.formtools.datatypes.FieldProperties;
+import com.spookymvlder.formtools.datatypes.FieldProperty;
 import com.spookymvlder.formtools.datatypes.FieldPropertyValidationError;
 import com.spookymvlder.formtools.datatypes.GroupingType;
 import com.spookymvlder.formtools.settings.ErrorSettings;
@@ -14,7 +14,7 @@ public class SingleFieldPropertyValidator {
     static final ErrorSettings errors = ErrorSettings.getInstance();
     //TODO store to error settings and return highest error level for field.
 
-    public static void validateWithErrors(FieldProperties field)  {
+    public static void validateWithErrors(FieldProperty field)  {
         validateAttributes(field);
         validateRanges(field);
         validateRepeatOccurrences(field);
@@ -23,7 +23,7 @@ public class SingleFieldPropertyValidator {
 
     }
 
-    public static void validateAttributes(FieldProperties field) {
+    public static void validateAttributes(FieldProperty field) {
         //Unless default to no or assume if attribute name is populated it is an attribute?
         if (field.getAttribute() == null && field.getAttributeName() != null) {
             errors.addToCurrentLog(new FieldPropertyValidationError(ErrorSource.SCHEME_FIELD_PROPERTY_VALIDATION,"isAttribute is required when attributeName is set.", ErrorSeverity.ERROR, field.getFieldId(), field.getFieldName()));
@@ -35,7 +35,7 @@ public class SingleFieldPropertyValidator {
     }
 
 
-    public static void validateRanges(FieldProperties field) {
+    public static void validateRanges(FieldProperty field) {
         boolean ranges = (field.getRangeStart() != null) || (field.getRangeEnd() != null);
         if (ranges && field.getRangeInclusive() == null) {
             errors.addToCurrentLog(new FieldPropertyValidationError(ErrorSource.SCHEME_FIELD_PROPERTY_VALIDATION,"rangeInclusive is required if rangeStart or rangeEnd are set.", ErrorSeverity.ERROR, field.getFieldId(), field.getFieldName()));
@@ -51,7 +51,7 @@ public class SingleFieldPropertyValidator {
         }
     }
 
-    public static void validateRepeatOccurrences(FieldProperties field) {
+    public static void validateRepeatOccurrences(FieldProperty field) {
 
         //Quit early if field is not repeated.
         if (field.getFieldRepeated().equals('F')) {
@@ -70,7 +70,7 @@ public class SingleFieldPropertyValidator {
         }
     }
 
-    public static void validateActiveRange(FieldProperties field) {
+    public static void validateActiveRange(FieldProperty field) {
 
         if (field.getActive() && field.getExpireDate().isAfter(LocalDate.now().minusDays(1))) {
             errors.addToCurrentLog(new FieldPropertyValidationError(ErrorSource.SCHEME_FIELD_PROPERTY_VALIDATION, "Field is listed as active, but has an expiration date set in the past.", ErrorSeverity.WARNING, field.getFieldId(), field.getFieldName()));
@@ -84,7 +84,7 @@ public class SingleFieldPropertyValidator {
     }
 
     //TODO update with data types when enum built out.
-    public static void validateGroupingType(FieldProperties field) {
+    public static void validateGroupingType(FieldProperty field) {
         if (field.getGroupingType() == GroupingType.COMPOSITE
         && !field.getDataType().equals("label")) {
             errors.addToCurrentLog(new FieldPropertyValidationError(ErrorSource.SCHEME_FIELD_PROPERTY_VALIDATION,

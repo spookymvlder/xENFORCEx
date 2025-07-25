@@ -2,7 +2,7 @@ package com.spookymvlder.formtools.parser;
 
 import com.opencsv.bean.CsvToBeanBuilder;
 import com.spookymvlder.formtools.datatypes.ErrorEntry;
-import com.spookymvlder.formtools.datatypes.FieldProperties;
+import com.spookymvlder.formtools.datatypes.FieldProperty;
 import com.spookymvlder.formtools.processsor.ProcessFieldProperties;
 import com.spookymvlder.formtools.settings.ErrorSettings;
 import com.spookymvlder.formtools.settings.ImportSettings;
@@ -43,15 +43,15 @@ public class ReadCSV {
         return processedSpec;
     }*/
 
-    public static List<FieldProperties> importBeanCSV(String filePath) {
-        List<FieldProperties> csvFields = new ArrayList<>();
+    public static List<FieldProperty> importBeanCSV(String filePath) {
+        List<FieldProperty> csvFields = new ArrayList<>();
         ErrorSettings errors = ErrorSettings.getInstance();
         errors.startNewLog();
         ParserSettings.getInstance().setConverters();
 
         try (BufferedReader br = new BufferedReader(new FileReader(filePath))) {
-            csvFields = new CsvToBeanBuilder<FieldProperties>(br)
-                    .withType(FieldProperties.class)
+            csvFields = new CsvToBeanBuilder<FieldProperty>(br)
+                    .withType(FieldProperty.class)
                     .withIgnoreLeadingWhiteSpace(true)
                     .withSeparator('\t')
                     .build()

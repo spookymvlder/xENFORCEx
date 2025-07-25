@@ -11,10 +11,7 @@ import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
 
 public class ParseDoc {
     private static final ParserSettings settings = ParserSettings.getInstance();
@@ -145,36 +142,37 @@ public class ParseDoc {
 
 
         //TODO double check form start field is set correctly, may not be root.
-        //TODO ensure that form start field does not have siblings.
+        //TODO ensure that form start field does not have siblings except recurrences of itself.
         //Starting field if not root of tree.
-        FieldProperties startField = settings.getFormStartField();
+        FieldProperty startProperty = settings.getFormStartField();
+        NodeList instanceList;
 
-        NodeList instanceList = doc.getElementsByTagName(settings.getFormStart());
-        //TODO make code below work with a single settings rather than essentially grabbing the same thing from two spots.
-        //NodeList instanceList = doc.getElementsByTagName((ImportSettings.getInstance().getFormRoot()));
+        if (startProperty.getXpathOverride() != null) {
+            instanceList = (NodeList) xpath.evaluate(startProperty.getXpathOverride(), doc, XPathConstants.NODESET);
+        } else {
+            instanceList = doc.getElementsByTagName(startProperty.getFieldName());
+        }
+
         for (int i = 0; i < instanceList.getLength(); i++) {
             Node workingInstance = instanceList.item(i);
             try{
-                //parsedInstances.add(new FormInstance(workingInstance.getNodeName(), buildTopSections(workingInstance)));
-                parsedInstances.add(new FormInstance(workingInstance.getNodeName(), topTest(workingInstance)));
+                parsedInstances.add(new FormInstance(workingInstance.getNodeName(), parseStartNode(workingInstance, startProperty)));
             } catch (XPathExpressionException e) {
                 System.out.println("Unable to extract form start: " + e.getMessage());
             }
-            //System.out.println("DEBUG");
         }
         return parsedInstances;
     }
 
     //Given a starting point and a tree, build sections and fields based on what the fieldProperties tree says should be present.
     //Instance should be form start
-    private static FormField parseStartNode(Node instance, FieldProperties property) throws XPathExpressionException {
+    private static FormField parseStartNode(Node instance, FieldProperty property) throws XPathExpressionException {
         //First node of a form
         /*
         //Should be checked by caller
         if (!instance.getNodeName().equals(property.getFieldName())) {
             errors.addToCurrentLog(new ParserError(ErrorSource.PARSE_ERROR,"Mismatch between form start FieldProperty and initial XML node.", ErrorSeverity.FATAL, instance.getNodeName(), instance.));
         }*/
-        List<FormField> top = new ArrayList<>();
         //Placeholder for the tree we're about to build.
         FormField field = null;
         String path = null;
@@ -186,10 +184,10 @@ public class ParseDoc {
         //Should only be one since we're at the start.
         NodeList matches = (NodeList) xpath.evaluate(path, instance, XPathConstants.NODESET);
         //TODO if keeping, swap this in to caller so we don't look up root here.
-        FieldProperties startField = settings.getFormStartField();
+        FieldProperty startField = settings.getFormStartField();
 
 
-        List<FieldProperties> topSectionFields = startField.getChildFields().stream().sorted(Comparator.comparingInt(FieldProperties::getOrder)).toList();
+        List<FieldProperty> topSectionFields = startField.getChildFields().stream().sorted(Comparator.comparingInt(FieldProperty::getOrder)).toList();
 
         Node start = instance.getFirstChild();
         while (start != null) {
@@ -201,7 +199,7 @@ public class ParseDoc {
             String sectionName = start.getNodeName();
             if (settings.getTopLevelSections().contains(sectionName)) {
                 FormSection topSection = testBuildSection(start, sectionName);
-                topSections.add(topSection);
+                //topSections.add(topSection);
             }
             start = start.getNextSibling();
         }
@@ -210,37 +208,79 @@ public class ParseDoc {
         return field;
     }
 
-    private static FormField parseNode(Node contextNode, FieldProperties property) throws XPathExpressionException {
-        FormField field;
-        String path;
-        if (property.getXpathOverride() != null) {
-            path = property.getXpathOverride();
-        } else {
-            path = property.getRelativePath();
+    private static FormField parseNode(Node contextNode, FieldProperty property) throws XPathExpressionException {
+        return parseNode(contextNode, property, "");
+
+    }
+
+    private static void parseNode(Node contextNode, FieldProperty property, String parentLabel, FormField parent) throws XPathExpressionException {
+
+        if (property.getSkipImport()) {
+            for (FieldProperty prop : property.getChildFields()) {
+                parseNode(contextNode, prop, parentLabel, parent);
+            }
         }
-        /**
-         * Check type of field.
-         * -Check if skipped.
-         * -If composite, continue to constituents
-         * -If label, continue down
-         * -If attribute, get attribute value
-         * -Otherwise get value
-         */
+        String label = parentLabel;
+        if (!parentLabel.isEmpty()) {
+            label += " ";
+        }
+
+        String path = property.getRelativePath();
+
+        if (property.getDataType().equals("label")) {
+            label = safeEvaluate(contextNode, path);
+            for (FieldProperty prop : property.getChildFields()) {
+                parseNode(contextNode, prop, label, parent);
+            }
+        }
+
+        List<FieldData> data = new ArrayList<>();
         switch(property.getGroupingType()) {
             case GroupingType.CONSTITUENT:
-                //
-                break;
+                errors.addToCurrentLog(new ParserError(ErrorSource.PARSE_ERROR, "Error navigating document tree while parsing, encountered constituent field property, schema may not have processed correctly.",
+                        ErrorSeverity.ERROR, contextNode.getNodeName()));
+                return;
             case GroupingType.COMPOSITE:
-                //
-            break;
-            //No need for none
+                data = buildConstituents(contextNode, property);
+                break;
+            //Should be skipping constituent as handled through composite.
             default:
-                //
-            break;
+                data.add(buildFieldData(contextNode, property));
+                break;
         }
-        if (property.getDataType().equals("Label")) {
+        FormField field = new FormField(data, property.getDisplayName(), property);
+        field.setParent(parent);
+        //Label should only persist to first non-label level.
+        if (!label.isEmpty()) {
+            field.setLabel(label);
+        }
+        label = "";
+        for (FieldProperty prop : property.getChildFields()) {
+            parseNode(contextNode, prop, label, field);
+        }
 
+    }
+
+    private static List<FieldData> buildConstituents(Node contextNode, FieldProperty property) {
+        List<FieldData> constituents = new ArrayList<>();
+        //TODO consider error instead?
+        if (property.getGroupingType() == GroupingType.COMPOSITE) {
+            int counter = 0;
+            for (FieldProperty prop : property.getConstituents()) {
+                String value = safeEvaluate(contextNode, prop.getRelativePath());
+                String type = prop.getDataType();
+                constituents.add(new FieldData(value, type, counter));
+                counter++;
+            }
         }
+
+        return constituents;
+    }
+
+    private static FieldData buildFieldData(Node contextNode, FieldProperty property) {
+        String value = safeEvaluate(contextNode, property.getRelativePath());
+        String type = property.getDataType();
+        return new FieldData(value, type, 0);
     }
 
     private static FormSection buildSection(Node contextNode, String sectionName) throws XPathExpressionException {

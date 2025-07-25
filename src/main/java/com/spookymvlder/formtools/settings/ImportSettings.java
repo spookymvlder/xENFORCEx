@@ -1,6 +1,6 @@
 package com.spookymvlder.formtools.settings;
 
-import com.spookymvlder.formtools.datatypes.FieldProperties;
+import com.spookymvlder.formtools.datatypes.FieldProperty;
 
 public class ImportSettings {
     private static ImportSettings instance;
@@ -8,7 +8,7 @@ public class ImportSettings {
     private String xsdFilePath;
     //Where the form starts, but not necessarily the beginning of data.
     private String formRoot;
-    private FieldProperties rootField;
+    private FieldProperty rootField;
     //Usually 0, what node stripping should start at.
     //Default to firstChildElement. It may be possible that the form root has data,
     private int formRootIndex;
@@ -32,11 +32,11 @@ public class ImportSettings {
         return instance;
     }
 
-    public FieldProperties getRootField() {
+    public FieldProperty getRootField() {
         return rootField;
     }
 
-    public void setRootField(FieldProperties rootField) {
+    public void setRootField(FieldProperty rootField) {
         this.rootField = rootField;
     }
 
