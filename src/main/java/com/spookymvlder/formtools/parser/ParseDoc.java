@@ -166,7 +166,7 @@ public class ParseDoc {
 
     //Given a starting point and a tree, build sections and fields based on what the fieldProperties tree says should be present.
     //Instance should be form start
-    private static FormField parseStartNode(Node instance, FieldProperty property) throws XPathExpressionException {
+    private static FormField<?> parseStartNode(Node context, FieldProperty startProperty) throws XPathExpressionException {
         //First node of a form
         /*
         //Should be checked by caller
@@ -174,51 +174,27 @@ public class ParseDoc {
             errors.addToCurrentLog(new ParserError(ErrorSource.PARSE_ERROR,"Mismatch between form start FieldProperty and initial XML node.", ErrorSeverity.FATAL, instance.getNodeName(), instance.));
         }*/
         //Placeholder for the tree we're about to build.
-        FormField field = null;
-        String path = null;
-        if (property.getXpathOverride() != null) {
-            path = property.getXpathOverride();
-        } else {
-            path = property.getRelativePath();
-        }
-        //Should only be one since we're at the start.
-        NodeList matches = (NodeList) xpath.evaluate(path, instance, XPathConstants.NODESET);
-        //TODO if keeping, swap this in to caller so we don't look up root here.
-        FieldProperty startField = settings.getFormStartField();
+        FormField<?> field = null;
+        //Relative path grabs xpath if available
+        String path = startProperty.getRelativePath();
 
 
-        List<FieldProperty> topSectionFields = startField.getChildFields().stream().sorted(Comparator.comparingInt(FieldProperty::getOrder)).toList();
 
-        Node start = instance.getFirstChild();
-        while (start != null) {
-            String sectionName = start.getNodeName();
 
-        }
 
-        while(start != null) {
-            String sectionName = start.getNodeName();
-            if (settings.getTopLevelSections().contains(sectionName)) {
-                FormSection topSection = testBuildSection(start, sectionName);
-                //topSections.add(topSection);
-            }
-            start = start.getNextSibling();
-        }
+
+
 
 
         return field;
     }
 
-    private static FormField parseNode(Node contextNode, FieldProperty property) throws XPathExpressionException {
-        return parseNode(contextNode, property, "");
-
-    }
-
-    private static void parseNode(Node contextNode, FieldProperty property, String parentLabel, FormField parent) throws XPathExpressionException {
-
+    //TODO refactor
+    private static void parseNode(Node contextNode, FieldProperty property, String parentLabel, FormField<?> parent) throws XPathExpressionException {
+        Node newContextNode = (Node) safeEvaluateNode(contextNode, property.getRelativePath());
         if (property.getSkipImport()) {
-            for (FieldProperty prop : property.getChildFields()) {
-                parseNode(contextNode, prop, parentLabel, parent);
-            }
+            parseChildren(newContextNode, property, parentLabel, parent);
+            return;
         }
         String label = parentLabel;
         if (!parentLabel.isEmpty()) {
@@ -229,47 +205,52 @@ public class ParseDoc {
 
         if (property.getDataType().equals("label")) {
             label = safeEvaluate(contextNode, path);
-            for (FieldProperty prop : property.getChildFields()) {
-                parseNode(contextNode, prop, label, parent);
-            }
+            parseChildren(newContextNode, property, label, parent);
+            return;
         }
 
-        List<FieldData> data = new ArrayList<>();
+
+        FormField<?> field;
         switch(property.getGroupingType()) {
             case GroupingType.CONSTITUENT:
                 errors.addToCurrentLog(new ParserError(ErrorSource.PARSE_ERROR, "Error navigating document tree while parsing, encountered constituent field property, schema may not have processed correctly.",
-                        ErrorSeverity.ERROR, contextNode.getNodeName()));
+                        ErrorSeverity.ERROR, newContextNode.getNodeName()));
                 return;
             case GroupingType.COMPOSITE:
-                data = buildConstituents(contextNode, property);
+                Map<String, FieldData> data = buildConstituents(newContextNode, property);
+                field = new CompositeField(property.getDisplayName(), property, parent, data);
                 break;
             //Should be skipping constituent as handled through composite.
             default:
-                data.add(buildFieldData(contextNode, property));
+                field = new SimpleField(property.getDisplayName(), property, parent, buildFieldData(newContextNode, property));
                 break;
         }
-        FormField field = new FormField(data, property.getDisplayName(), property);
-        field.setParent(parent);
+
         //Label should only persist to first non-label level.
         if (!label.isEmpty()) {
             field.setLabel(label);
         }
+        parent.addChild(field);
         label = "";
-        for (FieldProperty prop : property.getChildFields()) {
-            parseNode(contextNode, prop, label, field);
-        }
+        parseChildren(newContextNode, property, label, field);
 
     }
 
-    private static List<FieldData> buildConstituents(Node contextNode, FieldProperty property) {
-        List<FieldData> constituents = new ArrayList<>();
+    private static void parseChildren(Node contextNode, FieldProperty property, String parentLabel, FormField parent) throws XPathExpressionException {
+        for (FieldProperty prop : property.getChildFields()) {
+            parseNode(contextNode, prop, parentLabel, parent);
+        }
+    }
+
+    private static Map<String, FieldData> buildConstituents(Node contextNode, FieldProperty property) {
+        Map<String, FieldData> constituents = new HashMap<>();
         //TODO consider error instead?
         if (property.getGroupingType() == GroupingType.COMPOSITE) {
             int counter = 0;
             for (FieldProperty prop : property.getConstituents()) {
                 String value = safeEvaluate(contextNode, prop.getRelativePath());
                 String type = prop.getDataType();
-                constituents.add(new FieldData(value, type, counter));
+                constituents.put(property.getDisplayName(), new FieldData(value, type, counter));
                 counter++;
             }
         }
@@ -345,6 +326,11 @@ public class ParseDoc {
             //TODO review behavior.
             return "";
         }
+    }
+
+    public static Node safeEvaluateNode(Node context, String path) throws XPathExpressionException {
+        XPath xpath = XPathFactory.newInstance().newXPath();
+        return (Node) xpath.evaluate(path, context, XPathConstants.NODE);
     }
 
 
