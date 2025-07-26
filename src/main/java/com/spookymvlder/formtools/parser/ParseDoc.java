@@ -156,7 +156,9 @@ public class ParseDoc {
         for (int i = 0; i < instanceList.getLength(); i++) {
             Node workingInstance = instanceList.item(i);
             try{
-                parsedInstances.add(new FormInstance(workingInstance.getNodeName(), parseStartNode(workingInstance, startProperty)));
+                FormInstance iteration = new FormInstance(workingInstance.getNodeName(), parseStartNode(workingInstance, startProperty));
+                iteration.getStartField().setParent(iteration);
+                parsedInstances.add(iteration);
             } catch (XPathExpressionException e) {
                 System.out.println("Unable to extract form start: " + e.getMessage());
             }
@@ -166,27 +168,13 @@ public class ParseDoc {
 
     //Given a starting point and a tree, build sections and fields based on what the fieldProperties tree says should be present.
     //Instance should be form start
-    private static FormField<?> parseStartNode(Node context, FieldProperty startProperty) throws XPathExpressionException {
-        //First node of a form
-        /*
-        //Should be checked by caller
-        if (!instance.getNodeName().equals(property.getFieldName())) {
-            errors.addToCurrentLog(new ParserError(ErrorSource.PARSE_ERROR,"Mismatch between form start FieldProperty and initial XML node.", ErrorSeverity.FATAL, instance.getNodeName(), instance.));
-        }*/
-        //Placeholder for the tree we're about to build.
-        FormField<?> field = null;
-        //Relative path grabs xpath if available
-        String path = startProperty.getRelativePath();
+    private static SimpleField parseStartNode(Node context, FieldProperty startProperty) throws XPathExpressionException {
+        String name = startProperty.getDisplayName();
+        FieldData data = new FieldData("root", "root",0);
+        SimpleField start = new SimpleField (name, startProperty, data);
+        parseChildren(context, startProperty, "", start);
 
-
-
-
-
-
-
-
-
-        return field;
+        return start;
     }
 
     //TODO refactor

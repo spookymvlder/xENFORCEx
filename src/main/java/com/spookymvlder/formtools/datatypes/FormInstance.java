@@ -8,6 +8,7 @@ public class FormInstance implements FormStructure {
     private FormField startField;
     private String metadata;
 
+
     public FormInstance(String longName, FormField startField) {
         this.longName = longName;
         this.startField = startField;
@@ -21,4 +22,15 @@ public class FormInstance implements FormStructure {
         return startField;
     }
 
+    public List<FormField<?>> getChildren() {
+        return children;
+    }
+
+    public void setChildren(List<FormField<?>> children) {
+        this.children = children;
+    }
+
+    public void addChild(FormField<?> child) {
+        children.add(child);
+    }
 }

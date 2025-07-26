@@ -37,5 +37,6 @@ public enum FieldDataTypes {
     CURRENCY,
     PERCENTAGE,
     CUSTOM,
-    RAW_XML
+    RAW_XML,
+    ROOT
 }

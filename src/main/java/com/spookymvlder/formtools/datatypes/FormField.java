@@ -22,6 +22,10 @@ public abstract class FormField<T> implements FormStructure {
         this.parent = parent;
     }
 
+    public FormField(String displayName, FieldProperty property) {
+        this.displayName = displayName;
+        this.property = property;
+    }
 
     public String getDisplayName() {
         return displayName;
@@ -35,7 +39,7 @@ public abstract class FormField<T> implements FormStructure {
         return property;
     }
 
-    public List<FormField<T>> getChildren() {
+    public List<FormField<?>> getChildren() {
         return children;
     }
 
@@ -45,6 +49,10 @@ public abstract class FormField<T> implements FormStructure {
 
     public FormStructure getParent() {
         return parent;
+    }
+
+    public void setParent(FormStructure parent) {
+        this.parent = parent;
     }
 
     public void setRetrievedPath(String retrievedPath) {
