@@ -9,6 +9,7 @@ import com.spookymvlder.formtools.settings.ParserSettings;
 import com.spookymvlder.formtools.utilities.ErrorSeverity;
 import com.spookymvlder.formtools.utilities.ErrorSource;
 import com.spookymvlder.formtools.processsor.FieldPropertyConverter;
+import org.w3c.dom.Node;
 
 
 import javax.xml.xpath.XPathExpression;
@@ -134,6 +135,15 @@ public class FieldProperty {
 
     public Set<FieldProperty> getChildFields() {
         return childFields;
+    }
+
+    public FieldProperty getChildField(String fieldName) {
+        for (FieldProperty childField : childFields) {
+            if (childField.getFieldName().equals(fieldName)) {
+                return childField;
+            }
+        }
+        return null;
     }
 
     public void setChildFields(Set<FieldProperty> childFields) {
@@ -487,22 +497,34 @@ public class FieldProperty {
         this.compiledPath = compiledPath;
     }
 
-    private String buildStringPath() {
-        String path = "";
-        if (ParserSettings.getInstance().isDuplicateName(this.fieldName)) {
+    private String buildRelativePath() {
+        String path = "descendant::";
+        //TODO figure out constituents
+        if (!this.getGroupingType().equals(GroupingType.CONSTITUENT)) {
+            path += this.fieldName;
+        } else {
+            //TODO review when constituent handling in place. Right now assuming parent is simple field.
+            path += this.parentField.getFieldName() + "/" + this.fieldName;
+        }
+        if (this.isAttribute) {
+            path += "@" + this.attributeName;
+        }
+        /*
+        //idea would be skipped fields aren't available to provide their path.
+        //Need to distinguish building relative path and full path.
+        if (!this.parentField.fieldName.equalsIgnoreCase("root")) {
             StringBuilder sb = new StringBuilder();
-            sb.append(this.fieldName);
-            sb.append(buildAttributePath());
-            do {
+            while (this.parentField.getSkipImport()) {
                 sb.insert(0,"/");
                 sb.insert(0, this.parentField.fieldName);
-            } while (ParserSettings.getInstance().isDuplicateName(this.parentField.fieldName));
-        } else {
-            path = "/" + this.fieldName;
-        }
+            }
+
+        }*/
 
         return path;
     }
+
+
 
     private String buildAttributePath() {
         String pathEnd = "";
@@ -532,6 +554,9 @@ public class FieldProperty {
     public String getRelativePath() {
         if (xpathOverride != null) {
             return xpathOverride;
+        }
+        if (relativePath == null) {
+            relativePath = buildRelativePath();
         }
         return relativePath;
     }

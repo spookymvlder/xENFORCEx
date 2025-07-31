@@ -64,7 +64,7 @@ public class ProcessFieldProperties {
         List<FieldProperty> roots = new ArrayList<>();
         List<String> duplicateNames = new ArrayList<>();
 
-
+        //TODO - duplicate name checking should be no name is a descendant of the same name
         //Step 1 - build a map of all active fields and perform field specific validation
         for (FieldProperty field : context.getAllFields()) {
             //If inactive, do some validation, but then skip field so it doesn't end up on idToField map.

@@ -156,7 +156,7 @@ public class ParseDoc {
         for (int i = 0; i < instanceList.getLength(); i++) {
             Node workingInstance = instanceList.item(i);
             try{
-                FormInstance iteration = new FormInstance(workingInstance.getNodeName(), parseStartNode(workingInstance, startProperty));
+                FormInstance iteration = new FormInstance(workingInstance.getNodeName(), parseStartNode(workingInstance, startProperty, i));
                 iteration.getStartField().setParent(iteration);
                 parsedInstances.add(iteration);
             } catch (XPathExpressionException e) {
@@ -168,10 +168,15 @@ public class ParseDoc {
 
     //Given a starting point and a tree, build sections and fields based on what the fieldProperties tree says should be present.
     //Instance should be form start
-    private static SimpleField parseStartNode(Node context, FieldProperty startProperty) throws XPathExpressionException {
+    private static SimpleField parseStartNode(Node context, FieldProperty startProperty, int position) throws XPathExpressionException {
         String name = startProperty.getDisplayName();
+        //TODO - dedicated start node class that doesn't have data.
+        //TODO - validate that start node is not skipped as part of validation.
         FieldData data = new FieldData("root", "root",0);
+        String path = startProperty.getRelativePath() + "[" + position + "]";
         SimpleField start = new SimpleField (name, startProperty, data);
+        start.setRetrievedPath(path);
+        start.setPosition(position);
         parseChildren(context, startProperty, "", start);
 
         return start;
@@ -224,7 +229,30 @@ public class ParseDoc {
 
     }
 
+    //Want to get the version of this node from the root of the form
+    private static int findNodePosition(Node parent, Node child) {
+        NodeList nodeList = parent.getChildNodes();
+        for (int i = 0; i < nodeList.getLength(); i++) {
+            Node node = nodeList.item(i);
+            if (node.isSameNode(child)) {
+                return i;
+            }
+        }
+        //Node not found
+        return -1;
+    }
+
     private static void parseChildren(Node contextNode, FieldProperty property, String parentLabel, FormField parent) throws XPathExpressionException {
+        for (int i = 0; i < contextNode.getChildNodes().getLength(); i++) {
+            Node child = contextNode.getChildNodes().item(i);
+            if (child.getNodeType() == Node.ELEMENT_NODE) {
+                String name = child.getNodeName();
+                FieldProperty prop = property.getChildField(name);
+                if (prop != null) {
+                    parseNode(child, prop, label, parentField);
+                }
+            }
+        }
         for (FieldProperty prop : property.getChildFields()) {
             parseNode(contextNode, prop, parentLabel, parent);
         }
