@@ -9,10 +9,7 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 import javax.xml.xpath.*;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 
 //New version of ParseDoc. Starting over instead of trying to untangle 4 versions of the parser.
@@ -43,16 +40,20 @@ public class FormParser {
     public List<FormInstance> parseForm() throws XPathExpressionException {
         NodeList formRootNodes = findFormRootNode();
         if (formRootNodes == null) {
+            errors.addToCurrentLog(new ErrorEntry(ErrorSource.PARSE_ERROR, "Form root node not found.", ErrorSeverity.FATAL));
             return null;
         }
         return parseFormIndex(0, formRootNodes.getLength(), formRootNodes);
     }
+
+
     public List<FormInstance> parseForm(int startIndex, int endIndex) throws XPathExpressionException {
         if ((startIndex > endIndex) || (startIndex < 0)) {
             errors.addToCurrentLog(new ErrorEntry(ErrorSource.PARSE_ERROR,
                     "At least one parseForm instance index is out of bounds", ErrorSeverity.FATAL));
             return null;
         }
+
 
         NodeList formRootNodes = findFormRootNode();
         if (formRootNodes == null) {
@@ -93,6 +94,7 @@ public class FormParser {
 
         List<FormInstance> parsedInstances = new ArrayList<>();
 
+        //TODO confirm that less than endIndex is correct.
         for (int i = startIndex; i < endIndex; i++) {
             Node instanceNode = formRootNodes.item(i);
             try {
@@ -119,6 +121,7 @@ public class FormParser {
      * @return
      * @throws XPathExpressionException
      */
+    //TODO consider changing name from root to start if not actual root.
     private NodeList findFormRootNode() throws XPathExpressionException {
         // Use XPath or a BFS to locate the first matching node
         String rootPath = rootProperty.getRelativePath();
@@ -143,10 +146,10 @@ public class FormParser {
         }
 
 
-        String label = prop.getDataType().equals("label") ? safeEvaluate(contextNode, prop.getRelativePath(), xpath) : parentLabel;
+        String label = prop.getDataType().equals("label") ? safeEvaluate(contextNode, prop.getRelativePath()) : parentLabel;
 
 
-// Construct field
+        // Construct field
         FormField field;
         switch (prop.getGroupingType()) {
             case COMPOSITE:
@@ -154,7 +157,8 @@ public class FormParser {
                 field = new CompositeField(prop.getDisplayName(), prop, parent, compositeData);
                 break;
             case CONSTITUENT:
-// Should be parsed by composite
+                // Should be parsed by composite
+                //TODO - WHY THOUGH?
                 errors.addToCurrentLog(new ErrorEntry(ErrorSource.PARSE_ERROR, "Unexpected constituent found: " + prop.getFieldId(), ErrorSeverity.ERROR));
                 return null;
             default:
@@ -174,19 +178,36 @@ public class FormParser {
         }
     }
 
+    private FieldData parseSimpleField(Node contextNode, FieldProperty prop) {
+        String value = safeEvaluate(contextNode, prop.getRelativePath());
+        return new FieldData(value, parseFieldType(prop.getDataType()), 0);
+    }
+
     private static Map<String, FieldData> parseConstituents(Node contextNode, FieldProperty property) {
-        Map<String, FieldData> constituents = new HashMap<>();
-        //TODO consider error instead?
-        if (property.getGroupingType() == GroupingType.COMPOSITE) {
-            int counter = 0;
-            for (FieldProperty prop : property.getConstituents()) {
-                String value = safeEvaluate(contextNode, prop.getRelativePath());
-                String type = prop.getDataType();
-                constituents.put(property.getDisplayName(), new FieldData(value, type, counter));
-                counter++;
-            }
+        Map<String, FieldData> constituents = new LinkedHashMap<>();
+
+        int counter = 0;
+        for (FieldProperty constituent : property.getConstituents()) {
+            String value = safeEvaluate(contextNode, constituent.getRelativePath());
+
+            FieldDataTypes type = parseFieldType(constituent.getDataType());
+
+            FieldData data = new FieldData(value, type, counter);
+            constituents.put(constituent.getDisplayName(), data);
+            counter++;
         }
 
         return constituents;
+    }
+
+    //TODO change FieldProperty to return an enum so we don't have to parse here.
+    private static FieldDataTypes parseFieldType(String type) {
+        FieldDataTypes enumType;
+        try {
+            enumType = FieldDataTypes.valueOf(type.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            enumType = FieldDataTypes.STRING;
+        }
+        return enumType;
     }
 }
