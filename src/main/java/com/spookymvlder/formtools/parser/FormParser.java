@@ -155,11 +155,15 @@ public class FormParser {
 
         if (prop.getSkipImport()) {
             for (FieldProperty child : prop.getChildFields()) {
-                return parseNode(contextNode, child, parent, parentLabel, resolvedPath);
+                FormField skipped = parseNode(contextNode, child, parent, parentLabel, resolvedPath);
+                if (skipped != null) {
+                    parent.addChild(skipped);
+                }
             }
+            return null;
         }
 
-
+        //TODO decide if label should be fetched before or after skip.
         String label = prop.getDataType().equals("label") ? safeEvaluate(contextNode, prop.getRelativePath()) : parentLabel;
 
         // Construct field
@@ -177,6 +181,14 @@ public class FormParser {
             default:
                 FieldData data = parseSimpleField(contextNode, prop);
                 field = new SimpleField(prop.getDisplayName(), prop, resolvedPath, parent, data);
+        }
+
+        field.setLabel(label);
+        for (FieldProperty child : prop.getChildFields()) {
+            FormField childField = parseNode(contextNode, child, field,label, resolvedPath);
+            if (childField != null) {
+                field.addChild(childField);
+            }
         }
         return field;
     }
@@ -213,6 +225,7 @@ public class FormParser {
         return constituents;
     }
 
+    //Used to find if there are sibling elements for the same node to get their relative path correctly.
     private int getElementIndex(Node node) {
         if (node == null || node.getNodeType() != Node.ELEMENT_NODE) return -1;
 
