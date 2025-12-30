@@ -1,8 +1,8 @@
 package com.spookymvlder.formtools.datatypes;
 
-public class SimpleField extends FormField<FieldData> {
+public class SimpleField extends FormField {
     private FieldData value;
-    private int position;
+    //private int position;
 
     public SimpleField(String displayName, FieldProperty property, FormStructure parent, FieldData value) {
         super(displayName, property, parent);
@@ -14,18 +14,32 @@ public class SimpleField extends FormField<FieldData> {
         this.value = value;
     }
 
-    public int getPosition() {
+    public SimpleField(String displayName, FieldProperty property, String retrievedPath, FormStructure parent, FieldData value) {
+        super(property, retrievedPath, parent);
+        this.value = value;
+    }
+
+    public SimpleField(FieldProperty property, String retrievedPath, FieldData value) {
+        super(property, retrievedPath);
+        this.value = value;
+    }
+
+
+
+    /*public int getPosition() {
         return position;
     }
 
     public void setPosition(int position) {
         this.position = position;
-    }
+    }*/
 
     @Override
     public FieldData getValue() {
         return value;
     }
+
+
 
 
 }

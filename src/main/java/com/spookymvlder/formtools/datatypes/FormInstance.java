@@ -1,36 +1,38 @@
 package com.spookymvlder.formtools.datatypes;
 
+import java.util.ArrayList;
 import java.util.List;
 
 //TODO make abstract form piece and inherit.
 public class FormInstance implements FormStructure {
-    private String longName;
+    private String formName;
     private FormField startField;
     private String metadata;
+    private List<FormField> children = new ArrayList<FormField>();
 
 
-    public FormInstance(String longName, FormField startField) {
-        this.longName = longName;
+    public FormInstance(String formName, FormField startField) {
+        this.formName = formName;
         this.startField = startField;
     }
 
-    public String getLongName() {
-        return longName;
+    public String getFormName() {
+        return formName;
     }
 
     public FormField getStartField() {
         return startField;
     }
 
-    public List<FormField<?>> getChildren() {
+    public List<FormField> getChildren() {
         return children;
     }
 
-    public void setChildren(List<FormField<?>> children) {
+    public void setChildren(List<FormField> children) {
         this.children = children;
     }
 
-    public void addChild(FormField<?> child) {
+    public void addChild(FormField child) {
         children.add(child);
     }
 }

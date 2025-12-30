@@ -1,14 +1,15 @@
 package com.spookymvlder.formtools.datatypes;
 
+import java.util.ArrayList;
 import java.util.List;
 
-public abstract class FormField<T> implements FormStructure {
+public abstract class FormField implements FormStructure {
 
 
 
     protected String displayName; //Used to map import settings to field type.
     protected FieldProperty property;
-    protected List<FormField<?>> children;
+    protected List<FormField> children = new ArrayList<FormField>();
     //To allow root to reference formInstance
     protected FormStructure parent;
     protected String retrievedPath;
@@ -28,6 +29,23 @@ public abstract class FormField<T> implements FormStructure {
         this.property = property;
     }
 
+    public FormField(FieldProperty property, String retrievedPath, FormStructure parent) {
+        this.property = property;
+        this.retrievedPath = retrievedPath;
+        this.parent = parent;
+    }
+    public FormField(FieldProperty property, String retrievedPath) {
+        this.property = property;
+        this.retrievedPath = retrievedPath;
+    }
+
+    public FormField(String displayName, FieldProperty property, String retrievedPath, FormStructure parent) {
+        this.displayName = displayName;
+        this.property = property;
+        this.retrievedPath = retrievedPath;
+        this.parent = parent;
+    }
+
     public String getDisplayName() {
         return displayName;
     }
@@ -40,11 +58,12 @@ public abstract class FormField<T> implements FormStructure {
         return property;
     }
 
-    public List<FormField<?>> getChildren() {
+    public List<FormField> getChildren() {
         return children;
     }
 
-    public void addChild(FormField<?> child) {
+    //TODO ensure no circular reference
+    public void addChild(FormField child) {
         this.children.add(child);
     }
 
@@ -52,6 +71,7 @@ public abstract class FormField<T> implements FormStructure {
         return parent;
     }
 
+    //TODO ensure no circular reference
     public void setParent(FormStructure parent) {
         this.parent = parent;
     }
@@ -69,5 +89,9 @@ public abstract class FormField<T> implements FormStructure {
         this.label = label;
     }
 
-    public abstract T getValue();
+    public abstract Object getValue();
+
+    public boolean isComposite() {
+        return false;
+    }
 }

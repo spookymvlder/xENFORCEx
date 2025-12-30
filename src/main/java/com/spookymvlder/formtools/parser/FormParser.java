@@ -38,9 +38,9 @@ public class FormParser {
      */
     //TODO this should either return all instances of the form or the specified instance of the form
     public List<FormInstance> parseForm() throws XPathExpressionException {
+        //Get all nodes matching the root of the form.
         NodeList formRootNodes = findFormRootNode();
         if (formRootNodes == null) {
-            errors.addToCurrentLog(new ErrorEntry(ErrorSource.PARSE_ERROR, "Form root node not found.", ErrorSeverity.FATAL));
             return null;
         }
         return parseFormIndex(0, formRootNodes.getLength(), formRootNodes);
@@ -91,21 +91,31 @@ public class FormParser {
         if (formRootNodes == null) {
             return null;
         }
+        //TODO validate index values, incorporate parseForm().
 
         List<FormInstance> parsedInstances = new ArrayList<>();
 
-        //TODO confirm that less than endIndex is correct.
+
         for (int i = startIndex; i < endIndex; i++) {
+            //Iterate per instance of form
             Node instanceNode = formRootNodes.item(i);
             try {
-                FieldData data = new FieldData("root", FieldDataTypes.ROOT, 0);
-                //SimpleField rootField = (SimpleField) parseNode(instanceNode, rootProperty, null, "");
+                //Create new root field
+                FieldData data = new FieldData("root", FieldDataTypes.ROOT, i);
+
+
                 //TODO call simple field directly
-                if (rootField == null) {
-                    errors.addToCurrentLog((new ErrorEntry(ErrorSource.PARSE_ERROR, "Root field not found.", ErrorSeverity.FATAL)));
-                    //TODO probably break here instead.
-                    continue;
+
+                String currentPath = "//" + rootProperty.getRelativePath() + "[" + i + "]";
+                SimpleField rootField = new SimpleField(rootProperty.getDisplayName(), rootProperty, currentPath,null, data);
+
+                for (FieldProperty child : rootProperty.getChildFields()) {
+                    FormField childField = parseNode(instanceNode, child, rootField, "", currentPath);
+                    if (childField != null) {
+                        rootField.addChild(childField);
+                    }
                 }
+
                 FormInstance instance = new FormInstance(rootProperty.getDisplayName(), rootField);
                 parsedInstances.add(instance);
                 //TODO better validation here.
@@ -136,25 +146,28 @@ public class FormParser {
     }
 
 
-    private FormField<?> parseNode(Node contextNode, FieldProperty prop, FormField parent, String parentLabel) throws XPathExpressionException {
+    private FormField parseNode(Node contextNode, FieldProperty prop, FormField parent, String parentLabel, String callPath) throws XPathExpressionException {
 
+        String stepPath = prop.getRelativePath();
+        int index = getElementIndex(contextNode);
+        String indexedStep = index >= 0 ? stepPath + "[" + index + "]" : stepPath;
+        String resolvedPath = callPath.isEmpty() ? indexedStep : callPath + "/" + indexedStep;
 
         if (prop.getSkipImport()) {
             for (FieldProperty child : prop.getChildFields()) {
-                return parseNode(contextNode, child, parent, parentLabel);
+                return parseNode(contextNode, child, parent, parentLabel, resolvedPath);
             }
         }
 
 
         String label = prop.getDataType().equals("label") ? safeEvaluate(contextNode, prop.getRelativePath()) : parentLabel;
 
-
         // Construct field
         FormField field;
         switch (prop.getGroupingType()) {
             case COMPOSITE:
                 Map<String, FieldData> compositeData = parseConstituents(contextNode, prop);
-                field = new CompositeField(prop.getDisplayName(), prop, parent, compositeData);
+                field = new CompositeField(prop.getDisplayName(), prop, resolvedPath, parent, compositeData);
                 break;
             case CONSTITUENT:
                 // Should be parsed by composite
@@ -163,7 +176,7 @@ public class FormParser {
                 return null;
             default:
                 FieldData data = parseSimpleField(contextNode, prop);
-                field = new SimpleField(prop.getDisplayName(), prop, parent, data);
+                field = new SimpleField(prop.getDisplayName(), prop, resolvedPath, parent, data);
         }
         return field;
     }
@@ -199,6 +212,29 @@ public class FormParser {
 
         return constituents;
     }
+
+    private int getElementIndex(Node node) {
+        if (node == null || node.getNodeType() != Node.ELEMENT_NODE) return -1;
+
+        Node parent = node.getParentNode();
+        if (parent == null) return -1;
+
+        NodeList siblings = parent.getChildNodes();
+        String targetName = node.getNodeName();
+        int count = 0;
+
+        for (int i = 0; i < siblings.getLength(); i++) {
+            Node sibling = siblings.item(i);
+            if (sibling.getNodeType() == Node.ELEMENT_NODE && sibling.getNodeName().equals(targetName)) {
+                count++;
+                if (sibling == node) {
+                    return count;  // XPath is 1-based index
+                }
+            }
+        }
+        return -1;
+    }
+
 
     //TODO change FieldProperty to return an enum so we don't have to parse here.
     private static FieldDataTypes parseFieldType(String type) {
