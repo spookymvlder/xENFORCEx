@@ -47,6 +47,7 @@ public class FormParser {
     }
 
 
+
     public List<FormInstance> parseForm(int startIndex, int endIndex) throws XPathExpressionException {
         if ((startIndex > endIndex) || (startIndex < 0)) {
             errors.addToCurrentLog(new ErrorEntry(ErrorSource.PARSE_ERROR,
@@ -54,12 +55,11 @@ public class FormParser {
             return null;
         }
 
-
         NodeList formRootNodes = findFormRootNode();
         if (formRootNodes == null) {
             return null;
         }
-        //TODO create helper utility method to handle index errors and order checking.
+        //TODO create helper utility method to handle index errors and order checking. Then remove extra parseForm
         int formLength = formRootNodes.getLength();
         if (startIndex > formLength) {
             errors.addToCurrentLog(new ErrorEntry(ErrorSource.PARSE_ERROR,
@@ -91,7 +91,6 @@ public class FormParser {
         if (formRootNodes == null) {
             return null;
         }
-        //TODO validate index values, incorporate parseForm().
 
         List<FormInstance> parsedInstances = new ArrayList<>();
 

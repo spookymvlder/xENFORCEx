@@ -1,5 +1,6 @@
 package com.spookymvlder.formtools.parser;
 
+import com.spookymvlder.formtools.datatypes.FormInstance;
 import com.spookymvlder.formtools.settings.ImportSettings;
 
 import com.spookymvlder.formtools.settings.ParserSettings;
@@ -26,18 +27,23 @@ public class ImportXml {
 
     // Temp main for testing.
     public static void main(String[] args) {
+        //TODO remove when unnecessary.
+        TEMPSETTINGS.setTestSettings();
 
         //If we don't have a successful spec import, quit out.
         if(!settings.getSpecImported()) {
             return;
         }
 
-        //TODO remove when unnecessary.
-        TEMPSETTINGS.setTestSettings();
+
 
         try{
         Document doc = importXML();
-        ParseDoc.parseDoc(doc);
+        FormParser parser = new FormParser(doc, settings.getRootField());
+        List<FormInstance> forms = parser.parseForm();
+        //ParseDoc.parseDoc(doc);
+            //TODO remove
+            System.out.println(forms);
         }
         catch(Exception e){
             e.printStackTrace();
