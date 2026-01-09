@@ -28,7 +28,9 @@ public class ImportXml {
     // Temp main for testing.
     public static void main(String[] args) {
         //TODO remove when unnecessary.
+
         TEMPSETTINGS.setTestSettings();
+        ImportSpecification.importSpec(settings.getSpecFilePath());
 
         //If we don't have a successful spec import, quit out.
         if(!settings.getSpecImported()) {

@@ -10,8 +10,11 @@ public class TEMPSETTINGS {
     private static final ImportSettings settings = ImportSettings.getInstance();
 
     public static void setTestSettings() {
-        settings.setXmlFilePath("src/main/resources/local-only/sampleDriver.xml");
+
+
+        settings.setXmlFilePath("src/main/resources/local-only/condensedSampleDriver.xml");
         settings.setXsdFilePath("src/main/resources/local-only/sampleDriverSchema.xsd");
+        settings.setSpecFilePath("src/main/resources/Documentation/field_property_template_driver_long.csv");
         settings.setFormRoot("prospectiveDrivers");
         settings.setFormRootIndex(0);
 

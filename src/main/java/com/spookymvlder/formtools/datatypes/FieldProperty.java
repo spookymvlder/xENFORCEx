@@ -55,22 +55,25 @@ public class FieldProperty {
     @CsvBindByName
     private Integer maxOccurs;
     @CsvBindAndSplitByName(elementType=String.class, splitOn = ",")
-    private String[] condRepeatedSourceIds;
+    private List<String> condRepeatedSourceIds;
     //TODO update logic here to split list level here and condRequiredValues on curly braces and array level via pipe
-    @CsvBindAndSplitByName(elementType=String.class, splitOn = "|")
-    private List<String[]> condRepeatedValues;
+    @CsvBindAndSplitByName(elementType=String.class, splitOn = "\\|")
+    private List<String> condRepeatedValues;
     @CsvBindByName
     private LinkLogic condRepeatedLogic;
 
-
+    private List<String[]> processedCondRepeatedValues;
 
     @CsvCustomBindByName(column="required", converter = FieldPropertyConverter.RepeatConverter.class)
     private Boolean required;
     //TODO import separate conditionally mandatory logic if complicated.
     @CsvBindAndSplitByName(elementType=String.class, splitOn = ",")
-    private String[] condRequiredSourceIds;
-    @CsvBindAndSplitByName(elementType=String.class, splitOn = "|")
-    private List<String[]> condRequiredValues;
+    private List<String> condRequiredSourceIds;
+    @CsvBindAndSplitByName(elementType=String.class, splitOn = "\\|")
+    private List<String> condRequiredValues;
+
+    private List<String[]> processedCondRequiredValues;
+
     @CsvBindByName
     private LinkLogic condRequiredLogic;
 
@@ -121,15 +124,21 @@ public class FieldProperty {
 
     //TODO namespace support
 
+
+    @CsvBindByName(column = "groupingType")
+    @PreAssignmentProcessor(processor = ConvertEmptyOrBlankStringsToDefault.class, paramString = "NONE")
+    private GroupingType groupingType;
+
+
     private Set<FieldProperty> childFields = new HashSet<>();
     private FieldProperty parentField = null;
     private XPathExpression compiledPath = null;
     private String relativePath = null;
     //TODO - add to import spec
     private boolean treatAsSection;
-    @CsvBindByName(column = "groupingType")
-    @PreAssignmentProcessor(processor = ConvertEmptyOrBlankStringsToDefault.class, paramString = "NONE")
-    private GroupingType groupingType;
+
+
+
     private List<FieldProperty> constituents = new ArrayList<>();
 
 
@@ -279,20 +288,27 @@ public class FieldProperty {
         this.maxOccurs = maxOccurs;
     }
 
-    public String[] getCondRepeatedSourceIds() {
+    public List<String> getCondRepeatedSourceIds() {
         return condRepeatedSourceIds;
     }
 
-    public void setCondRepeatedSourceIds(String[] condRepeatedSourceIds) {
+    public void setCondRepeatedSourceIds(List<String> condRepeatedSourceIds) {
         this.condRepeatedSourceIds = condRepeatedSourceIds;
     }
 
-    public List<String[]> getCondRepeatedValues() {
-        return condRepeatedValues;
+    public List<String[]> getProcessedCondRepeatedValues() {
+        if (this.processedCondRepeatedValues == null || this.processedCondRepeatedValues.isEmpty()) {
+            List<String[]> processed = this.condRepeatedValues.stream()
+                    .map(s -> s.split(","))
+                    .toList();
+            setProcessedCondRepeatedValues(processed);
+
+        }
+        return processedCondRepeatedValues;
     }
 
-    public void setCondRepeatedValues(List<String[]> condRepeatedValues) {
-        this.condRepeatedValues = condRepeatedValues;
+    public void setProcessedCondRepeatedValues(List<String[]> processedCondRepeatedValues) {
+        this.processedCondRepeatedValues = processedCondRepeatedValues;
     }
 
     public LinkLogic getCondRepeatedLogic() {
@@ -343,20 +359,27 @@ public class FieldProperty {
         this.required = required;
     }
 
-    public String[] getCondRequiredSourceIds() {
+    public List<String> getCondRequiredSourceIds() {
         return condRequiredSourceIds;
     }
 
-    public void setCondRequiredSourceIds(String[] condRequiredSourceIds) {
+    public void setCondRequiredSourceIds(List<String> condRequiredSourceIds) {
         this.condRequiredSourceIds = condRequiredSourceIds;
     }
 
-    public List<String[]> getCondRequiredValues() {
-        return condRequiredValues;
+    public List<String[]> getProcessedCondRequiredValues() {
+        if (this.processedCondRequiredValues == null || this.processedCondRequiredValues.isEmpty()) {
+            List<String[]> processed = this.condRequiredValues.stream()
+                    .map(s -> s.split(","))
+                    .toList();
+            setProcessedCondRequiredValues(processed);
+
+        }
+        return processedCondRequiredValues;
     }
 
-    public void setCondRequiredValues(List<String[]> condRequiredValues) {
-        this.condRequiredValues = condRequiredValues;
+    public void setProcessedCondRequiredValues(List<String[]> condRequiredValues) {
+        this.processedCondRequiredValues = condRequiredValues;
     }
 
     public LinkLogic getCondRequiredLogic() {

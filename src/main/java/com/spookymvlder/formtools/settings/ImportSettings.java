@@ -6,6 +6,7 @@ public class ImportSettings {
     private static ImportSettings instance;
     private String xmlFilePath;
     private String xsdFilePath;
+    private String specFilePath;
     //Where the form starts, but not necessarily the beginning of data.
     private String formRoot;
     private FieldProperty rootField;
@@ -18,6 +19,7 @@ public class ImportSettings {
     private ImportSettings() {
         this.xmlFilePath = null;
         this.xsdFilePath = null;
+        this.specFilePath = null;
         this.formRoot = null;
         this.formRootIndex = 0;
         this.testIgnoreXSD = false;
@@ -48,12 +50,20 @@ public class ImportSettings {
         return xsdFilePath;
     }
 
+    public String getSpecFilePath() {
+        return specFilePath;
+    }
+
     public void setXmlFilePath(String xmlFilePath) {
         this.xmlFilePath = xmlFilePath;
     }
 
     public void setXsdFilePath(String xsdFilePath) {
         this.xsdFilePath = xsdFilePath;
+    }
+
+    public void setSpecFilePath(String specFilePath) {
+        this.specFilePath = specFilePath;
     }
 
     public String getFormRoot() {
