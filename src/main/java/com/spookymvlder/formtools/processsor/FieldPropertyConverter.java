@@ -44,4 +44,18 @@ public class FieldPropertyConverter {
             throw new CsvDataTypeMismatchException("Invalid Y/N value: " + value);
         }
     }
+
+    public static class TFBooleanConverter extends AbstractBeanField<Boolean, String> {
+        @Override
+        protected Boolean convert(String fieldValue) throws IllegalArgumentException {
+            if (fieldValue == null|| fieldValue.isBlank()){
+                return null;
+            }
+            return switch (fieldValue.trim().toUpperCase()) {
+                case "T", "TRUE" -> true;
+                case "F", "FALSE" -> false;
+                default -> throw new IllegalArgumentException("Invalid boolean value: " + fieldValue);
+            };
+        }
+    }
 }

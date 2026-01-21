@@ -25,10 +25,10 @@ public class SingleFieldPropertyValidator {
 
     public static void validateAttributes(FieldProperty field) {
         //Unless default to no or assume if attribute name is populated it is an attribute?
-        if (field.getAttribute() == null && field.getAttributeName() != null) {
+        if (field.getAttribute() == null && !field.getAttributeName().isEmpty()) {
             errors.addToCurrentLog(new FieldPropertyValidationError(ErrorSource.SCHEME_FIELD_PROPERTY_VALIDATION,"isAttribute is required when attributeName is set.", ErrorSeverity.ERROR, field.getFieldId(), field.getFieldName()));
         }
-        if (field.getAttributeName() == null && field.getAttribute() != null) {
+        if (field.getAttributeName().isEmpty() && field.getAttribute() != null) {
             errors.addToCurrentLog(new FieldPropertyValidationError(ErrorSource.SCHEME_FIELD_PROPERTY_VALIDATION,"attributeName is required when isAttribute is set.", ErrorSeverity.ERROR, field.getFieldId(), field.getFieldName()));
         }
 
@@ -72,13 +72,13 @@ public class SingleFieldPropertyValidator {
 
     public static void validateActiveRange(FieldProperty field) {
 
-        if (field.getActive() && field.getExpireDate().isAfter(LocalDate.now().minusDays(1))) {
+        if (field.getActive() && field.isExpired(LocalDate.now().minusDays(1))) {
             errors.addToCurrentLog(new FieldPropertyValidationError(ErrorSource.SCHEME_FIELD_PROPERTY_VALIDATION, "Field is listed as active, but has an expiration date set in the past.", ErrorSeverity.WARNING, field.getFieldId(), field.getFieldName()));
         }
-        if (field.getActive() && field.getExpireDate().isBefore(LocalDate.now())) {
+        if (field.getActive() && field.expiresInFuture(LocalDate.now())) {
             errors.addToCurrentLog(new FieldPropertyValidationError(ErrorSource.SCHEME_FIELD_PROPERTY_VALIDATION, "Field property has not yet expired, but will be inactivated in the future.", ErrorSeverity.NOTIFICATION, field.getFieldId(), field.getFieldName()));
         }
-        if (!field.getActive() && field.getExpireDate().isAfter(LocalDate.now())) {
+        if (!field.getActive() && field.expiresInFuture(LocalDate.now())) {
             errors.addToCurrentLog(new FieldPropertyValidationError(ErrorSource.SCHEME_FIELD_PROPERTY_VALIDATION, "Field is inactive, but expires in the future. Field was not treated as active by import", ErrorSeverity.WARNING, field.getFieldId(), field.getFieldName()));
         }
     }

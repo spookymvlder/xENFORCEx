@@ -44,6 +44,7 @@ public class ReadCSV {
     }*/
 
     public static List<FieldProperty> importBeanCSV(String filePath) {
+        //TODO review best practice for reassigning local variable here.
         List<FieldProperty> csvFields = new ArrayList<>();
         ErrorSettings errors = ErrorSettings.getInstance();
         errors.startNewLog();
@@ -53,7 +54,7 @@ public class ReadCSV {
             csvFields = new CsvToBeanBuilder<FieldProperty>(br)
                     .withType(FieldProperty.class)
                     .withIgnoreLeadingWhiteSpace(true)
-                    .withSeparator('\t')
+                    .withSeparator(',')
                     .build()
                     .parse();
 

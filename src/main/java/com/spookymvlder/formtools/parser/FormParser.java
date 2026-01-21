@@ -105,7 +105,7 @@ public class FormParser {
 
                 //TODO call simple field directly
 
-                String currentPath = "//" + rootProperty.getRelativePath() + "[" + i + "]";
+                String currentPath = "/" + rootProperty.getRelativePath() + "[" + i + "]";
                 SimpleField rootField = new SimpleField(rootProperty.getDisplayName(), rootProperty, currentPath,null, data);
 
                 for (FieldProperty child : rootProperty.getChildFields()) {
@@ -134,7 +134,7 @@ public class FormParser {
     private NodeList findFormRootNode() throws XPathExpressionException {
         // Use XPath or a BFS to locate the first matching node
         String rootPath = rootProperty.getRelativePath();
-        XPathExpression expr = xpath.compile("//" + rootPath);
+        XPathExpression expr = xpath.compile("/" + rootPath);
         NodeList rootNodes = (NodeList) expr.evaluate(xmlDoc, XPathConstants.NODESET);
         if (rootNodes == null) {
             errors.addToCurrentLog(new ErrorEntry(ErrorSource.PARSE_ERROR,

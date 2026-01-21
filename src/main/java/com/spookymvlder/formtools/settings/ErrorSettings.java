@@ -19,6 +19,8 @@ public class ErrorSettings {
         this.logCount = 0;
         this.errorThreshold = ErrorSeverity.ERROR.getSeverityLevel();
         this.errorLogs = new HashMap<>();
+        this.logSeverity = new HashMap<>();
+        this.logSeverity.put(0, ErrorSeverity.NONE.getSeverityLevel());
     }
 
     public static ErrorSettings getInstance() {
@@ -36,7 +38,7 @@ public class ErrorSettings {
         logCount++;
     }
 
-    public List<ErrorEntry> getErrorLog(Integer logNumber) {
+    public List<ErrorEntry> getError(Integer logNumber) {
         return errorLogs.get(logNumber);
     }
 
@@ -59,7 +61,8 @@ public class ErrorSettings {
     }
 
     public int getSeverityOfCurrentLog() {
-        return getSeverityOfLog(this.logCount);
+
+        return getSeverityOfLog(this.logCount - 1);
     }
 
     private void updateLogSeverity(int logNumber, ErrorEntry errorEntry) {

@@ -29,7 +29,7 @@ public class ProcessFieldProperties {
                 () -> GroupFieldPropertyValidator.validateSingleRoot(context),
                 //Build tree structure
                 () -> setFieldRelations(context),
-                //*For now, retaining skippable in field tree so can build relative xpaths.
+                //TODO *For now, retaining skippable in field tree so can build relative xpaths.
                 //Remove skippable fields from tree while preserving links
                 //() -> bridgeSkippable(context),
                 //Remove skippable from active list and id to field map to not interfere with hierarchy check
@@ -95,7 +95,8 @@ public class ProcessFieldProperties {
             } else {
                 idToField.put(field.getFieldId(), field);
             }
-            if (field.getParentId().equalsIgnoreCase("root")) {
+            //Ensure match to root
+            if (field.getParentId().equalsIgnoreCase("root") || field.getDataType().equals("root")) {
                 roots.add(field);
             }
         }
@@ -173,5 +174,30 @@ public class ProcessFieldProperties {
         for(FieldProperty child : field.getChildFields()) {
             detectCycle(child, unvisitedFields, visitedFields);
         }
+    }
+
+    private static void normalizeField(FieldProperty field) {
+        field.setParentId(normalizeBlank(field.getParentId()));
+        field.setFieldName(normalizeBlank(field.getFieldName()));
+        field.setDisplayName(normalizeBlank(field.getDisplayName()));
+        field.setSectionHeaderOverride(normalizeBlank(field.getSectionHeaderOverride()));
+        // TODO handle list strings (condRepeatedValues, ...)
+        field.setCodeSystemName(normalizeBlank(field.getCodeSystemName()));
+        field.setCodeSystemVersion(normalizeBlank(field.getCodeSystemVersion()));
+        field.setCodeSystemId(normalizeBlank(field.getCodeSystemId()));
+        field.setCodeSystemCode(normalizeBlank(field.getCodeSystemCode()));
+        field.setDataType(normalizeBlank(field.getDataType()));
+        field.setUnit(normalizeBlank(field.getUnit()));
+        field.setRegexPattern(normalizeBlank(field.getRegexPattern()));
+        field.setXpathOverride(field.getXpathOverride());
+        field.setAttributeName(field.getAttributeName());
+        field.setUiControl(normalizeBlank(field.getUiControl()));
+
+
+    }
+
+    // Convert empty strings to nulls. Empty strings created automatically on import.
+    private static String normalizeBlank(String s) {
+        return (s == null || s.isEmpty()) ? null : s;
     }
 }

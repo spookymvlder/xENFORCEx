@@ -1,6 +1,8 @@
 package com.spookymvlder.formtools.parser;
 
+import com.spookymvlder.formtools.datatypes.ErrorEntry;
 import com.spookymvlder.formtools.datatypes.FormInstance;
+import com.spookymvlder.formtools.settings.ErrorSettings;
 import com.spookymvlder.formtools.settings.ImportSettings;
 
 import com.spookymvlder.formtools.settings.ParserSettings;
@@ -46,6 +48,14 @@ public class ImportXml {
         //ParseDoc.parseDoc(doc);
             //TODO remove
             System.out.println(forms);
+            ErrorSettings errors = ErrorSettings.getInstance();
+            System.out.println("Errors: " +errors.getLogCount());
+            for (int i = 1; i <= errors.getLogCount(); i++) {
+                List<ErrorEntry> errorLog = errors.getError(i);
+                for (ErrorEntry errorEntry : errorLog) {
+                    System.out.println(errorEntry);
+                }
+            }
         }
         catch(Exception e){
             e.printStackTrace();

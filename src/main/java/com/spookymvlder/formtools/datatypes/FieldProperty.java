@@ -1,15 +1,12 @@
 package com.spookymvlder.formtools.datatypes;
 
 import com.opencsv.bean.*;
-import com.opencsv.bean.customconverter.ConverterLanguageToBoolean;
 import com.opencsv.bean.processor.ConvertEmptyOrBlankStringsToDefault;
 import com.opencsv.bean.processor.PreAssignmentProcessor;
 import com.spookymvlder.formtools.settings.ErrorSettings;
-import com.spookymvlder.formtools.settings.ParserSettings;
 import com.spookymvlder.formtools.utilities.ErrorSeverity;
 import com.spookymvlder.formtools.utilities.ErrorSource;
 import com.spookymvlder.formtools.processsor.FieldPropertyConverter;
-import org.w3c.dom.Node;
 
 
 import javax.xml.xpath.XPathExpression;
@@ -23,7 +20,7 @@ import java.util.Set;
 
 public class FieldProperty {
     //TODO Consider field IDs that may not be numeric, maybe convert to numeric?
-    @CsvBindByName (required = true)
+    @CsvBindByName (column = "fieldId", required = true)
     private String fieldId;
     //TODO error checking if the fieldName is a duplicate for something at the same hierarchy level and is not repeating.
     @CsvBindByName (required = true)
@@ -41,7 +38,7 @@ public class FieldProperty {
     @CsvBindByName
     private String sectionHeaderOverride;
 
-    @CsvBindByName
+    @CsvCustomBindByName (column="active", converter = FieldPropertyConverter.TFBooleanConverter.class)
     private Boolean active;
     //TODO figure out how to modularize
     @CsvCustomBindByName (column="expireDate", converter = FieldPropertyConverter.CustomDateConverter.class)
@@ -64,8 +61,9 @@ public class FieldProperty {
 
     private List<String[]> processedCondRepeatedValues;
 
+    //TODO change to Char or enum, or process later
     @CsvCustomBindByName(column="required", converter = FieldPropertyConverter.RepeatConverter.class)
-    private Boolean required;
+    private Character required;
     //TODO import separate conditionally mandatory logic if complicated.
     @CsvBindAndSplitByName(elementType=String.class, splitOn = ",")
     private List<String> condRequiredSourceIds;
@@ -88,13 +86,13 @@ public class FieldProperty {
     private String codeSystemCode;
 
     //Allowed values for field
-    @CsvBindByName (required = true)
+    @CsvBindByName (column = "dataType", required = true)
     private String dataType;
     @CsvBindByName
     private Double rangeStart;
     @CsvBindByName
     private Double rangeEnd;
-    @CsvCustomBindByName (column="rangeInclusive", converter = ConverterLanguageToBoolean.class)
+    @CsvCustomBindByName (column="rangeInclusive", converter = FieldPropertyConverter.TFBooleanConverter.class)
     private Boolean rangeInclusive;
     @CsvBindByName
     private Integer minLength;
@@ -110,7 +108,7 @@ public class FieldProperty {
     @CsvBindByName
     private String xpathOverride;
     //TODO confirm this works and doesn't need language set somewhere.
-    @CsvCustomBindByName (column="isAttribute", converter = ConverterLanguageToBoolean.class)
+    @CsvCustomBindByName (column="isAttribute", converter = FieldPropertyConverter.TFBooleanConverter.class)
     private Boolean isAttribute;
     @CsvBindByName
     private String attributeName;
@@ -119,7 +117,7 @@ public class FieldProperty {
     private String uiControl;
     @CsvBindByName
     private String validationMessage;
-    @CsvCustomBindByName (column="skipImport", converter = ConverterLanguageToBoolean.class)
+    @CsvCustomBindByName (column="skipImport", converter = FieldPropertyConverter.TFBooleanConverter.class)
     private Boolean skipImport;
 
     //TODO namespace support
@@ -133,6 +131,7 @@ public class FieldProperty {
     private Set<FieldProperty> childFields = new HashSet<>();
     private FieldProperty parentField = null;
     private XPathExpression compiledPath = null;
+    // TODO make it clear that import spec fields get normalized, fields like this do not.
     private String relativePath = null;
     //TODO - add to import spec
     private boolean treatAsSection;
@@ -256,6 +255,18 @@ public class FieldProperty {
         this.active = active;
     }
 
+    public boolean hasExpireDate() {
+        return expireDate != null;
+    }
+
+    public boolean isExpired(LocalDate date) {
+        return hasExpireDate() && expireDate.isBefore(date);
+    }
+
+    public boolean expiresInFuture(LocalDate date) {
+        return hasExpireDate() && expireDate.isAfter(date);
+    }
+
     public LocalDate getExpireDate() {
         return expireDate;
     }
@@ -351,11 +362,12 @@ public class FieldProperty {
         this.codeSystemCode = codeSystemCode;
     }
 
-    public Boolean getRequired() {
+    public Character getRequired() {
         return required;
     }
 
-    public void setRequired(Boolean required) {
+    //TODO add validation
+    public void setRequired(Character required) {
         this.required = required;
     }
 
@@ -503,7 +515,7 @@ public class FieldProperty {
     }
 
     public Boolean getSkipImport() {
-        return skipImport;
+        return skipImport != Boolean.TRUE;
     }
 
     public void setSkipImport(Boolean skipImport) {
