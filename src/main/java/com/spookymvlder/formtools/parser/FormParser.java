@@ -17,18 +17,18 @@ import java.util.*;
 public class FormParser {
     private final ErrorSettings errors = ErrorSettings.getInstance();
     private static XPath xpath;         // TODO see if static xpath would cause problems going forward. Possible issues include multiple forms or building FormParser multiple times before parsing different forms.
-    private final FieldProperty rootProperty;
+    private final FieldProperty instanceRootProperty;
     private final Document xmlDoc;
 
     /**
      * Sets up the form parser to iterate over a xml file and field property tree.
      * @param xmlDoc - the doc being parsed.
-     * @param rootProperty - the start of a form
+     * @param instanceRootProperty - the start of a form
      */
-    public FormParser(Document xmlDoc, FieldProperty rootProperty) {
+    public FormParser(Document xmlDoc, FieldProperty instanceRootProperty) {
         xpath = XPathFactory.newInstance().newXPath();
         this.xmlDoc = xmlDoc;
-        this.rootProperty = rootProperty;
+        this.instanceRootProperty = instanceRootProperty;
     }
 
     /**
@@ -105,17 +105,17 @@ public class FormParser {
 
                 //TODO call simple field directly
 
-                String currentPath = "/" + rootProperty.getRelativePath() + "[" + i + "]";
-                SimpleField rootField = new SimpleField(rootProperty.getDisplayName(), rootProperty, currentPath,null, data);
+                String currentPath = "/" + instanceRootProperty.getRelativePath() + "[" + i + "]";
+                SimpleField rootField = new SimpleField(instanceRootProperty.getDisplayName(), instanceRootProperty, currentPath,null, data);
 
-                for (FieldProperty child : rootProperty.getChildFields()) {
+                for (FieldProperty child : instanceRootProperty.getChildFields()) {
                     FormField childField = parseNode(instanceNode, child, rootField, "", currentPath);
                     if (childField != null) {
                         rootField.addChild(childField);
                     }
                 }
 
-                FormInstance instance = new FormInstance(rootProperty.getDisplayName(), rootField);
+                FormInstance instance = new FormInstance(instanceRootProperty.getDisplayName(), rootField);
                 parsedInstances.add(instance);
                 //TODO better validation here.
             } catch (XPathExpressionException e) {
@@ -133,7 +133,7 @@ public class FormParser {
     //TODO consider changing name from root to start if not actual root.
     private NodeList findFormRootNode() throws XPathExpressionException {
         // Use XPath or a BFS to locate the first matching node
-        String rootPath = rootProperty.getRelativePath();
+        String rootPath = instanceRootProperty.getRelativePath();
         XPathExpression expr = xpath.compile("/" + rootPath);
         NodeList rootNodes = (NodeList) expr.evaluate(xmlDoc, XPathConstants.NODESET);
         if (rootNodes == null) {

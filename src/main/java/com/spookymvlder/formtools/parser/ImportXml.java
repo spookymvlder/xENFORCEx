@@ -5,7 +5,6 @@ import com.spookymvlder.formtools.datatypes.FormInstance;
 import com.spookymvlder.formtools.settings.ErrorSettings;
 import com.spookymvlder.formtools.settings.ImportSettings;
 
-import com.spookymvlder.formtools.settings.ParserSettings;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -43,15 +42,17 @@ public class ImportXml {
 
         try{
         Document doc = importXML();
+        //TODO send rootField from fieldProcessorContext instead
         FormParser parser = new FormParser(doc, settings.getRootField());
         List<FormInstance> forms = parser.parseForm();
         //ParseDoc.parseDoc(doc);
             //TODO remove
             System.out.println(forms);
             ErrorSettings errors = ErrorSettings.getInstance();
-            System.out.println("Errors: " +errors.getLogCount());
+            //TODO this is only checking latest log, but log is currently only opened once per run.
+            System.out.println("Errors: " + errors.getCurrentLog().size());
             for (int i = 1; i <= errors.getLogCount(); i++) {
-                List<ErrorEntry> errorLog = errors.getError(i);
+                List<ErrorEntry> errorLog = errors.getErrorLog(i);
                 for (ErrorEntry errorEntry : errorLog) {
                     System.out.println(errorEntry);
                 }
@@ -82,7 +83,7 @@ public class ImportXml {
         if(!settings.getXmlFilePath().toLowerCase().endsWith(".xml")) {
             return false;
         }
-        return settings.getFormRoot() != null;
+        return settings.getAnchorElementName() != null && settings.getRootId() != null;
     }
 
     private static Boolean validateXsdSettings() {
@@ -106,7 +107,7 @@ public class ImportXml {
         Document doc = builder.parse(xmlFile);
         doc.getDocumentElement().normalize();
         //TODO ensure comments are stripped out too
-        stripEmptyElements(doc.getElementsByTagName(settings.getFormRoot()).item(settings.getFormRootIndex()));
+        stripEmptyElements(doc.getElementsByTagName(settings.getAnchorElementName()).item(settings.getAnchorElementIndex()));
         return doc;
     }
 

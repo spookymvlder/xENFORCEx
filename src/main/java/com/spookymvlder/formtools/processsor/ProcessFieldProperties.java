@@ -5,6 +5,7 @@ import com.spookymvlder.formtools.datatypes.ErrorEntry;
 import com.spookymvlder.formtools.datatypes.FieldProperty;
 import com.spookymvlder.formtools.datatypes.FieldPropertyValidationError;
 import com.spookymvlder.formtools.settings.ErrorSettings;
+import com.spookymvlder.formtools.settings.ImportSettings;
 import com.spookymvlder.formtools.settings.ParserSettings;
 import com.spookymvlder.formtools.utilities.ErrorSeverity;
 import com.spookymvlder.formtools.utilities.ErrorSource;
@@ -23,9 +24,11 @@ public class ProcessFieldProperties {
 
         //
         List<Runnable> validationSteps = List.of(
+                //Ensure fields are formatted as expected.
+                () -> normalizeAllFields(context),
                 //Perform all actions that are field specific rather than based on the whole list.
                 () -> iterateFields(context),
-                //Ensure that there is a single root
+                //Ensure that there is a single root and anchor element
                 () -> GroupFieldPropertyValidator.validateSingleRoot(context),
                 //Build tree structure
                 () -> setFieldRelations(context),
@@ -63,6 +66,8 @@ public class ProcessFieldProperties {
         List<String> fieldNames = new ArrayList<>();
         List<FieldProperty> roots = new ArrayList<>();
         List<String> duplicateNames = new ArrayList<>();
+        ImportSettings settings = ImportSettings.getInstance();
+        List<FieldProperty> anchorFields = new ArrayList<>();
 
         //TODO - duplicate name checking should be no name is a descendant of the same name
         //Step 1 - build a map of all active fields and perform field specific validation
@@ -96,8 +101,11 @@ public class ProcessFieldProperties {
                 idToField.put(field.getFieldId(), field);
             }
             //Ensure match to root
-            if (field.getParentId().equalsIgnoreCase("root") || field.getDataType().equals("root")) {
+            if (field.getFieldId().equals(settings.getRootId())) {
                 roots.add(field);
+            }
+            if (field.getParentId() == null) {
+                anchorFields.add(field);
             }
         }
 
@@ -111,31 +119,35 @@ public class ProcessFieldProperties {
         context.setInactiveFields(inactiveFields);
         context.setRootList(roots);
         context.setDuplicateNames(duplicateNames);
+        context.setAnchorList(anchorFields);
     }
 
     public static void setFieldRelations(FieldProcessorContext context) {
         List<String> inactiveIds = new ArrayList<>();
+        FieldProperty anchor = context.getAnchor();
         for(FieldProperty field : context.getActiveFields()) {
+            // If field is the anchor field, it won't have a parent ID. All other fields SHOULD have a parent ID.
+            if (field == anchor) {
+                continue;
+            }
+            // This should be guaranteed to not be null based on anchor check earlier in this function and null check in iterateFields().
             String parentId = field.getParentId();
             FieldProperty parent = context.getField(parentId);
-            //Parent is null if missing from table OR if field is root. Neither needs to make connections, but if not root log error.
+            //Parent is null if missing from table, need to log error.
             if (parent == null) {
-                if (!parentId.equalsIgnoreCase("root")) {
-                    //Don't need inactiveIds unless this specific case comes up, so don't build it unless we need it.
-                    if (inactiveIds.isEmpty()) {
-                        for (FieldProperty inactive : context.getInactiveFields()) {
-                            inactiveIds.add(inactive.getFieldId());
-                        }
-                    }
-                    String message;
-                    //If the id that doesn't map to an active field does belong to an inactive field, log a more specific version of the error message.
-                    if (inactiveIds.contains(parentId)) {
-                        message = "The parent id for this field belongs to an inactive field and does not map to a valid field property.";
-                        } else {
-                        message = "The parent id for the field does not map to a valid field property.";
-                    }
-                    ErrorSettings.getInstance().addToCurrentLog(new FieldPropertyValidationError(ErrorSource.FIELD_RELATIONSHIP_VALIDATION, message, ErrorSeverity.ERROR, field.getFieldId(), field.getFieldName()));
+                String message;
+                if (parentId == null) {
+                    message = "The parentId is empty ";
+                } else {
+                    message = "The parentId " + parentId + " does not map to a valid field property ";
                 }
+                message += "for fieldId " + field.getFieldId();
+                ErrorSettings.getInstance().addToCurrentLog(new FieldPropertyValidationError(ErrorSource.FIELD_RELATIONSHIP_VALIDATION, message, ErrorSeverity.FATAL, field.getFieldId(), field.getFieldName()));
+                continue;
+            }
+            if (!context.getActiveFields().contains(parent)) {
+                String message = "The parent id for this field belongs to an inactive field and does not map to a valid field property.";
+                ErrorSettings.getInstance().addToCurrentLog(new FieldPropertyValidationError(ErrorSource.FIELD_RELATIONSHIP_VALIDATION, message, ErrorSeverity.ERROR, field.getFieldId(), field.getFieldName()));
                 continue;
             }
             field.createConnections(parent);
@@ -173,6 +185,13 @@ public class ProcessFieldProperties {
         unvisitedFields.remove(field);
         for(FieldProperty child : field.getChildFields()) {
             detectCycle(child, unvisitedFields, visitedFields);
+        }
+    }
+
+    // At the moment just ensure we're storing null for empty strings instead of "" via opencsv or other import method.
+    private static void normalizeAllFields(FieldProcessorContext context) {
+        for (FieldProperty field : context.getActiveFields()) {
+            normalizeField(field);
         }
     }
 

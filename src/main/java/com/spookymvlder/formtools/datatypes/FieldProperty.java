@@ -31,7 +31,7 @@ public class FieldProperty {
 
     @CsvBindByName
     private Integer order;
-    @CsvBindByName (required = true)
+    @CsvBindByName (required = false)
     private String parentId;
     @CsvBindByName
     private Integer hierarchyLevel;

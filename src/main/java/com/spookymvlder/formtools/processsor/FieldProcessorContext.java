@@ -17,6 +17,8 @@ public class FieldProcessorContext {
     List<FieldProperty> allFields = new ArrayList<>();
     List<FieldProperty> rootList = new ArrayList<>();
     List<String> duplicateNames = new ArrayList<>();
+    List<FieldProperty> anchorList = new ArrayList<>();
+    FieldProperty anchor = null;
 
 
     public List<FieldProperty> getAllFields() {
@@ -108,5 +110,21 @@ public class FieldProcessorContext {
 
     public void setDuplicateNames(List<String> duplicateNames) {
         this.duplicateNames = duplicateNames;
+    }
+
+    public List<FieldProperty> getAnchorList() {
+        return anchorList;
+    }
+
+    public void setAnchorList(List<FieldProperty> anchorFields) {
+        this.anchorList = anchorFields;
+    }
+
+    public FieldProperty getAnchor() {
+        return anchor;
+    }
+
+    public void setAnchor(FieldProperty anchor) {
+        this.anchor = anchor;
     }
 }

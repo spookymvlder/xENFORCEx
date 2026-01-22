@@ -36,9 +36,14 @@ public class ErrorSettings {
 
     public void startNewLog() {
         logCount++;
+        //TODO make this safer.
+        errorLogs.put(logCount, new ArrayList<>());
     }
 
-    public List<ErrorEntry> getError(Integer logNumber) {
+    public List<ErrorEntry> getErrorLog(Integer logNumber) {
+        if (logNumber < 1 || logNumber > logCount) {
+            return new ArrayList<>();
+        }
         return errorLogs.get(logNumber);
     }
 

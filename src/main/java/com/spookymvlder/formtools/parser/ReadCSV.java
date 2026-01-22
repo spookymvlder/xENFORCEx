@@ -1,6 +1,8 @@
 package com.spookymvlder.formtools.parser;
 
+import com.opencsv.CSVReader;
 import com.opencsv.bean.CsvToBeanBuilder;
+import com.opencsv.exceptions.CsvValidationException;
 import com.spookymvlder.formtools.datatypes.ErrorEntry;
 import com.spookymvlder.formtools.datatypes.FieldProperty;
 import com.spookymvlder.formtools.processsor.ProcessFieldProperties;
@@ -11,6 +13,7 @@ import com.spookymvlder.formtools.utilities.*;
 
 import java.io.*;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class ReadCSV {
 
@@ -43,14 +46,52 @@ public class ReadCSV {
         return processedSpec;
     }*/
 
+    @FunctionalInterface
+    private interface ReaderAction<T> {
+        T apply(BufferedReader reader) throws Exception;
+    }
+
+    private static <T> T withBufferedReader(String filePath, ReaderAction<T> action, T failureValue) {
+        ErrorSettings errors = ErrorSettings.getInstance();
+
+        try (BufferedReader br = new BufferedReader(new FileReader(filePath))) {
+            return action.apply(br);
+
+        } catch (FileNotFoundException fnfe) {
+            errors.addToCurrentLog(new ErrorEntry(
+                    ErrorSource.IMPORT_SCHEME,
+                    "Error! File not found: " + fnfe.getMessage(),
+                    ErrorSeverity.FATAL
+            ));
+        } catch (IOException ioe) {
+            errors.addToCurrentLog(new ErrorEntry(ErrorSource.IMPORT_SCHEME, "Error! I/O Error: " + ioe.getMessage(), ErrorSeverity.FATAL));
+        }
+        catch (Exception e) {
+            errors.addToCurrentLog(new ErrorEntry(
+                    ErrorSource.IMPORT_SCHEME,
+                    "Error! CSV processing error: " + e.getMessage(),
+                    ErrorSeverity.FATAL
+            ));
+        }
+
+        return failureValue;
+    }
+
+
     public static List<FieldProperty> importBeanCSV(String filePath) {
+        /*
         //TODO review best practice for reassigning local variable here.
         List<FieldProperty> csvFields = new ArrayList<>();
         ErrorSettings errors = ErrorSettings.getInstance();
+        //TODO move this elsewhere
         errors.startNewLog();
         ParserSettings.getInstance().setConverters();
 
         try (BufferedReader br = new BufferedReader(new FileReader(filePath))) {
+            CSVReader reader = new CSVReader(br);
+            String[] headerRow = reader.readNext();
+
+
             csvFields = new CsvToBeanBuilder<FieldProperty>(br)
                     .withType(FieldProperty.class)
                     .withIgnoreLeadingWhiteSpace(true)
@@ -62,6 +103,8 @@ public class ReadCSV {
             errors.addToCurrentLog(new ErrorEntry(ErrorSource.IMPORT_SCHEME,"Error! File not found: " + fnfe.getMessage(), ErrorSeverity.FATAL));
         } catch (IOException ioe) {
             errors.addToCurrentLog(new ErrorEntry(ErrorSource.IMPORT_SCHEME,"Error! I/O Error: " + ioe.getMessage(), ErrorSeverity.FATAL));
+        } catch (CsvValidationException e) {
+            errors.addToCurrentLog(new ErrorEntry(ErrorSource.IMPORT_SCHEME,"Error! CSV Validation Error: " + e.getMessage(), ErrorSeverity.FATAL));
         }
         //TODO check for specific error level.
         boolean successCheck = errors.getSeverityOfCurrentLog() < 3;
@@ -74,5 +117,93 @@ public class ReadCSV {
 
 
         return csvFields;
+        */
+        ErrorSettings errors = ErrorSettings.getInstance();
+        errors.startNewLog();
+        ParserSettings.getInstance().setConverters();
+
+        // Step 1: CSV schema validation
+        validateCsvHeaders(filePath);
+
+        // Abort early if fatal errors
+        if (errors.getSeverityOfCurrentLog() >= 3) {
+            ImportSettings.getInstance().setSpecImported(false);
+            return List.of();
+        }
+
+        // Step 2: Parse CSV
+        List<FieldProperty> csvFields = parseCsv(filePath);
+
+        // Step 3: Process fields
+        if (errors.getSeverityOfCurrentLog() < 3) {
+            ProcessFieldProperties.processFieldProperties(csvFields);
+        }
+
+        boolean success = errors.getSeverityOfCurrentLog() < 3;
+        ImportSettings.getInstance().setSpecImported(success);
+
+        return csvFields;
     }
+
+    private static void validateCsvHeaders(String filePath) {
+        withBufferedReader(filePath, reader -> {
+
+            CSVReader csvReader = new CSVReader(reader);
+            String[] headers = csvReader.readNext();
+
+            if (headers == null) {
+                ErrorSettings.getInstance().addToCurrentLog(
+                        new ErrorEntry(
+                                ErrorSource.IMPORT_SCHEME,
+                                "CSV file is empty",
+                                ErrorSeverity.FATAL
+                        )
+                );
+                return null;
+            }
+
+            validateRequiredHeaders(headers);
+            return null;
+
+        }, null);
+    }
+    private static void validateRequiredHeaders(String[] headers) {
+        Set<String> headerSet = Arrays.stream(headers)
+                .map(String::trim)
+                .collect(Collectors.toSet());
+
+        List<String> requiredHeaders = List.of(
+                "parentId"
+                // add others that must exist structurally
+        );
+
+        List<String> missing = requiredHeaders.stream()
+                .filter(h -> !headerSet.contains(h))
+                .toList();
+
+        if (!missing.isEmpty()) {
+            ErrorSettings.getInstance().addToCurrentLog(
+                    new ErrorEntry(
+                            ErrorSource.IMPORT_SCHEME,
+                            "CSV is missing required columns: " + String.join(", ", missing),
+                            ErrorSeverity.FATAL
+                    )
+            );
+        }
+    }
+
+    private static List<FieldProperty> parseCsv(String filePath) {
+        return withBufferedReader(filePath, reader ->
+                        new CsvToBeanBuilder<FieldProperty>(reader)
+                                .withType(FieldProperty.class)
+                                .withIgnoreLeadingWhiteSpace(true)
+                                .withSeparator(',')
+                                .build()
+                                .parse(),
+                List.of()
+        );
+    }
+
+
+
 }

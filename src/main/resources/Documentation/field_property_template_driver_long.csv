@@ -1,5 +1,5 @@
 fieldId,fieldName,displayName,order,parentId,hierarchyLevel,sectionHeaderOverride,active,expireDate,fieldRepeated,minOccurs,maxOccurs,condRepeatedSourceIds,condRepeatedValues,condRepeatedLogic,required,condRequiredSourceIds,condRequiredValues,condRequiredLogic,codeSystemName,codeSystemId,codeSystemVersion,codeSystemCode,dataType,rangeStart,rangeEnd,rangeInclusive,minLength,maxLength,enumeration,unit,regexPattern,xpathOverride,isAttribute,attributeName,uiControl,validationMessage,skipImport,groupingType
-0,prospectiveDrivers,Prospective Driver,0,0,0,,T,,F,1,1,,,,T,,,,,,,,root,,,,,,,,,,,,,,,
+0,prospectiveDrivers,Prospective Driver,0,,0,,T,,F,1,1,,,,T,,,,,,,,label,,,,,,,,,,,,,,,
 1,application,Application,1,0,1,,T,,T,0,,,,,F,,,,,,,,label,,,,,,,,,,,,,,T,
 2,driver,Driver,2,1,2,,T,,F,,,,,,T,,,,,,,,label,,,,,,,,,,,,,,T,
 3,driverInfo,Driver Info,3,2,3,,T,,F,,,,,,T,,,,,,,,label,,,,,,,,,,,,,,T,

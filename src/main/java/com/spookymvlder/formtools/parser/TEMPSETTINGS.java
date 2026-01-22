@@ -15,8 +15,9 @@ public class TEMPSETTINGS {
         settings.setXmlFilePath("src/main/resources/local-only/condensedSampleDriver.xml");
         settings.setXsdFilePath("src/main/resources/local-only/sampleDriverSchema.xsd");
         settings.setSpecFilePath("src/main/resources/Documentation/field_property_template_driver_long.csv");
-        settings.setFormRoot("prospectiveDrivers");
-        settings.setFormRootIndex(0);
+        settings.setAnchorElementName("application");
+        settings.setAnchorElementIndex(0);
+        settings.setRootId("1");
 
         ParserSettings parserSettings = ParserSettings.getInstance();
         parserSettings.setForeignKey("foreignKey");

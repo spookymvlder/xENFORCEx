@@ -8,23 +8,25 @@ public class ImportSettings {
     private String xsdFilePath;
     private String specFilePath;
     //Where the form starts, but not necessarily the beginning of data.
-    private String formRoot;
+    private String anchorElementName;
     private FieldProperty rootField;
     //Usually 0, what node stripping should start at.
     //Default to firstChildElement. It may be possible that the form root has data,
-    private int formRootIndex;
+    private int anchorElementIndex;
     private boolean testIgnoreXSD;
     private Boolean specImported;
+    private String rootId;
 
     private ImportSettings() {
         this.xmlFilePath = null;
         this.xsdFilePath = null;
         this.specFilePath = null;
-        this.formRoot = null;
-        this.formRootIndex = 0;
+        this.anchorElementName = null;
+        this.anchorElementIndex = 0;
         this.testIgnoreXSD = false;
         this.specImported = false;
         this.rootField = null;
+        this.rootId = null;
     }
 
     public static ImportSettings getInstance() {
@@ -66,20 +68,20 @@ public class ImportSettings {
         this.specFilePath = specFilePath;
     }
 
-    public String getFormRoot() {
-        return formRoot;
+    public String getAnchorElementName() {
+        return anchorElementName;
     }
 
-    public void setFormRoot(String formRoot) {
-        this.formRoot = formRoot;
+    public void setAnchorElementName(String anchorElementName) {
+        this.anchorElementName = anchorElementName;
     }
 
-    public int getFormRootIndex() {
-        return formRootIndex;
+    public int getAnchorElementIndex() {
+        return anchorElementIndex;
     }
 
-    public void setFormRootIndex(int formRootIndex) {
-        this.formRootIndex = formRootIndex;
+    public void setAnchorElementIndex(int anchorElementIndex) {
+        this.anchorElementIndex = anchorElementIndex;
     }
 
     public boolean getTestIgnoreXSD() {
@@ -96,5 +98,13 @@ public class ImportSettings {
 
     public void setSpecImported(Boolean specImported) {
         this.specImported = specImported;
+    }
+
+    public String getRootId() {
+        return rootId;
+    }
+
+    public void setRootId(String rootId) {
+        this.rootId = rootId;
     }
 }
