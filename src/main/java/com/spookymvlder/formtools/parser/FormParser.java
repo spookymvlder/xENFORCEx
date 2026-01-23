@@ -2,6 +2,7 @@ package com.spookymvlder.formtools.parser;
 
 import com.spookymvlder.formtools.datatypes.*;
 import com.spookymvlder.formtools.settings.ErrorSettings;
+import com.spookymvlder.formtools.settings.ImportSettings;
 import com.spookymvlder.formtools.utilities.ErrorSeverity;
 import com.spookymvlder.formtools.utilities.ErrorSource;
 import org.w3c.dom.Document;
@@ -134,6 +135,16 @@ public class FormParser {
     private NodeList findFormRootNode() throws XPathExpressionException {
         // Use XPath or a BFS to locate the first matching node
         String rootPath = instanceRootProperty.getRelativePath();
+        if (rootPath == null) {
+            rootPath = getRelativePath(instanceRootProperty);
+            if (rootPath != null) {
+                instanceRootProperty.setRelativePath(rootPath);
+            } else {
+                //TODO better handling? Should be handled already.
+                return null;
+            }
+        }
+
         XPathExpression expr = xpath.compile("/" + rootPath);
         NodeList rootNodes = (NodeList) expr.evaluate(xmlDoc, XPathConstants.NODESET);
         if (rootNodes == null) {
@@ -144,6 +155,24 @@ public class FormParser {
         return rootNodes;
     }
 
+    private String getRelativePath(FieldProperty property) {
+        String path = property.getRelativePath();
+        if (path != null) {
+            return path;
+        }
+        FieldProperty parent = property.getParentField();
+        if (parent != null) {
+            return getRelativePath(parent) + '/' + property.getFieldName();
+        }
+        // Should be document anchor. Should have already been validated
+        else if (property.getFieldName().equals(ImportSettings.getInstance().getAnchorElementName())) {
+            return property.getFieldName();
+        } else {
+            String message = "Field property '" + property.getFieldName() + "' is not the document anchor but lacks a parent element.";
+            errors.addToCurrentLog(new ErrorEntry(ErrorSource.PARSE_ERROR, message, ErrorSeverity.FATAL));
+            return null;
+        }
+    }
 
     private FormField parseNode(Node contextNode, FieldProperty prop, FormField parent, String parentLabel, String callPath) throws XPathExpressionException {
 

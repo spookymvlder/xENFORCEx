@@ -29,7 +29,7 @@ public class ProcessFieldProperties {
                 //Perform all actions that are field specific rather than based on the whole list.
                 () -> iterateFields(context),
                 //Ensure that there is a single root and anchor element
-                () -> GroupFieldPropertyValidator.validateSingleRoot(context),
+                () -> GroupFieldPropertyValidator.validateWithErrors(context),
                 //Build tree structure
                 () -> setFieldRelations(context),
                 //TODO *For now, retaining skippable in field tree so can build relative xpaths.
@@ -41,7 +41,7 @@ public class ProcessFieldProperties {
         );
         for (Runnable step : validationSteps) {
             step.run();
-            if (errors.getSeverityOfCurrentLog() < errors.getErrorThreshold()) {
+            if (errors.getSeverityOfCurrentLog() >= errors.getErrorThreshold()) {
                 break;
             }
         }
@@ -190,7 +190,7 @@ public class ProcessFieldProperties {
 
     // At the moment just ensure we're storing null for empty strings instead of "" via opencsv or other import method.
     private static void normalizeAllFields(FieldProcessorContext context) {
-        for (FieldProperty field : context.getActiveFields()) {
+        for (FieldProperty field : context.getAllFields()) {
             normalizeField(field);
         }
     }
@@ -211,7 +211,7 @@ public class ProcessFieldProperties {
         field.setXpathOverride(field.getXpathOverride());
         field.setAttributeName(field.getAttributeName());
         field.setUiControl(normalizeBlank(field.getUiControl()));
-
+        field.setRelativePath(normalizeBlank(field.getRelativePath()));
 
     }
 

@@ -587,12 +587,10 @@ public class FieldProperty {
     }
 
     public String getRelativePath() {
-        if (xpathOverride != null) {
-            return xpathOverride;
-        }
-        if (relativePath == null) {
-            relativePath = buildRelativePath();
-        }
+        //TODO come back to this
+//        if (relativePath == null) {
+//            relativePath = buildRelativePath();
+//        }
         return relativePath;
     }
 

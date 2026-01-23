@@ -17,12 +17,6 @@ public class ImportSpecification {
         if(!ImportSettings.getInstance().getSpecImported()) {
             return;
         }
-        for (FieldProperty field : fields) {
-            if (field.getDataType().equals("root")){
-                ImportSettings.getInstance().setRootField(field);
-                break;                                  //Want to stop after first root found. Should only be one.
-            }
-        }
 
         /*
         // Unclear what the plan was here
