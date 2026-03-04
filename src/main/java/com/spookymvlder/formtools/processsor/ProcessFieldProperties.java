@@ -42,6 +42,7 @@ public class ProcessFieldProperties {
         for (Runnable step : validationSteps) {
             step.run();
             if (errors.getSeverityOfCurrentLog() >= errors.getErrorThreshold()) {
+                System.out.println("Breaking due to errors!");
                 break;
             }
         }
@@ -68,6 +69,7 @@ public class ProcessFieldProperties {
         List<String> duplicateNames = new ArrayList<>();
         ImportSettings settings = ImportSettings.getInstance();
         List<FieldProperty> anchorFields = new ArrayList<>();
+        List<FieldProperty> activeFields = new ArrayList<>();
 
         //TODO - duplicate name checking should be no name is a descendant of the same name
         //Step 1 - build a map of all active fields and perform field specific validation
@@ -78,6 +80,8 @@ public class ProcessFieldProperties {
                 //Field won't be going through other validation, but could have something funky with expire date.
                 SingleFieldPropertyValidator.validateActiveRange(field);
                 continue;
+            } else {
+                activeFields.add(field);
             }
 
             //Perform all field specific validation
@@ -113,7 +117,7 @@ public class ProcessFieldProperties {
         for (FieldProperty field : inactiveFields) {
             context.removeFromActiveFields(field);
         }
-
+        context.setActiveFields(activeFields);
         context.setIdToField(idToField);
         context.setSkippableFields(skippableFields);
         context.setInactiveFields(inactiveFields);
@@ -167,25 +171,63 @@ public class ProcessFieldProperties {
         }
     }
 */
-    public static void traverseTree(FieldProcessorContext context) {
-        List<FieldProperty> unvisitedFields = context.getActiveFields();
-        List<FieldProperty> visited = new ArrayList<>();
-        detectCycle(context.getRoot(), unvisitedFields, visited);
-        for (FieldProperty field : unvisitedFields) {
-            errors.addToCurrentLog(new FieldPropertyValidationError(ErrorSource.SCHEME_HIERARCHY_CHECK, "Orphaned field detected.", ErrorSeverity.ERROR, field.getFieldId(), field.getFieldName()));
+public static void traverseTree(FieldProcessorContext context) {
+    // Track which active fields were reachable from root
+    Set<FieldProperty> reachable = new HashSet<>();
+
+    // 3-color sets
+    Set<FieldProperty> visiting = new HashSet<>(); // GRAY
+    Set<FieldProperty> visited  = new HashSet<>(); // BLACK
+
+    detectCycleAndMarkReachable(context.getRoot(), reachable, visiting, visited);
+
+    // Anything active but not reachable is anf orphan
+    for (FieldProperty field : context.getActiveFields()) {
+        //TODO ensure that any list lookup is based on ID to avoid hashing error.
+        if (!reachable.contains(field) && !context.getAnchorList().contains(field)) {
+            errors.addToCurrentLog(new FieldPropertyValidationError(
+                    ErrorSource.SCHEME_HIERARCHY_CHECK,
+                    "Orphaned field detected.",
+                    ErrorSeverity.ERROR,
+                    field.getFieldId(),
+                    field.getFieldName()
+            ));
         }
     }
+}
 
-    private static void detectCycle(FieldProperty field, List<FieldProperty> unvisitedFields, List<FieldProperty> visitedFields) {
-        if (visitedFields.contains(field)) {
-            errors.addToCurrentLog((new ErrorEntry(ErrorSource.SCHEME_HIERARCHY_CHECK,"Cycle detected at fieldId: " + field.getFieldId(), ErrorSeverity.FATAL)));
+    private static void detectCycleAndMarkReachable(
+            FieldProperty field,
+            Set<FieldProperty> reachable,
+            Set<FieldProperty> visiting,
+            Set<FieldProperty> visited
+    ) {
+        if (field == null) return;
+
+        // Already fully processed: no cycle, no need to recurse again
+        if (visited.contains(field)) {
             return;
         }
-        visitedFields.add(field);
-        unvisitedFields.remove(field);
-        for(FieldProperty child : field.getChildFields()) {
-            detectCycle(child, unvisitedFields, visitedFields);
+
+        // Back-edge to a node in the current recursion stack => cycle
+        if (visiting.contains(field)) {
+            errors.addToCurrentLog(new ErrorEntry(
+                    ErrorSource.SCHEME_HIERARCHY_CHECK,
+                    "Cycle detected at fieldId: " + field.getFieldId(),
+                    ErrorSeverity.FATAL
+            ));
+            return;
         }
+
+        visiting.add(field);
+        reachable.add(field);
+
+        for (FieldProperty child : field.getChildFields()) {
+            detectCycleAndMarkReachable(child, reachable, visiting, visited);
+        }
+
+        visiting.remove(field);
+        visited.add(field);
     }
 
     // At the moment just ensure we're storing null for empty strings instead of "" via opencsv or other import method.

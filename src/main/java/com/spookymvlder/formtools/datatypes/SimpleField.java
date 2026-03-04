@@ -15,7 +15,7 @@ public class SimpleField extends FormField {
     }
 
     public SimpleField(String displayName, FieldProperty property, String retrievedPath, FormStructure parent, FieldData value) {
-        super(property, retrievedPath, parent);
+        super(displayName, property, retrievedPath, parent);
         this.value = value;
     }
 
