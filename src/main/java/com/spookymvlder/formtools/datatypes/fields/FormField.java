@@ -1,4 +1,6 @@
-package com.spookymvlder.formtools.datatypes;
+package com.spookymvlder.formtools.datatypes.fields;
+
+import com.spookymvlder.formtools.datatypes.FieldProperty;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -12,10 +14,8 @@ public abstract class FormField implements FormStructure {
     protected List<FormField> children = new ArrayList<FormField>();
     //To allow root to reference formInstance
     protected FormStructure parent;
-    protected String retrievedPath;
+    protected String resolvedPath;
     protected String label;
-
-
 
 
     public FormField(String displayName, FieldProperty property, FormStructure parent) {
@@ -29,20 +29,20 @@ public abstract class FormField implements FormStructure {
         this.property = property;
     }
 
-    public FormField(FieldProperty property, String retrievedPath, FormStructure parent) {
+    public FormField(FieldProperty property, String resolvedPath, FormStructure parent) {
         this.property = property;
-        this.retrievedPath = retrievedPath;
+        this.resolvedPath = resolvedPath;
         this.parent = parent;
     }
-    public FormField(FieldProperty property, String retrievedPath) {
+    public FormField(FieldProperty property, String resolvedPath) {
         this.property = property;
-        this.retrievedPath = retrievedPath;
+        this.resolvedPath = resolvedPath;
     }
 
-    public FormField(String displayName, FieldProperty property, String retrievedPath, FormStructure parent) {
+    public FormField(String displayName, FieldProperty property, String resolvedPath, FormStructure parent) {
         this.displayName = displayName;
         this.property = property;
-        this.retrievedPath = retrievedPath;
+        this.resolvedPath = resolvedPath;
         this.parent = parent;
     }
 
@@ -50,8 +50,8 @@ public abstract class FormField implements FormStructure {
         return displayName;
     }
 
-    public String getRetrievedPath() {
-        return retrievedPath;
+    public String getResolvedPath() {
+        return resolvedPath;
     }
 
     public FieldProperty getProperty() {
@@ -76,8 +76,8 @@ public abstract class FormField implements FormStructure {
         this.parent = parent;
     }
 
-    public void setRetrievedPath(String retrievedPath) {
-        this.retrievedPath = retrievedPath;
+    public void setResolvedPath(String resolvedPath) {
+        this.resolvedPath = resolvedPath;
     }
 
 
@@ -89,7 +89,7 @@ public abstract class FormField implements FormStructure {
         this.label = label;
     }
 
-    public abstract Object getValue();
+
 
     public boolean isComposite() {
         return false;

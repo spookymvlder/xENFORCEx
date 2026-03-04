@@ -1,5 +1,7 @@
 package com.spookymvlder.formtools.datatypes;
 
+import com.spookymvlder.formtools.datatypes.fields.FormStructure;
+
 import java.util.Objects;
 
 public class FieldData implements FormStructure {

@@ -250,10 +250,9 @@ public static void traverseTree(FieldProcessorContext context) {
         field.setDataType(normalizeBlank(field.getDataType()));
         field.setUnit(normalizeBlank(field.getUnit()));
         field.setRegexPattern(normalizeBlank(field.getRegexPattern()));
-        field.setXpathOverride(field.getXpathOverride());
         field.setAttributeName(field.getAttributeName());
         field.setUiControl(normalizeBlank(field.getUiControl()));
-        field.setRelativePath(normalizeBlank(field.getRelativePath()));
+        field.setTemplatePath(normalizeBlank(field.getTemplatePath()));
 
     }
 

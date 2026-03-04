@@ -105,8 +105,7 @@ public class FieldProperty {
     @CsvBindByName
     private String regexPattern;
 
-    @CsvBindByName
-    private String xpathOverride;
+
     //TODO confirm this works and doesn't need language set somewhere.
     @CsvCustomBindByName (column="isAttribute", converter = FieldPropertyConverter.TFBooleanConverter.class)
     private Boolean isAttribute;
@@ -130,11 +129,12 @@ public class FieldProperty {
 
     private Set<FieldProperty> childFields = new HashSet<>();
     private FieldProperty parentField = null;
-    private XPathExpression compiledPath = null;
+
     // TODO make it clear that import spec fields get normalized, fields like this do not.
-    private String relativePath = null;
+    private String templatePath = null;
     //TODO - add to import spec
     private boolean treatAsSection;
+
 
 
 
@@ -474,13 +474,6 @@ public class FieldProperty {
         this.regexPattern = regexPattern;
     }
 
-    public String getXpathOverride() {
-        return xpathOverride;
-    }
-
-    public void setXpathOverride(String xpathOverride) {
-        this.xpathOverride = xpathOverride;
-    }
 
     public Boolean getAttribute() {
         return Boolean.TRUE.equals(this.isAttribute);
@@ -522,15 +515,6 @@ public class FieldProperty {
         this.skipImport = skipImport;
     }
 
-
-    public XPathExpression getCompiledPath() {
-
-        return compiledPath;
-    }
-
-    public void setCompiledPath(XPathExpression compiledPath) {
-        this.compiledPath = compiledPath;
-    }
 
     private String buildRelativePath() {
         String path = "descendant::";
@@ -586,16 +570,16 @@ public class FieldProperty {
         this.treatAsSection = treatAsSection;
     }
 
-    public String getRelativePath() {
+    public String getTemplatePath() {
         //TODO come back to this
 //        if (relativePath == null) {
 //            relativePath = buildRelativePath();
 //        }
-        return relativePath;
+        return templatePath;
     }
 
-    public void setRelativePath(String relativePath) {
-        this.relativePath = relativePath;
+    public void setTemplatePath(String templatePath) {
+        this.templatePath = templatePath;
     }
 
     public List<FieldProperty> getConstituents() {

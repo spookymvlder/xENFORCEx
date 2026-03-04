@@ -1,5 +1,8 @@
 package com.spookymvlder.formtools.datatypes;
 
+import com.spookymvlder.formtools.datatypes.fields.FormField;
+import com.spookymvlder.formtools.datatypes.fields.FormStructure;
+
 import java.util.ArrayList;
 import java.util.List;
 

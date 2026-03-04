@@ -1,5 +1,7 @@
 package com.spookymvlder.formtools.datatypes;
 
+import com.spookymvlder.formtools.datatypes.fields.FormField;
+
 import java.util.*;
 
 public class FormSection {

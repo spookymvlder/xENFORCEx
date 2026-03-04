@@ -1,6 +1,9 @@
-package com.spookymvlder.formtools.datatypes;
+package com.spookymvlder.formtools.datatypes.fields;
 
-public class SimpleField extends FormField {
+import com.spookymvlder.formtools.datatypes.FieldData;
+import com.spookymvlder.formtools.datatypes.FieldProperty;
+
+public class SimpleField extends EntryField {
     private FieldData value;
     //private int position;
 
@@ -14,13 +17,8 @@ public class SimpleField extends FormField {
         this.value = value;
     }
 
-    public SimpleField(String displayName, FieldProperty property, String retrievedPath, FormStructure parent, FieldData value) {
-        super(displayName, property, retrievedPath, parent);
-        this.value = value;
-    }
-
-    public SimpleField(FieldProperty property, String retrievedPath, FieldData value) {
-        super(property, retrievedPath);
+    public SimpleField(String displayName, FieldProperty property, String resolvedPath, FormStructure parent, FieldData value) {
+        super(displayName, property, resolvedPath, parent);
         this.value = value;
     }
 
