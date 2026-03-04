@@ -112,36 +112,52 @@ public class FormParser {
 
         List<FormInstance> parsedInstances = new ArrayList<>();
 
-
         for (int i = startIndex; i < endIndex; i++) {
-            //Iterate per instance of form
             Node instanceNode = formRootNodes.item(i);
+            if (instanceNode == null) {
+                errors.addToCurrentLog(new ErrorEntry(
+                        ErrorSource.PARSE_ERROR,
+                        "Null instance node encountered at index " + i,
+                        ErrorSeverity.ERROR
+                ));
+                continue;
+            }
+
             try {
-                //Create new root field
+                // Root field for this form instance
                 FieldData data = new FieldData("root", FieldDataTypes.ROOT, i);
 
-
-                //TODO call simple field directly
-
-                //String currentPath = "/" + instanceRootProperty.getRelativePath() + "[" + i + "]";
+                // Absolute XPath (debugging)
                 String currentPath = pathContext.getRootInstanceXPath(i);
 
-                SimpleField rootField = new SimpleField(instanceRootProperty.getDisplayName(), instanceRootProperty, currentPath,null, data);
+                SimpleField rootField = new SimpleField(
+                        instanceRootProperty.getDisplayName(),
+                        instanceRootProperty,
+                        currentPath,
+                        null,
+                        data
+                );
 
+                // Parse children under the instance root node
                 for (FieldProperty child : instanceRootProperty.getChildFields()) {
-                    FormField childField = parseNode(instanceNode, child, rootField, "", currentPath);
-                    if (childField != null) {
+                    List<FormField> children = parseNodes(instanceNode, child, rootField, "", currentPath);
+                    for (FormField childField : children) {
                         rootField.addChild(childField);
                     }
                 }
 
                 FormInstance instance = new FormInstance(instanceRootProperty.getDisplayName(), rootField);
                 parsedInstances.add(instance);
-                //TODO better validation here.
+
             } catch (XPathExpressionException e) {
-                System.out.println("Unable to extract form start: " + e.getMessage());
+                errors.addToCurrentLog(new ErrorEntry(
+                        ErrorSource.PARSE_ERROR,
+                        "Unable to extract form instance at index " + i + ": " + e.getMessage(),
+                        ErrorSeverity.ERROR
+                ));
             }
         }
+
         return parsedInstances;
     }
 
@@ -208,98 +224,139 @@ public class FormParser {
         }
     }
 
-    private FormField parseNode(Node contextNode, FieldProperty prop, FormField parent, String parentLabel, String callPath) throws XPathExpressionException {
 
 
-        String selector = prop.getXpathOverride();
+    private List<FormField> parseNodes(Node contextNode, FieldProperty prop, FormField parent, String parentLabel, String callPath)
+            throws XPathExpressionException {
 
-        if (selector == null || selector.isBlank()) {
-            selector = prop.getFieldName();
+        String name = prop.getFieldName();
+        if (name == null || name.isBlank()) {
+            errors.addToCurrentLog(new ErrorEntry(
+                    ErrorSource.PARSE_ERROR,
+                    "FieldProperty has blank fieldName. fieldId=" + prop.getFieldId(),
+                    ErrorSeverity.FATAL
+            ));
+            return Collections.emptyList();
         }
 
+        // Match all child elements with this name (repeats handled here)
+        List<Node> matches = childElementsByName(contextNode, name);
 
+        if (matches.isEmpty()) return Collections.emptyList();
 
-        if (selector == null || selector.isBlank()) {
-            errors.addToCurrentLog(new ErrorEntry(ErrorSource.PARSE_ERROR, "Empty selector for fieldId=" + prop.getFieldId() + " fieldName=" + prop.getFieldName() + " ", ErrorSeverity.FATAL));
-            System.out.println("MISS: prop=" + prop.getFieldName() + " selector=NULL/blank"
-            + " ctxNode=" + contextNode.getNodeName()
-            + " callPath=" + callPath);
-            return null;
-        }
-        System.out.println("ENTER: " + prop.getFieldName()
-                + " selector=" + selector
-                + " ctxNode=" + (contextNode == null ? "null" : contextNode.getNodeName())
-                + " callPath=" + callPath);
+        List<FormField> results = new ArrayList<>(matches.size());
 
-        Node thisNode = (Node) xpath.evaluate(selector, contextNode, XPathConstants.NODE);
+        for (int i = 0; i < matches.size(); i++) {
+            Node thisNode = matches.get(i);
 
-        // If the node doesn't exist in XML, no field instance should be created.
-        if (thisNode == null) {
-            System.out.println("MISS: prop=" + prop.getFieldName()
-                    + " selector=" + selector
-                    + " ctxNode=" + contextNode.getNodeName()
-                    + " callPath=" + callPath);
-            return null;
-        }
+            String indexedStep = name + "[" + (i + 1) + "]"; // XPath-style index
+            String resolvedPath = callPath.isEmpty() ? indexedStep : callPath + "/" + indexedStep;
 
-        int index = getElementIndex(thisNode);
+            // skipImport: do not create a field, but DO descend from this node
 
-        String indexedStep = index >= 0 ? selector + "[" + index + "]" : selector;
-        String resolvedPath = callPath.isEmpty() ? indexedStep : callPath + "/" + indexedStep;
+            if (prop.getSkipImport()) {
+                System.out.println("skipImport=" + prop.getSkipImport() + " prop=" + prop.getFieldName());
+                for (FieldProperty child : prop.getChildFields()) {
+                    for (FormField skippedChild : parseNodes(thisNode, child, parent, parentLabel, resolvedPath)) {
+                        parent.addChild(skippedChild);
+                    }
+                }
+                continue;
+            }
 
+            // Label is a container type: it exists to disambiguate structure, not to extract a giant value.
+            String label = parentLabel;
 
-        if (prop.getSkipImport()) {
-            for (FieldProperty child : prop.getChildFields()) {
-                FormField skipped = parseNode(thisNode, child, parent, parentLabel, resolvedPath);
-                if (skipped != null) {
-                    parent.addChild(skipped);
+            FormField field;
+            switch (prop.getGroupingType()) {
+                case COMPOSITE: {
+                    // composite: constituents read relative to resolvedPath, or better: relative to thisNode (next improvement)
+                    Map<String, FieldData> compositeData = parseConstituentsFromNode(thisNode, prop);
+                    field = new CompositeField(prop.getDisplayName(), prop, resolvedPath, parent, compositeData);
+                    break;
+                }
+                case CONSTITUENT:
+                    errors.addToCurrentLog(new ErrorEntry(
+                            ErrorSource.PARSE_ERROR,
+                            "Unexpected constituent found: " + prop.getFieldId(),
+                            ErrorSeverity.ERROR
+                    ));
+                    continue;
+
+                default: {
+                    FieldData data = parseFieldValueFromNode(thisNode, prop);
+                    field = new SimpleField(prop.getDisplayName(), prop, resolvedPath, parent, data);
                 }
             }
-            return null;
+
+            field.setLabel(label);
+
+            for (FieldProperty child : prop.getChildFields()) {
+                for (FormField childField : parseNodes(thisNode, child, field, label, resolvedPath)) {
+                    field.addChild(childField);
+                }
+            }
+
+            results.add(field);
         }
 
+        return results;
+    }
 
-        //TODO decide if label should be fetched before or after skip.
-        String label = "label".equals(prop.getDataType())
-                ? safeEvaluateFromDoc(resolvedPath)
-                : parentLabel;
+    private static List<Node> childElementsByName(Node parent, String name) {
 
-        // Construct field
-        FormField field;
-        switch (prop.getGroupingType()) {
-            case COMPOSITE:
-                Map<String, FieldData> compositeData = parseConstituents(resolvedPath, prop);
-                field = new CompositeField(prop.getDisplayName(), prop, resolvedPath, parent, compositeData);
-                break;
-            case CONSTITUENT:
-                // Should be parsed by composite
-                //TODO - WHY THOUGH?
-                errors.addToCurrentLog(new ErrorEntry(ErrorSource.PARSE_ERROR, "Unexpected constituent found: " + prop.getFieldId(), ErrorSeverity.ERROR));
-                return null;
-            default:
-                FieldData data = parseSimpleField(resolvedPath, prop);
-                field = new SimpleField(prop.getDisplayName(), prop, resolvedPath, parent, data);
-        }
+        List<Node> out = new ArrayList<>();
+        NodeList kids = parent.getChildNodes();
 
-        field.setLabel(label);
-
-        for (FieldProperty child : prop.getChildFields()) {
-            String childSelector = (child.getXpathOverride() != null && !child.getXpathOverride().isBlank())
-                    ? child.getXpathOverride()
-                    : child.getFieldName();
-
-            System.out.println("  TRY CHILD: parent=" + prop.getFieldName()
-                    + " child=" + child.getFieldName()
-                    + " selector=" + childSelector
-                    + " ctxNode=" + thisNode.getNodeName()
-                    + " callPath=" + resolvedPath);
-
-            FormField childField = parseNode(thisNode, child, field,label, resolvedPath);
-            if (childField != null) {
-                field.addChild(childField);
+        for (int i = 0; i < kids.getLength(); i++) {
+            Node k = kids.item(i);
+            if (k.getNodeType() == Node.ELEMENT_NODE && name.equals(k.getNodeName())) {
+                out.add(k);
             }
         }
-        return field;
+        return out;
+    }
+
+    private FieldData parseFieldValueFromNode(Node thisNode, FieldProperty prop) {
+        String value = "";
+
+        if (prop.getAttribute()) {
+            String attr = prop.getAttributeName();
+            if (attr != null && !attr.isBlank()) {
+                // XPath against the node is simplest for attributes
+                value = safeEvaluate(thisNode, "@" + attr);
+            }
+        } else {
+            // Only non-label types read element text
+            if (!"label".equals(prop.getDataType())) {
+                value = safeEvaluate(thisNode, "text()");
+            }
+        }
+
+        return new FieldData(value, parseFieldType(prop.getDataType()), 0);
+    }
+
+    private Map<String, FieldData> parseConstituentsFromNode(Node thisNode, FieldProperty property) {
+        Map<String, FieldData> constituents = new LinkedHashMap<>();
+        int counter = 0;
+
+        for (FieldProperty constituent : property.getConstituents()) {
+            String name = constituent.getFieldName();
+            String v = "";
+
+            if (constituent.getAttribute()) {
+                String attr = constituent.getAttributeName();
+                if (attr != null && !attr.isBlank()) v = safeEvaluate(thisNode, "@" + attr);
+            } else {
+                // constituent elements are typically children of the composite node
+                v = safeEvaluate(thisNode, name + "/text()");
+            }
+
+            constituents.put(constituent.getDisplayName(),
+                    new FieldData(v, parseFieldType(constituent.getDataType()), counter++));
+        }
+
+        return constituents;
     }
 
     public static String safeEvaluate(Node context, String path) {

@@ -427,7 +427,7 @@ public class FieldProperty {
     }
 
     public Boolean getRangeInclusive() {
-        return rangeInclusive;
+        return Boolean.TRUE.equals(this.rangeInclusive);
     }
 
     public void setRangeInclusive(Boolean rangeInclusive) {
@@ -483,7 +483,7 @@ public class FieldProperty {
     }
 
     public Boolean getAttribute() {
-        return isAttribute;
+        return Boolean.TRUE.equals(this.isAttribute);
     }
 
     public void setAttribute(Boolean attribute) {
@@ -515,7 +515,7 @@ public class FieldProperty {
     }
 
     public Boolean getSkipImport() {
-        return skipImport != Boolean.TRUE;
+        return Boolean.TRUE.equals(this.skipImport);
     }
 
     public void setSkipImport(Boolean skipImport) {
