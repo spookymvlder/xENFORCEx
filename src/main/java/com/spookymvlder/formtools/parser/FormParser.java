@@ -3,7 +3,7 @@ package com.spookymvlder.formtools.parser;
 import com.spookymvlder.formtools.datatypes.*;
 import com.spookymvlder.formtools.datatypes.fields.CompositeField;
 import com.spookymvlder.formtools.datatypes.fields.FormField;
-import com.spookymvlder.formtools.datatypes.fields.GroupField;
+import com.spookymvlder.formtools.datatypes.fields.ContainerField;
 import com.spookymvlder.formtools.datatypes.fields.SimpleField;
 import com.spookymvlder.formtools.settings.ErrorSettings;
 import com.spookymvlder.formtools.settings.ImportSettings;
@@ -24,7 +24,8 @@ public class FormParser {
     private static XPath xpath;         // TODO see if static xpath would cause problems going forward. Possible issues include multiple forms or building FormParser multiple times before parsing different forms.
     private final FieldProperty instanceRootProperty;
     private final Document xmlDoc;
-    private final XmlPathContext pathContext;
+
+
 
     /**
      * Sets up the form parser to iterate over a xml file and field property tree.
@@ -36,21 +37,38 @@ public class FormParser {
         this.xmlDoc = xmlDoc;
         this.instanceRootProperty = instanceRootProperty;
 
-
-        // Ensure we have a root relative path
-        String rootPath = instanceRootProperty.getTemplatePath();
-        if (rootPath == null) {
-            rootPath = buildRelativePath(instanceRootProperty);
-            if (rootPath != null) {
-                instanceRootProperty.setTemplatePath(rootPath);
+        String rootTemplatePath = instanceRootProperty.getTemplatePath();
+        if (rootTemplatePath == null || rootTemplatePath.isBlank()) {
+            rootTemplatePath = buildRelativePath(instanceRootProperty);
+            if (rootTemplatePath != null) {
+                instanceRootProperty.setTemplatePath(rootTemplatePath);
             }
         }
-        if (rootPath == null) {
-            // buildRelativePath already logged a fatal error
-            this.pathContext = null;
-        } else {
-            this.pathContext = new XmlPathContext(xpath, rootPath);
+
+        if (rootTemplatePath != null) {
+            rootTemplatePath = rootTemplatePath.trim();
+
+            if (rootTemplatePath.startsWith("/")) {
+                rootTemplatePath = rootTemplatePath.substring(1);
+                instanceRootProperty.setTemplatePath(rootTemplatePath);
+            }
         }
+
+
+//        // Ensure we have a root relative path
+//        String rootPath = instanceRootProperty.getTemplatePath();
+//        if (rootPath == null) {
+//            rootPath = buildRelativePath(instanceRootProperty);
+//            if (rootPath != null) {
+//                instanceRootProperty.setTemplatePath(rootPath);
+//            }
+//        }
+//        if (rootPath == null) {
+//            // buildRelativePath already logged a fatal error
+//            this.pathContext = null;
+//        } else {
+//            this.pathContext = new XmlPathContext(xpath, rootPath);
+//        }
     }
 
     /**
@@ -196,18 +214,29 @@ public class FormParser {
         return rootNodes;
 
          */
-        if (pathContext == null) return null;
-
-        NodeList rootNodes = pathContext.selectRootNodes(xmlDoc);
-        if (rootNodes == null || rootNodes.getLength() == 0) {
+//        if (pathContext == null) return null;
+//
+//        NodeList rootNodes = pathContext.selectRootNodes(xmlDoc);
+//        if (rootNodes == null || rootNodes.getLength() == 0) {
+//            errors.addToCurrentLog(new ErrorEntry(
+//                    ErrorSource.PARSE_ERROR,
+//                    "Form root node not found by parseForm. XPath: " + pathContext.getRootSetXPath(),
+//                    ErrorSeverity.FATAL
+//            ));
+//            return null;
+//        }
+//        return rootNodes;
+        String rootTemplatePath = instanceRootProperty.getTemplatePath();
+        if (rootTemplatePath == null) {
             errors.addToCurrentLog(new ErrorEntry(
                     ErrorSource.PARSE_ERROR,
-                    "Form root node not found by parseForm. XPath: " + pathContext.getRootSetXPath(),
+                    "Instance root property is missing a template path.",
                     ErrorSeverity.FATAL
             ));
             return null;
         }
-        return rootNodes;
+
+        return RootXPaths.selectRootNodes(xpath, xmlDoc, rootTemplatePath);
     }
 
     private String buildRelativePath(FieldProperty property) {
@@ -271,7 +300,7 @@ public class FormParser {
 
             // TODO ensure that FieldProperty is converted to enum during processing.
             if (prop.getDataType().toUpperCase().equals(FieldDataTypes.LABEL.toString())) {
-                field = new GroupField(prop.getDisplayName(), prop, resolvedXPath, parent);
+                field = new ContainerField(prop.getDisplayName(), prop, resolvedXPath, parent);
             } else {
                 switch (prop.getGroupingType()) {
                     case COMPOSITE: {
