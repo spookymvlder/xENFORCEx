@@ -80,8 +80,10 @@ public class ProcessFieldProperties {
         //TODO - duplicate name checking should be no name is a descendant of the same name
         //Step 1 - build a map of all active fields and perform field specific validation
         for (FieldProperty field : context.getAllFields()) {
+            FieldIdentity identity = field.getIdentity();
+
             //If inactive, do some validation, but then skip field so it doesn't end up on idToField map.
-            if (!field.getIdentity().getActive()){
+            if (!identity.getActive()){
                 inactiveFields.add(field);
                 //Field won't be going through other validation, but could have something funky with expire date.
                 SingleFieldPropertyValidator.validateActiveRange(field);
@@ -93,26 +95,27 @@ public class ProcessFieldProperties {
             //Perform all field specific validation
             SingleFieldPropertyValidator.validateWithErrors(field);
 
-            FieldIdentity identity = field.getIdentity();
+
             //Get fields being skipped to preserve links when building a tree. Also validate name while we know the field isn't being skipped.
             //TODO need to allow skippable field, handle constituent skippable different, and treat duplicate name differently if part of grouping
             if (identity.getSkipImport()) {
                 skippableFields.add(field);
-            } else if (fieldNames.contains(identity.getFieldName())) {
-                duplicateNames.add(identity.getFieldName());
-                errors.addToCurrentLog(new FieldPropertyValidationError(ErrorSource.SCHEME_HIERARCHY_CHECK, "Multiple active fields with the same name exist, which may cause unintended behavior.", ErrorSeverity.WARNING, identity.getFieldId(), identity.getFieldName()));
+            } else if (fieldNames.contains(field.getFieldName())) {
+                duplicateNames.add(field.getFieldName());
+                errors.addToCurrentLog(new FieldPropertyValidationError(ErrorSource.SCHEME_HIERARCHY_CHECK, "Multiple active fields with the same name exist, which may cause unintended behavior.", ErrorSeverity.WARNING, field.getFieldId(), field.getFieldName()));
             } else {
-                fieldNames.add(identity.getFieldName());
+                fieldNames.add(field.getFieldName());
             }
 
             //TODO populate idToField at field creation to possibly make this more efficient.
-            if (idToField.containsKey(identity.getFieldId())) {
-                errors.addToCurrentLog(new FieldPropertyValidationError(ErrorSource.SCHEME_HIERARCHY_CHECK, "A field with the same ID has already been processed, this field is a duplicate. Duplicate has a name of " + idToField.get(identity.getFieldId()).getFieldName() + ".", ErrorSeverity.FATAL, field.getFieldId(), field.getFieldName()));
+            //TODO check versioning that I didn't mess this up.
+            if (idToField.containsKey(field.getFieldId())) {
+                errors.addToCurrentLog(new FieldPropertyValidationError(ErrorSource.SCHEME_HIERARCHY_CHECK, "A field with the same ID has already been processed, this field is a duplicate. Duplicate has a name of " + idToField.get(field.getFieldId()).getFieldName() + ".", ErrorSeverity.FATAL, field.getFieldId(), field.getFieldName()));
             } else {
-                idToField.put(identity.getFieldId(), field);
+                idToField.put(field.getFieldId(), field);
             }
             //Ensure match to root
-            if (identity.getFieldId().equals(settings.getRootId())) {
+            if (field.getFieldId().equals(settings.getRootId())) {
                 roots.add(field);
             }
             if (field.getRelation().getParentId() == null) {
@@ -152,13 +155,13 @@ public class ProcessFieldProperties {
                 } else {
                     message = "The parentId " + parentId + " does not map to a valid field property ";
                 }
-                message += "for fieldId " + field.getIdentity().getFieldId();
-                ErrorSettings.getInstance().addToCurrentLog(new FieldPropertyValidationError(ErrorSource.FIELD_RELATIONSHIP_VALIDATION, message, ErrorSeverity.FATAL, field.getIdentity().getFieldId(), field.getIdentity().getFieldName()));
+                message += "for fieldId " + field.getFieldId();
+                ErrorSettings.getInstance().addToCurrentLog(new FieldPropertyValidationError(ErrorSource.FIELD_RELATIONSHIP_VALIDATION, message, ErrorSeverity.FATAL, field.getFieldId(), field.getFieldName()));
                 continue;
             }
             if (!context.getActiveFields().contains(parent)) {
                 String message = "The parent id for this field belongs to an inactive field and does not map to a valid field property.";
-                ErrorSettings.getInstance().addToCurrentLog(new FieldPropertyValidationError(ErrorSource.FIELD_RELATIONSHIP_VALIDATION, message, ErrorSeverity.ERROR, field.getIdentity().getFieldId(), field.getIdentity().getFieldName()));
+                ErrorSettings.getInstance().addToCurrentLog(new FieldPropertyValidationError(ErrorSource.FIELD_RELATIONSHIP_VALIDATION, message, ErrorSeverity.ERROR, field.getFieldId(), field.getFieldName()));
                 continue;
             }
             field.createConnections(parent);
@@ -196,8 +199,8 @@ public static void traverseTree(FieldProcessorContext context) {
                     ErrorSource.SCHEME_HIERARCHY_CHECK,
                     "Orphaned field detected.",
                     ErrorSeverity.ERROR,
-                    field.getIdentity().getFieldId(),
-                    field.getIdentity().getFieldName()
+                    field.getFieldId(),
+                    field.getFieldName()
             ));
         }
     }
@@ -229,7 +232,7 @@ public static void traverseTree(FieldProcessorContext context) {
         visiting.add(field);
         reachable.add(field);
 
-        for (FieldProperty child : field.getChildFields()) {
+        for (FieldProperty child : field.getRelation().getChildFields()) {
             detectCycleAndMarkReachable(child, reachable, visiting, visited);
         }
 

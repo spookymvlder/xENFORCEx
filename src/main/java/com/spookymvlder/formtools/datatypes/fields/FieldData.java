@@ -1,6 +1,6 @@
-package com.spookymvlder.formtools.datatypes;
+package com.spookymvlder.formtools.datatypes.fields;
 
-import com.spookymvlder.formtools.datatypes.fields.FormStructure;
+import com.spookymvlder.formtools.datatypes.FieldDataType;
 
 import java.util.Objects;
 

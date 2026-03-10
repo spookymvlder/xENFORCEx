@@ -14,21 +14,47 @@ public class FieldCardinality {
     private List<String[]> condRepeatedValues;
     private LinkLogic condRepeatedLogic;
 
+    private ConditionalBool required;
+    //TODO import separate conditionally mandatory logic if complicated.
+    private List<String> condRequiredSourceIds;
+    private List<String[]> condRequiredValues;
+    private LinkLogic condRequiredLogic;
+
     public FieldCardinality(ConditionalBool fieldRepeated,
                             Integer minOccurs,
                             Integer maxOccurs,
                             List<String> condRepeatedSourceIds,
                             List<String> condRepeatedValues,
-                            LinkLogic condRepeatedLogic) {
+                            LinkLogic condRepeatedLogic,
+                            ConditionalBool required,
+                            List<String> condRequiredSourceIds,
+                            List<String> condRequiredValues,
+                            LinkLogic condRequiredLogic) {
         this.fieldRepeated = fieldRepeated;
-        this.minOccurs = minOccurs;
-        this.maxOccurs = maxOccurs;
         this.condRepeatedSourceIds = condRepeatedSourceIds;
         this.condRepeatedValues = getProcessedCondRepeatedValues(condRepeatedValues);
         this.condRepeatedLogic = condRepeatedLogic;
+        this.required = required;
+        this.condRequiredSourceIds = condRequiredSourceIds;
+        this.condRequiredValues = getProcessedCondRequiredValues(condRequiredValues);
+        this.condRequiredLogic = condRequiredLogic;
+        setOccurs(minOccurs, maxOccurs, fieldRepeated, required);
     }
 
-    public List<String[]> getProcessedCondRepeatedValues(List<String> condRepeatedValues) {
+    private void setOccurs(Integer minOccurs, Integer maxOccurs, ConditionalBool fieldRepeated, ConditionalBool required) {
+        if (minOccurs == null) {
+            if (required == ConditionalBool.FALSE) {
+                this.minOccurs = 0;
+            }
+        }
+        if (maxOccurs == null) {
+            if (fieldRepeated == ConditionalBool.FALSE) {
+                this.maxOccurs = 1;
+            }
+        }
+    }
+
+    private List<String[]> getProcessedCondRepeatedValues(List<String> condRepeatedValues) {
         return condRepeatedValues.stream()
                 .map(s -> s.split(","))
                 .toList();
@@ -56,5 +82,27 @@ public class FieldCardinality {
 
     public LinkLogic getCondRepeatedLogic() {
         return condRepeatedLogic;
+    }
+
+    private List<String[]> getProcessedCondRequiredValues(List<String> condRequiredValues) {
+        return condRequiredValues.stream()
+                .map(s -> s.split(","))
+                .toList();
+    }
+
+    public ConditionalBool getRequired() {
+        return required;
+    }
+
+    public List<String> getCondRequiredSourceIds() {
+        return condRequiredSourceIds;
+    }
+
+    public List<String[]> getCondRequiredValues() {
+        return condRequiredValues;
+    }
+
+    public LinkLogic getCondRequiredLogic() {
+        return condRequiredLogic;
     }
 }

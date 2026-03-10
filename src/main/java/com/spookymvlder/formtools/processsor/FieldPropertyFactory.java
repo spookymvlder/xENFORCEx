@@ -66,7 +66,6 @@ public class FieldPropertyFactory {
         FieldIdentity identity = buildIdentity(row);
         FieldRelation relation = buildRelation(row);
         FieldCardinality cardinality = buildCardinality(row);
-        FieldRequirement requirement = buildRequirement(row);
         FieldValueRestriction restriction = buildRestriction(row);
         FieldCodeSpec codeSpec = buildCodeSpec(row);
         FieldMetadataUI metadataUI = buildMetadataUI(row);
@@ -75,7 +74,6 @@ public class FieldPropertyFactory {
                 identity,
                 relation,
                 cardinality,
-                requirement,
                 restriction,
                 codeSpec,
                 metadataUI
@@ -110,18 +108,15 @@ public class FieldPropertyFactory {
                 row.maxOccurs(),
                 row.condRepeatedSourceIds(),
                 row.condRepeatedValues(),
-                row.condRepeatedLogic()
-        );
-    }
-
-    public static FieldRequirement buildRequirement(NormalizedFieldPropertyRow row) {
-        return new FieldRequirement(
+                row.condRepeatedLogic(),
                 row.required(),
                 row.condRequiredSourceIds(),
                 row.condRequiredValues(),
                 row.condRequiredLogic()
         );
     }
+
+
 
     public static FieldValueRestriction buildRestriction(NormalizedFieldPropertyRow row) {
         return new FieldValueRestriction(

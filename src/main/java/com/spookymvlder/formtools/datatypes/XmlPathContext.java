@@ -34,25 +34,7 @@ public final class XmlPathContext {
         this.rootSetXPath = "/" + rootRelativePath;
     }
 
-    /* ---------------- Stack control ---------------- */
 
-    public void push(String elementName) {
-        stack.push(new PathFrame(elementName, null));
-    }
-
-    public void push(String elementName, int index) {
-        if (index < 0) {
-            throw new IllegalArgumentException("Index must be >= 0");
-        }
-        stack.push(new PathFrame(elementName, index));
-    }
-
-    public void pop() {
-        if (stack.isEmpty()) {
-            throw new IllegalStateException("Path stack underflow");
-        }
-        stack.pop();
-    }
 
     /* ---------------- Path resolution ---------------- */
 

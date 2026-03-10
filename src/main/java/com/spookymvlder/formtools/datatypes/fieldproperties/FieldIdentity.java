@@ -5,12 +5,14 @@ import java.time.LocalDate;
 public class FieldIdentity {
     private String fieldId;
     private String fieldName;
+    //TODO error checking if the fieldName is a duplicate for something at the same hierarchy level and is not repeating.
     private String displayName;
     //TODO figure out how to modularize
     private Boolean active;
     //TODO make active date to make updates easier.
     private LocalDate expireDate;
     private Boolean skipImport;
+    private String templatePath = null;
 
     public FieldIdentity(String fieldId,
                          String fieldName,
@@ -67,5 +69,13 @@ public class FieldIdentity {
 
     public Boolean getSkipImport() {
         return Boolean.TRUE.equals(this.skipImport);
+    }
+
+    public String getTemplatePath() {
+        return templatePath;
+    }
+
+    public void setTemplatePath(String templatePath) {
+        this.templatePath = templatePath;
     }
 }

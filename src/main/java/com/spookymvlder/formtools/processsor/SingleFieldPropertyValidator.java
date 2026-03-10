@@ -32,11 +32,11 @@ public class SingleFieldPropertyValidator {
     public static void validateAttributes(FieldProperty field) {
         FieldValueRestriction value = field.getValue();
         //If there is a name for the attribute and isAttribute is not true
-        if (!value.getAttributeName().isEmpty() && !value.getAttribute()) {
+        if (!isNullOrEmpty(value.getAttributeName()) && !value.getAttribute()) {
             errors.addToCurrentLog(new FieldPropertyValidationError(ErrorSource.SCHEME_FIELD_PROPERTY_VALIDATION,"isAttribute is required when attributeName is set.", ErrorSeverity.ERROR, field.getFieldId(), field.getFieldName()));
         }
         //If there is not a name for the attribute and isAttribute is true
-        if (value.getAttributeName().isEmpty() && value.getAttribute()) {
+        if (isNullOrEmpty(value.getAttributeName()) && value.getAttribute()) {
             errors.addToCurrentLog(new FieldPropertyValidationError(ErrorSource.SCHEME_FIELD_PROPERTY_VALIDATION,"attributeName is required when isAttribute is set.", ErrorSeverity.ERROR, field.getFieldId(), field.getFieldName()));
         }
 
@@ -99,6 +99,10 @@ public class SingleFieldPropertyValidator {
                     field.getRelation().getGroupingType() + " field associated with a data type",
                     ErrorSeverity.ERROR, field.getFieldId(), field.getFieldName()));
         }
+    }
+
+    public static boolean isNullOrEmpty(String value) {
+        return value == null || value.trim().isEmpty();
     }
 }
 

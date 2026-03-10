@@ -134,15 +134,17 @@ public class ReadCSV {
         // Step 2: Parse CSV
         List<FieldPropertyRow> csvFields = parseCsv(filePath);
 
+        List<FieldProperty> processedProperties = new ArrayList<>();
+
         // Step 3: Process fields
         if (errors.getSeverityOfCurrentLog() < 3) {
-            List<FieldProperty> = ProcessFieldProperties.processFieldProperties(csvFields);
+            processedProperties = ProcessFieldProperties.processFieldProperties(csvFields);
         }
 
         boolean success = errors.getSeverityOfCurrentLog() < 3;
         ImportSettings.getInstance().setSpecImported(success);
 
-        return csvFields;
+        return processedProperties;
     }
 
     private static void validateCsvHeaders(String filePath) {

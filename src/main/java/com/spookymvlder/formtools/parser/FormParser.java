@@ -2,10 +2,7 @@ package com.spookymvlder.formtools.parser;
 
 import com.spookymvlder.formtools.datatypes.*;
 import com.spookymvlder.formtools.datatypes.fieldproperties.FieldProperty;
-import com.spookymvlder.formtools.datatypes.fields.CompositeField;
-import com.spookymvlder.formtools.datatypes.fields.FormField;
-import com.spookymvlder.formtools.datatypes.fields.ContainerField;
-import com.spookymvlder.formtools.datatypes.fields.SimpleField;
+import com.spookymvlder.formtools.datatypes.fields.*;
 import com.spookymvlder.formtools.settings.ErrorSettings;
 import com.spookymvlder.formtools.settings.ImportSettings;
 import com.spookymvlder.formtools.utilities.ErrorSeverity;
@@ -38,11 +35,11 @@ public class FormParser {
         this.xmlDoc = xmlDoc;
         this.instanceRootProperty = instanceRootProperty;
 
-        String rootTemplatePath = instanceRootProperty.getTemplatePath();
+        String rootTemplatePath = instanceRootProperty.getIdentity().getTemplatePath();
         if (rootTemplatePath == null || rootTemplatePath.isBlank()) {
             rootTemplatePath = buildRelativePath(instanceRootProperty);
             if (rootTemplatePath != null) {
-                instanceRootProperty.setTemplatePath(rootTemplatePath);
+                instanceRootProperty.getIdentity().setTemplatePath(rootTemplatePath);
             }
         }
 
@@ -51,7 +48,7 @@ public class FormParser {
 
             if (rootTemplatePath.startsWith("/")) {
                 rootTemplatePath = rootTemplatePath.substring(1);
-                instanceRootProperty.setTemplatePath(rootTemplatePath);
+                instanceRootProperty.getIdentity().setTemplatePath(rootTemplatePath);
             }
         }
 
@@ -155,7 +152,7 @@ public class FormParser {
                 String resolvedRootXPath  = DomPaths.absoluteXPath(instanceNode);
 
                 SimpleField rootField = new SimpleField(
-                        instanceRootProperty.getDisplayName(),
+                        instanceRootProperty.getIdentity().getDisplayName(),
                         instanceRootProperty,
                         resolvedRootXPath ,
                         null,
@@ -163,14 +160,14 @@ public class FormParser {
                 );
 
                 // Parse children under the instance root node
-                for (FieldProperty child : instanceRootProperty.getChildFields()) {
+                for (FieldProperty child : instanceRootProperty.getRelation().getChildFields()) {
                     List<FormField> children = parseNodes(instanceNode, child, rootField);
                     for (FormField childField : children) {
                         rootField.addChild(childField);
                     }
                 }
 
-                FormInstance instance = new FormInstance(instanceRootProperty.getDisplayName(), rootField);
+                FormInstance instance = new FormInstance(instanceRootProperty.getIdentity().getDisplayName(), rootField);
                 parsedInstances.add(instance);
 
             } catch (XPathExpressionException e) {
@@ -227,7 +224,7 @@ public class FormParser {
 //            return null;
 //        }
 //        return rootNodes;
-        String rootTemplatePath = instanceRootProperty.getTemplatePath();
+        String rootTemplatePath = instanceRootProperty.getIdentity().getTemplatePath();
         if (rootTemplatePath == null) {
             errors.addToCurrentLog(new ErrorEntry(
                     ErrorSource.PARSE_ERROR,
@@ -241,11 +238,11 @@ public class FormParser {
     }
 
     private String buildRelativePath(FieldProperty property) {
-        String path = property.getTemplatePath();
+        String path = property.getIdentity().getTemplatePath();
         if (path != null) {
             return path;
         }
-        FieldProperty parent = property.getParentField();
+        FieldProperty parent = property.getRelation().getParentField();
         if (parent != null) {
             return buildRelativePath(parent) + '/' + property.getFieldName();
         }
@@ -290,7 +287,7 @@ public class FormParser {
 
             // skipImport: do not create a field, but DO descend from this node
             if (prop.getIdentity().getSkipImport()) {
-                for (FieldProperty child : prop.getChildFields()) {
+                for (FieldProperty child : prop.getRelation().getChildFields()) {
                     List<FormField> childFields = parseNodes(thisNode, child, parent);
                     for (FormField cf : childFields) parent.addChild(cf);
                 }
@@ -300,34 +297,33 @@ public class FormParser {
             FormField field;
 
             // TODO ensure that FieldProperty is converted to enum during processing.
-            if (prop.getDataType().toUpperCase().equals(FieldDataType.LABEL.toString())) {
-                field = new ContainerField(prop.getDisplayName(), prop, resolvedXPath, parent);
-            } else {
-                switch (prop.getRelation().getGroupingType()) {
-                    case COMPOSITE: {
-                        // composite: constituents read relative to resolvedPath, or better: relative to thisNode (next improvement)
-                        Map<String, FieldData> compositeData = parseConstituentsFromNode(thisNode, prop);
-                        field = new CompositeField(prop.getDisplayName(), prop, resolvedXPath, parent, compositeData);
-                        break;
-                    }
-                    case CONSTITUENT:
-                        errors.addToCurrentLog(new ErrorEntry(
-                                ErrorSource.PARSE_ERROR,
-                                "Unexpected constituent found: " + prop.getFieldId(),
-                                ErrorSeverity.ERROR
-                        ));
-                        continue;
-
-                    default: {
-                        FieldData data = parseFieldValueFromNode(thisNode, prop, i);
-                        field = new SimpleField(prop.getDisplayName(), prop, resolvedXPath, parent, data);
-                    }
+            GroupingType fieldType = prop.getRelation().getGroupingType();
+            switch (fieldType) {
+                case CONTAINER: {
+                    field = new ContainerField(prop.getIdentity().getDisplayName(), prop, resolvedXPath, parent);
+                    break;
+                }
+                case COMPOSITE: {
+                    Map<String, FieldData> compositeData = parseConstituentsFromNode(thisNode, prop);
+                    field = new CompositeField(prop.getIdentity().getDisplayName(), prop, resolvedXPath, parent, compositeData);
+                    break;
+                }
+                case CONSTITUENT: {
+                    errors.addToCurrentLog(new ErrorEntry(
+                            ErrorSource.PARSE_ERROR,
+                            "Unexpected constituent found: " + prop.getFieldId(),
+                            ErrorSeverity.ERROR
+                    ));
+                    continue;
+                }
+                default: {
+                    FieldData data = parseFieldValueFromNode(thisNode, prop, i);
+                    field = new SimpleField(prop.getIdentity().getDisplayName(), prop, resolvedXPath, parent, data);
                 }
             }
 
 
-
-            for (FieldProperty child : prop.getChildFields()) {
+            for (FieldProperty child : prop.getRelation().getChildFields()) {
                 List<FormField> childFields = parseNodes(thisNode, child, field);
                 for (FormField cf : childFields) field.addChild(cf);
             }
@@ -352,43 +348,41 @@ public class FormParser {
         return out;
     }
 
+    // Should only be called on GroupingType = None. TODO consider error.
     private FieldData parseFieldValueFromNode(Node thisNode, FieldProperty prop, int position) {
         String value = "";
 
-        if (prop.getAttribute()) {
-            String attr = prop.getAttributeName();
+        if (prop.getValue().getAttribute()) {
+            String attr = prop.getValue().getAttributeName();
             if (attr != null && !attr.isBlank()) {
                 // XPath against the node is simplest for attributes
                 value = safeEvaluate(thisNode, "@" + attr);
             }
         } else {
-            // Only non-label types read element text
-            if (!"label".equals(prop.getDataType())) {
-                value = safeEvaluate(thisNode, "text()");
-            }
+            value = safeEvaluate(thisNode, "text()");
         }
 
-        return new FieldData(value, parseFieldType(prop.getDataType()), position);
+        return new FieldData(value, prop.getValue().getDataType(), position);
     }
 
     private Map<String, FieldData> parseConstituentsFromNode(Node thisNode, FieldProperty property) {
         Map<String, FieldData> constituents = new LinkedHashMap<>();
         int counter = 0;
 
-        for (FieldProperty constituent : property.getConstituents()) {
+        for (FieldProperty constituent : property.getRelation().getConstituents()) {
             String name = constituent.getFieldName();
             String v = "";
 
-            if (constituent.getAttribute()) {
-                String attr = constituent.getAttributeName();
+            if (constituent.getValue().getAttribute()) {
+                String attr = constituent.getValue().getAttributeName();
                 if (attr != null && !attr.isBlank()) v = safeEvaluate(thisNode, "@" + attr);
             } else {
                 // constituent elements are typically children of the composite node
                 v = safeEvaluate(thisNode, name + "/text()");
             }
 
-            constituents.put(constituent.getDisplayName(),
-                    new FieldData(v, parseFieldType(constituent.getDataType()), counter++));
+            constituents.put(constituent.getIdentity().getDisplayName(),
+                    new FieldData(v, constituent.getValue().getDataType(), counter++));
         }
 
         return constituents;
@@ -420,20 +414,20 @@ public class FormParser {
 
     private FieldData parseSimpleField(String resolvedPath, FieldProperty prop) {
         String value = safeEvaluateFromDoc(resolvedPath);
-        return new FieldData(value, parseFieldType(prop.getDataType()), 0);
+        return new FieldData(value, prop.getValue().getDataType(), 0);
     }
 
     private Map<String, FieldData> parseConstituents(String resolvedPath, FieldProperty property) {
         Map<String, FieldData> constituents = new LinkedHashMap<>();
 
         int counter = 0;
-        for (FieldProperty constituent : property.getConstituents()) {
+        for (FieldProperty constituent : property.getRelation().getConstituents()) {
             String value = safeEvaluateFromDoc(resolvedPath);
 
-            FieldDataType type = parseFieldType(constituent.getDataType());
+            FieldDataType type = constituent.getValue().getDataType();
 
             FieldData data = new FieldData(value, type, counter);
-            constituents.put(constituent.getDisplayName(), data);
+            constituents.put(constituent.getIdentity().getDisplayName(), data);
             counter++;
         }
 
@@ -465,15 +459,5 @@ public class FormParser {
     }
 
 
-    //TODO change FieldProperty to return an enum so we don't have to parse here.
-    private static FieldDataType parseFieldType(String type) {
-        FieldDataType enumType;
-        try {
-            enumType = FieldDataType.valueOf(type.toUpperCase());
-        } catch (IllegalArgumentException e) {
-            enumType = FieldDataType.STRING;
-        }
-        return enumType;
-    }
 
 }
