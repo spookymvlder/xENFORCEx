@@ -10,6 +10,7 @@ import com.spookymvlder.formtools.datatypes.fieldproperties.FieldValueRestrictio
 import com.spookymvlder.formtools.settings.ErrorSettings;
 import com.spookymvlder.formtools.utilities.ErrorSeverity;
 import com.spookymvlder.formtools.utilities.ErrorSource;
+import com.spookymvlder.formtools.utilities.StringUtils;
 
 import java.time.LocalDate;
 
@@ -32,11 +33,11 @@ public class SingleFieldPropertyValidator {
     public static void validateAttributes(FieldProperty field) {
         FieldValueRestriction value = field.getValue();
         //If there is a name for the attribute and isAttribute is not true
-        if (!isNullOrEmpty(value.getAttributeName()) && !value.getAttribute()) {
+        if (!StringUtils.isNullOrEmpty(value.getAttributeName()) && !value.getAttribute()) {
             errors.addToCurrentLog(new FieldPropertyValidationError(ErrorSource.SCHEME_FIELD_PROPERTY_VALIDATION,"isAttribute is required when attributeName is set.", ErrorSeverity.ERROR, field.getFieldId(), field.getFieldName()));
         }
         //If there is not a name for the attribute and isAttribute is true
-        if (isNullOrEmpty(value.getAttributeName()) && value.getAttribute()) {
+        if (StringUtils.isNullOrEmpty(value.getAttributeName()) && value.getAttribute()) {
             errors.addToCurrentLog(new FieldPropertyValidationError(ErrorSource.SCHEME_FIELD_PROPERTY_VALIDATION,"attributeName is required when isAttribute is set.", ErrorSeverity.ERROR, field.getFieldId(), field.getFieldName()));
         }
 
@@ -101,8 +102,5 @@ public class SingleFieldPropertyValidator {
         }
     }
 
-    public static boolean isNullOrEmpty(String value) {
-        return value == null || value.trim().isEmpty();
-    }
 }
 
