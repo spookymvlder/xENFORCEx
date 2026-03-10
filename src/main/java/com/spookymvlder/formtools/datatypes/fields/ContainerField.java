@@ -1,6 +1,6 @@
 package com.spookymvlder.formtools.datatypes.fields;
 
-import com.spookymvlder.formtools.datatypes.FieldProperty;
+import com.spookymvlder.formtools.datatypes.fieldproperties.FieldProperty;
 
 public class ContainerField extends FormField {
     public ContainerField(String displayName, FieldProperty property, String resolvedPath, FormStructure parent) {

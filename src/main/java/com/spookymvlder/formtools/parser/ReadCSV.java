@@ -2,9 +2,9 @@ package com.spookymvlder.formtools.parser;
 
 import com.opencsv.CSVReader;
 import com.opencsv.bean.CsvToBeanBuilder;
-import com.opencsv.exceptions.CsvValidationException;
 import com.spookymvlder.formtools.datatypes.ErrorEntry;
-import com.spookymvlder.formtools.datatypes.FieldProperty;
+import com.spookymvlder.formtools.datatypes.fieldproperties.FieldProperty;
+import com.spookymvlder.formtools.datatypes.fieldproperties.FieldPropertyRow;
 import com.spookymvlder.formtools.processsor.ProcessFieldProperties;
 import com.spookymvlder.formtools.settings.ErrorSettings;
 import com.spookymvlder.formtools.settings.ImportSettings;
@@ -132,11 +132,11 @@ public class ReadCSV {
         }
 
         // Step 2: Parse CSV
-        List<FieldProperty> csvFields = parseCsv(filePath);
+        List<FieldPropertyRow> csvFields = parseCsv(filePath);
 
         // Step 3: Process fields
         if (errors.getSeverityOfCurrentLog() < 3) {
-            ProcessFieldProperties.processFieldProperties(csvFields);
+            List<FieldProperty> = ProcessFieldProperties.processFieldProperties(csvFields);
         }
 
         boolean success = errors.getSeverityOfCurrentLog() < 3;
@@ -167,13 +167,19 @@ public class ReadCSV {
 
         }, null);
     }
+
+    /**
+     * For required columns that may optionally have empty values.
+     * @param headers
+     */
     private static void validateRequiredHeaders(String[] headers) {
         Set<String> headerSet = Arrays.stream(headers)
                 .map(String::trim)
                 .collect(Collectors.toSet());
 
         List<String> requiredHeaders = List.of(
-                "parentId"
+                "parentId",
+                "dataType"
                 // add others that must exist structurally
         );
 
@@ -192,10 +198,10 @@ public class ReadCSV {
         }
     }
 
-    private static List<FieldProperty> parseCsv(String filePath) {
+    private static List<FieldPropertyRow> parseCsv(String filePath) {
         return withBufferedReader(filePath, reader ->
-                        new CsvToBeanBuilder<FieldProperty>(reader)
-                                .withType(FieldProperty.class)
+                        new CsvToBeanBuilder<FieldPropertyRow>(reader)
+                                .withType(FieldPropertyRow.class)
                                 .withIgnoreLeadingWhiteSpace(true)
                                 .withSeparator(',')
                                 .build()

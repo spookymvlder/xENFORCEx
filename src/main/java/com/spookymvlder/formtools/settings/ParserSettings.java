@@ -1,6 +1,6 @@
 package com.spookymvlder.formtools.settings;
 
-import com.spookymvlder.formtools.datatypes.FieldProperty;
+import com.spookymvlder.formtools.datatypes.fieldproperties.FieldProperty;
 import com.spookymvlder.formtools.processsor.FieldPropertyConverter;
 
 import java.time.format.DateTimeFormatter;

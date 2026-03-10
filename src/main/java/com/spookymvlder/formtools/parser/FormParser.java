@@ -1,6 +1,7 @@
 package com.spookymvlder.formtools.parser;
 
 import com.spookymvlder.formtools.datatypes.*;
+import com.spookymvlder.formtools.datatypes.fieldproperties.FieldProperty;
 import com.spookymvlder.formtools.datatypes.fields.CompositeField;
 import com.spookymvlder.formtools.datatypes.fields.FormField;
 import com.spookymvlder.formtools.datatypes.fields.ContainerField;
@@ -147,7 +148,7 @@ public class FormParser {
 
             try {
                 // Root field for this form instance
-                FieldData data = new FieldData("root", FieldDataTypes.ROOT, i);
+                FieldData data = new FieldData("root", FieldDataType.ROOT, i);
 
                 // Absolute XPath (debugging)
                 //String currentPath = pathContext.getRootInstanceXPath(i);
@@ -288,7 +289,7 @@ public class FormParser {
             String resolvedXPath = DomPaths.absoluteXPath(thisNode);
 
             // skipImport: do not create a field, but DO descend from this node
-            if (prop.getSkipImport()) {
+            if (prop.getIdentity().getSkipImport()) {
                 for (FieldProperty child : prop.getChildFields()) {
                     List<FormField> childFields = parseNodes(thisNode, child, parent);
                     for (FormField cf : childFields) parent.addChild(cf);
@@ -299,10 +300,10 @@ public class FormParser {
             FormField field;
 
             // TODO ensure that FieldProperty is converted to enum during processing.
-            if (prop.getDataType().toUpperCase().equals(FieldDataTypes.LABEL.toString())) {
+            if (prop.getDataType().toUpperCase().equals(FieldDataType.LABEL.toString())) {
                 field = new ContainerField(prop.getDisplayName(), prop, resolvedXPath, parent);
             } else {
-                switch (prop.getGroupingType()) {
+                switch (prop.getRelation().getGroupingType()) {
                     case COMPOSITE: {
                         // composite: constituents read relative to resolvedPath, or better: relative to thisNode (next improvement)
                         Map<String, FieldData> compositeData = parseConstituentsFromNode(thisNode, prop);
@@ -429,7 +430,7 @@ public class FormParser {
         for (FieldProperty constituent : property.getConstituents()) {
             String value = safeEvaluateFromDoc(resolvedPath);
 
-            FieldDataTypes type = parseFieldType(constituent.getDataType());
+            FieldDataType type = parseFieldType(constituent.getDataType());
 
             FieldData data = new FieldData(value, type, counter);
             constituents.put(constituent.getDisplayName(), data);
@@ -465,12 +466,12 @@ public class FormParser {
 
 
     //TODO change FieldProperty to return an enum so we don't have to parse here.
-    private static FieldDataTypes parseFieldType(String type) {
-        FieldDataTypes enumType;
+    private static FieldDataType parseFieldType(String type) {
+        FieldDataType enumType;
         try {
-            enumType = FieldDataTypes.valueOf(type.toUpperCase());
+            enumType = FieldDataType.valueOf(type.toUpperCase());
         } catch (IllegalArgumentException e) {
-            enumType = FieldDataTypes.STRING;
+            enumType = FieldDataType.STRING;
         }
         return enumType;
     }

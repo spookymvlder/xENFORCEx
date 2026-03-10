@@ -1,7 +1,7 @@
 package com.spookymvlder.formtools.processsor;
 
 import com.spookymvlder.formtools.datatypes.ErrorEntry;
-import com.spookymvlder.formtools.datatypes.FieldProperty;
+import com.spookymvlder.formtools.datatypes.fieldproperties.FieldProperty;
 import com.spookymvlder.formtools.settings.ErrorSettings;
 import com.spookymvlder.formtools.settings.ImportSettings;
 import com.spookymvlder.formtools.utilities.ErrorSeverity;

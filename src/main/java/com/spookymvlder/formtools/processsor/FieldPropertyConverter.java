@@ -2,6 +2,12 @@ package com.spookymvlder.formtools.processsor;
 
 import com.opencsv.bean.AbstractBeanField;
 import com.opencsv.exceptions.CsvDataTypeMismatchException;
+import com.spookymvlder.formtools.datatypes.ConditionalBool;
+import com.spookymvlder.formtools.datatypes.FieldDataType;
+import com.spookymvlder.formtools.datatypes.GroupingType;
+import com.spookymvlder.formtools.datatypes.LinkLogic;
+import com.spookymvlder.formtools.datatypes.fieldproperties.FieldPropertyRow;
+import com.spookymvlder.formtools.datatypes.fieldproperties.NormalizedFieldPropertyRow;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -58,4 +64,51 @@ public class FieldPropertyConverter {
             };
         }
     }
+
+
+
+    public static String normalizeBlank(String value) {
+        if (value == null) {
+            return null;
+        }
+
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    public static FieldDataType parseDataType(String value) {
+        String normalizedValue = normalizeBlank(value);
+        if (normalizedValue == null) {
+            return null;
+        }
+
+        return FieldDataType.valueOf(normalizedValue.toUpperCase());
+    }
+
+    public static GroupingType parseGroupingType(String value) {
+        String normalizedValue = normalizeBlank(value);
+        if (normalizedValue == null) {
+            return null;
+        }
+
+        return GroupingType.valueOf(normalizedValue.toUpperCase());
+    }
+
+    public static LinkLogic parseLinkLogic(String value) {
+        String normalizedValue = normalizeBlank(value);
+        if (normalizedValue == null) {
+            return null;
+        }
+        return LinkLogic.valueOf(normalizedValue.toUpperCase());
+    }
+
+    public static ConditionalBool parseConditionalBool(Character value) {
+        String normalizedValue = normalizeBlank(String.valueOf(value));
+        if (normalizedValue == null) {
+            return null;
+        }
+        return ConditionalBool.valueOfAbbreviation(normalizedValue.toUpperCase());
+    }
+
+
 }

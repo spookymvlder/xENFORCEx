@@ -6,10 +6,10 @@ import java.util.Objects;
 
 public class FieldData implements FormStructure {
     private String value;
-    private FieldDataTypes dataType;
+    private FieldDataType dataType;
     private int position;
 
-    public FieldData(String value, FieldDataTypes dataType, int position) {
+    public FieldData(String value, FieldDataType dataType, int position) {
         this.value = value;
         this.dataType = dataType;
         this.position = position;
@@ -19,7 +19,7 @@ public class FieldData implements FormStructure {
         return value;
     }
 
-    public FieldDataTypes getDataType() {
+    public FieldDataType getDataType() {
         return dataType;
     }
 

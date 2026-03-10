@@ -1,6 +1,6 @@
 package com.spookymvlder.formtools.datatypes.fields;
 
-import com.spookymvlder.formtools.datatypes.FieldProperty;
+import com.spookymvlder.formtools.datatypes.fieldproperties.FieldProperty;
 
 import java.util.ArrayList;
 import java.util.List;

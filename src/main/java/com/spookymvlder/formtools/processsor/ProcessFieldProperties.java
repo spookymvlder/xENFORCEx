@@ -2,8 +2,11 @@ package com.spookymvlder.formtools.processsor;
 
 
 import com.spookymvlder.formtools.datatypes.ErrorEntry;
-import com.spookymvlder.formtools.datatypes.FieldProperty;
+import com.spookymvlder.formtools.datatypes.fieldproperties.FieldIdentity;
+import com.spookymvlder.formtools.datatypes.fieldproperties.FieldProperty;
+import com.spookymvlder.formtools.datatypes.fieldproperties.FieldPropertyRow;
 import com.spookymvlder.formtools.datatypes.FieldPropertyValidationError;
+import com.spookymvlder.formtools.datatypes.fieldproperties.NormalizedFieldPropertyRow;
 import com.spookymvlder.formtools.settings.ErrorSettings;
 import com.spookymvlder.formtools.settings.ImportSettings;
 import com.spookymvlder.formtools.settings.ParserSettings;
@@ -17,15 +20,17 @@ public class ProcessFieldProperties {
     static final ErrorSettings errors = ErrorSettings.getInstance();
 
 
-    public static void processFieldProperties(List<FieldProperty> csvFields) {
+    public static List<FieldProperty> processFieldProperties(List<FieldPropertyRow> csvFields) {
         //Initialize a wrapper to maintain the schema fields
         FieldProcessorContext context = new FieldProcessorContext();
-        context.setAllFields(csvFields);
+        List<FieldProperty> processedFieldProperties = new ArrayList<>();
+
+        context.setAllRows(csvFields);
 
         //
         List<Runnable> validationSteps = List.of(
                 //Ensure fields are formatted as expected.
-                () -> normalizeAllFields(context),
+                () -> convertFieldProperties(context),
                 //Perform all actions that are field specific rather than based on the whole list.
                 () -> iterateFields(context),
                 //Ensure that there is a single root and anchor element
@@ -54,10 +59,11 @@ public class ProcessFieldProperties {
 
         //TODO move someplace else
         ParserSettings settings = ParserSettings.getInstance();
-        for (FieldProperty field : csvFields) {
+        for (FieldProperty field : context.getAllFields()) {
             settings.addToFieldIdToName(field.getFieldId(), field.getFieldName());
             settings.addToFieldFromId(field.getFieldId(), field);
         }
+        return processedFieldProperties;
     }
 
     public static void iterateFields(FieldProcessorContext context) {
@@ -75,7 +81,7 @@ public class ProcessFieldProperties {
         //Step 1 - build a map of all active fields and perform field specific validation
         for (FieldProperty field : context.getAllFields()) {
             //If inactive, do some validation, but then skip field so it doesn't end up on idToField map.
-            if (!field.getActive()){
+            if (!field.getIdentity().getActive()){
                 inactiveFields.add(field);
                 //Field won't be going through other validation, but could have something funky with expire date.
                 SingleFieldPropertyValidator.validateActiveRange(field);
@@ -87,28 +93,29 @@ public class ProcessFieldProperties {
             //Perform all field specific validation
             SingleFieldPropertyValidator.validateWithErrors(field);
 
+            FieldIdentity identity = field.getIdentity();
             //Get fields being skipped to preserve links when building a tree. Also validate name while we know the field isn't being skipped.
             //TODO need to allow skippable field, handle constituent skippable different, and treat duplicate name differently if part of grouping
-            if (field.getSkipImport()) {
+            if (identity.getSkipImport()) {
                 skippableFields.add(field);
-            } else if (fieldNames.contains(field.getFieldName())) {
-                duplicateNames.add(field.getFieldName());
-                errors.addToCurrentLog(new FieldPropertyValidationError(ErrorSource.SCHEME_HIERARCHY_CHECK, "Multiple active fields with the same name exist, which may cause unintended behavior.", ErrorSeverity.WARNING, field.getFieldId(), field.getFieldName()));
+            } else if (fieldNames.contains(identity.getFieldName())) {
+                duplicateNames.add(identity.getFieldName());
+                errors.addToCurrentLog(new FieldPropertyValidationError(ErrorSource.SCHEME_HIERARCHY_CHECK, "Multiple active fields with the same name exist, which may cause unintended behavior.", ErrorSeverity.WARNING, identity.getFieldId(), identity.getFieldName()));
             } else {
-                fieldNames.add(field.getFieldName());
+                fieldNames.add(identity.getFieldName());
             }
 
             //TODO populate idToField at field creation to possibly make this more efficient.
-            if (idToField.containsKey(field.getFieldId())) {
-                errors.addToCurrentLog(new FieldPropertyValidationError(ErrorSource.SCHEME_HIERARCHY_CHECK, "A field with the same ID has already been processed, this field is a duplicate. Duplicate has a name of " + idToField.get(field.getFieldId()).getFieldName() + ".", ErrorSeverity.FATAL, field.getFieldId(), field.getFieldName()));
+            if (idToField.containsKey(identity.getFieldId())) {
+                errors.addToCurrentLog(new FieldPropertyValidationError(ErrorSource.SCHEME_HIERARCHY_CHECK, "A field with the same ID has already been processed, this field is a duplicate. Duplicate has a name of " + idToField.get(identity.getFieldId()).getFieldName() + ".", ErrorSeverity.FATAL, field.getFieldId(), field.getFieldName()));
             } else {
-                idToField.put(field.getFieldId(), field);
+                idToField.put(identity.getFieldId(), field);
             }
             //Ensure match to root
-            if (field.getFieldId().equals(settings.getRootId())) {
+            if (identity.getFieldId().equals(settings.getRootId())) {
                 roots.add(field);
             }
-            if (field.getParentId() == null) {
+            if (field.getRelation().getParentId() == null) {
                 anchorFields.add(field);
             }
         }
@@ -135,7 +142,7 @@ public class ProcessFieldProperties {
                 continue;
             }
             // This should be guaranteed to not be null based on anchor check earlier in this function and null check in iterateFields().
-            String parentId = field.getParentId();
+            String parentId = field.getRelation().getParentId();
             FieldProperty parent = context.getField(parentId);
             //Parent is null if missing from table, need to log error.
             if (parent == null) {
@@ -145,13 +152,13 @@ public class ProcessFieldProperties {
                 } else {
                     message = "The parentId " + parentId + " does not map to a valid field property ";
                 }
-                message += "for fieldId " + field.getFieldId();
-                ErrorSettings.getInstance().addToCurrentLog(new FieldPropertyValidationError(ErrorSource.FIELD_RELATIONSHIP_VALIDATION, message, ErrorSeverity.FATAL, field.getFieldId(), field.getFieldName()));
+                message += "for fieldId " + field.getIdentity().getFieldId();
+                ErrorSettings.getInstance().addToCurrentLog(new FieldPropertyValidationError(ErrorSource.FIELD_RELATIONSHIP_VALIDATION, message, ErrorSeverity.FATAL, field.getIdentity().getFieldId(), field.getIdentity().getFieldName()));
                 continue;
             }
             if (!context.getActiveFields().contains(parent)) {
                 String message = "The parent id for this field belongs to an inactive field and does not map to a valid field property.";
-                ErrorSettings.getInstance().addToCurrentLog(new FieldPropertyValidationError(ErrorSource.FIELD_RELATIONSHIP_VALIDATION, message, ErrorSeverity.ERROR, field.getFieldId(), field.getFieldName()));
+                ErrorSettings.getInstance().addToCurrentLog(new FieldPropertyValidationError(ErrorSource.FIELD_RELATIONSHIP_VALIDATION, message, ErrorSeverity.ERROR, field.getIdentity().getFieldId(), field.getIdentity().getFieldName()));
                 continue;
             }
             field.createConnections(parent);
@@ -189,8 +196,8 @@ public static void traverseTree(FieldProcessorContext context) {
                     ErrorSource.SCHEME_HIERARCHY_CHECK,
                     "Orphaned field detected.",
                     ErrorSeverity.ERROR,
-                    field.getFieldId(),
-                    field.getFieldName()
+                    field.getIdentity().getFieldId(),
+                    field.getIdentity().getFieldName()
             ));
         }
     }
@@ -230,34 +237,14 @@ public static void traverseTree(FieldProcessorContext context) {
         visited.add(field);
     }
 
-    // At the moment just ensure we're storing null for empty strings instead of "" via opencsv or other import method.
-    private static void normalizeAllFields(FieldProcessorContext context) {
-        for (FieldProperty field : context.getAllFields()) {
-            normalizeField(field);
+    private static void convertFieldProperties(FieldProcessorContext context) {
+        List<FieldProperty> allFields = new ArrayList<>();
+        for (FieldPropertyRow row : context.getAllRows()) {
+            allFields.add(FieldPropertyFactory.buildFieldProperty(row));
         }
-    }
-
-    private static void normalizeField(FieldProperty field) {
-        field.setParentId(normalizeBlank(field.getParentId()));
-        field.setFieldName(normalizeBlank(field.getFieldName()));
-        field.setDisplayName(normalizeBlank(field.getDisplayName()));
-        field.setSectionHeaderOverride(normalizeBlank(field.getSectionHeaderOverride()));
-        // TODO handle list strings (condRepeatedValues, ...)
-        field.setCodeSystemName(normalizeBlank(field.getCodeSystemName()));
-        field.setCodeSystemVersion(normalizeBlank(field.getCodeSystemVersion()));
-        field.setCodeSystemId(normalizeBlank(field.getCodeSystemId()));
-        field.setCodeSystemCode(normalizeBlank(field.getCodeSystemCode()));
-        field.setDataType(normalizeBlank(field.getDataType()));
-        field.setUnit(normalizeBlank(field.getUnit()));
-        field.setRegexPattern(normalizeBlank(field.getRegexPattern()));
-        field.setAttributeName(field.getAttributeName());
-        field.setUiControl(normalizeBlank(field.getUiControl()));
-        field.setTemplatePath(normalizeBlank(field.getTemplatePath()));
+        context.setAllFields(allFields);
 
     }
 
-    // Convert empty strings to nulls. Empty strings created automatically on import.
-    private static String normalizeBlank(String s) {
-        return (s == null || s.isEmpty()) ? null : s;
-    }
+
 }

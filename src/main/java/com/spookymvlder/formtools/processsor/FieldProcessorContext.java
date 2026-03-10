@@ -1,6 +1,8 @@
 package com.spookymvlder.formtools.processsor;
 
-import com.spookymvlder.formtools.datatypes.FieldProperty;
+import com.spookymvlder.formtools.datatypes.fieldproperties.FieldProperty;
+import com.spookymvlder.formtools.datatypes.fieldproperties.FieldPropertyRow;
+import com.spookymvlder.formtools.datatypes.fieldproperties.NormalizedFieldPropertyRow;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -15,6 +17,11 @@ public class FieldProcessorContext {
     FieldProperty root = null;
     List<FieldProperty> activeFields = new ArrayList<>();
     List<FieldProperty> allFields = new ArrayList<>();
+    List<FieldPropertyRow> allRows = new ArrayList<>();
+
+
+
+    List<NormalizedFieldPropertyRow> allNormalizedRows = new ArrayList<>();
     List<FieldProperty> rootList = new ArrayList<>();
     List<String> duplicateNames = new ArrayList<>();
     List<FieldProperty> anchorList = new ArrayList<>();
@@ -25,8 +32,23 @@ public class FieldProcessorContext {
         return allFields;
     }
 
+    public List<NormalizedFieldPropertyRow> getAllNormalizedRows() {
+        return allNormalizedRows;
+    }
+
+    public void setAllNormalizedRows(List<NormalizedFieldPropertyRow> allNormalizedRows) {
+        this.allNormalizedRows = allNormalizedRows;
+    }
+
     public void setAllFields(List<FieldProperty> allFields) {
         this.allFields = allFields;
+    }
+
+    public List<FieldPropertyRow> getAllRows() {
+        return allRows;
+    }
+    public void setAllRows(List<FieldPropertyRow> allRows) {
+        this.allRows = allRows;
     }
 
     public Map<String, FieldProperty> getIdToField() {

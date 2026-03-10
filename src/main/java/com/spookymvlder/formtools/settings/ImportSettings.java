@@ -1,6 +1,6 @@
 package com.spookymvlder.formtools.settings;
 
-import com.spookymvlder.formtools.datatypes.FieldProperty;
+import com.spookymvlder.formtools.datatypes.fieldproperties.FieldProperty;
 
 public class ImportSettings {
     private static ImportSettings instance;

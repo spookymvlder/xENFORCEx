@@ -1,7 +1,7 @@
 package com.spookymvlder.formtools.datatypes.fields;
 
 import com.spookymvlder.formtools.datatypes.FieldData;
-import com.spookymvlder.formtools.datatypes.FieldProperty;
+import com.spookymvlder.formtools.datatypes.fieldproperties.FieldProperty;
 
 public class SimpleField extends EntryField {
     private FieldData value;
