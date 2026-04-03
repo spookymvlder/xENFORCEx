@@ -7,7 +7,6 @@ import com.spookymvlder.formtools.datatypes.FieldDataType;
 import com.spookymvlder.formtools.datatypes.GroupingType;
 import com.spookymvlder.formtools.datatypes.LinkLogic;
 import com.spookymvlder.formtools.datatypes.fieldproperties.FieldPropertyRow;
-import com.spookymvlder.formtools.datatypes.fieldproperties.NormalizedFieldPropertyRow;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;

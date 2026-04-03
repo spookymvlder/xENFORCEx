@@ -1,13 +1,15 @@
 package com.spookymvlder.formtools.processsor;
 
+import com.spookymvlder.formtools.datatypes.ConditionalBool;
+import com.spookymvlder.formtools.datatypes.GroupingType;
 import com.spookymvlder.formtools.datatypes.fieldproperties.*;
 
 import static com.spookymvlder.formtools.processsor.FieldPropertyConverter.*;
 
 public class FieldPropertyFactory {
 
-    public static NormalizedFieldPropertyRow normalizeRow(FieldPropertyRow row) {
-        return new NormalizedFieldPropertyRow(
+    public static ResolvedFieldPropertyRow parseRow(FieldPropertyRow row) {
+        return new ResolvedFieldPropertyRow(
                 normalizeBlank(row.getFieldId()),
                 normalizeBlank(row.getFieldName()),
                 normalizeBlank(row.getDisplayName()),
@@ -58,17 +60,86 @@ public class FieldPropertyFactory {
         );
     }
 
-    public static FieldProperty buildFieldProperty(FieldPropertyRow row) {
-        return buildFieldProperty(normalizeRow(row));
+    public static ResolvedFieldPropertyRow applyDefaults(ResolvedFieldPropertyRow row) {
+        Boolean active = row.active() != null ? row.active() : true;
+        ConditionalBool fieldRepeated = row.fieldRepeated() != null ? row.fieldRepeated() : ConditionalBool.FALSE;
+        ConditionalBool required = row.required() != null ? row.required() : ConditionalBool.FALSE;
+
+        Integer minOccurs = row.minOccurs() != null ? row.minOccurs()
+                : (required == ConditionalBool.TRUE ? 1 : 0);
+
+        Integer maxOccurs = row.maxOccurs() != null ? row.maxOccurs()
+                : (fieldRepeated == ConditionalBool.FALSE ? 1 : null);
+
+        Boolean rangeStartInclusive = (row.rangeStartInclusive() != null || row.rangeStart() == null)
+                ? row.rangeStartInclusive() : Boolean.TRUE;
+        Boolean rangeEndInclusive = (row.rangeEndInclusive() != null || row.rangeEnd() == null)
+                ? row.rangeEndInclusive() : Boolean.TRUE;
+
+        return new ResolvedFieldPropertyRow(
+                row.fieldId(),
+                row.fieldName(),
+                row.displayName(),
+
+                row.parentId(),
+
+                active,
+                row.expireDate(),
+
+                fieldRepeated,
+                minOccurs,
+                maxOccurs,
+                row.condRepeatedSourceIds(),
+                row.condRepeatedValues(),
+                row.condRepeatedLogic(),
+
+                required,
+                row.condRequiredSourceIds(),
+                row.condRequiredValues(),
+                row.condRequiredLogic(),
+
+                row.codeSystemName(),
+                row.codeSystemId(),
+                row.codeSystemVersion(),
+                row.codeSystemCode(),
+
+                row.dataType(),
+                row.rangeStart(),
+                row.rangeEnd(),
+                rangeStartInclusive,
+                rangeEndInclusive,
+                row.minLength(),
+                row.maxLength(),
+                row.enumerations(),
+                row.regexPattern(),
+
+                row.isAttribute(),
+                row.attributeName(),
+
+                row.uiControl(),
+                row.unit(),
+                row.displayOrder(),
+                row.validationMessage(),
+
+                row.skipImport(),
+                row.groupingType() != null ? row.groupingType() : GroupingType.NONE,
+                row.componentOf()
+        );
     }
 
-    public static FieldProperty buildFieldProperty(NormalizedFieldPropertyRow row) {
-        FieldIdentity identity = buildIdentity(row);
-        FieldRelation relation = buildRelation(row);
-        FieldCardinality cardinality = buildCardinality(row);
-        FieldValueRestriction restriction = buildRestriction(row);
-        FieldCodeSpec codeSpec = buildCodeSpec(row);
-        FieldMetadataUI metadataUI = buildMetadataUI(row);
+    public static FieldProperty buildFieldProperty(FieldPropertyRow row) {
+        return buildFieldProperty(parseRow(row));
+    }
+
+    public static FieldProperty buildFieldProperty(ResolvedFieldPropertyRow row) {
+        ResolvedFieldPropertyRow resolved = applyDefaults(row);
+
+        FieldIdentity identity = buildIdentity(resolved);
+        FieldRelation relation = buildRelation(resolved);
+        FieldCardinality cardinality = buildCardinality(resolved);
+        FieldValueRestriction restriction = buildRestriction(resolved);
+        FieldCodeSpec codeSpec = buildCodeSpec(resolved);
+        FieldMetadataUI metadataUI = buildMetadataUI(resolved);
 
         return new FieldProperty(
                 identity,
@@ -80,9 +151,7 @@ public class FieldPropertyFactory {
         );
     }
 
-
-
-    public static FieldIdentity buildIdentity(NormalizedFieldPropertyRow row) {
+    public static FieldIdentity buildIdentity(ResolvedFieldPropertyRow row) {
         return new FieldIdentity(
                 row.fieldId(),
                 row.fieldName(),
@@ -93,7 +162,7 @@ public class FieldPropertyFactory {
         );
     }
 
-    public static FieldRelation buildRelation(NormalizedFieldPropertyRow row) {
+    public static FieldRelation buildRelation(ResolvedFieldPropertyRow row) {
         return new FieldRelation(
                 row.parentId(),
                 row.groupingType(),
@@ -101,7 +170,7 @@ public class FieldPropertyFactory {
         );
     }
 
-    public static FieldCardinality buildCardinality(NormalizedFieldPropertyRow row) {
+    public static FieldCardinality buildCardinality(ResolvedFieldPropertyRow row) {
         return new FieldCardinality(
                 row.fieldRepeated(),
                 row.minOccurs(),
@@ -116,9 +185,7 @@ public class FieldPropertyFactory {
         );
     }
 
-
-
-    public static FieldValueRestriction buildRestriction(NormalizedFieldPropertyRow row) {
+    public static FieldValueRestriction buildRestriction(ResolvedFieldPropertyRow row) {
         return new FieldValueRestriction(
                 row.dataType(),
                 row.rangeStart(),
@@ -134,7 +201,7 @@ public class FieldPropertyFactory {
         );
     }
 
-    public static FieldCodeSpec buildCodeSpec(NormalizedFieldPropertyRow row) {
+    public static FieldCodeSpec buildCodeSpec(ResolvedFieldPropertyRow row) {
         return new FieldCodeSpec(
                 row.codeSystemName(),
                 row.codeSystemId(),
@@ -143,7 +210,7 @@ public class FieldPropertyFactory {
         );
     }
 
-    public static FieldMetadataUI buildMetadataUI(NormalizedFieldPropertyRow row) {
+    public static FieldMetadataUI buildMetadataUI(ResolvedFieldPropertyRow row) {
         return new FieldMetadataUI(
                 row.uiControl(),
                 row.unit(),
@@ -151,6 +218,4 @@ public class FieldPropertyFactory {
                 row.validationMessage()
         );
     }
-
-
 }

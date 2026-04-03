@@ -6,7 +6,6 @@ import com.spookymvlder.formtools.datatypes.fieldproperties.FieldIdentity;
 import com.spookymvlder.formtools.datatypes.fieldproperties.FieldProperty;
 import com.spookymvlder.formtools.datatypes.fieldproperties.FieldPropertyRow;
 import com.spookymvlder.formtools.datatypes.FieldPropertyValidationError;
-import com.spookymvlder.formtools.datatypes.fieldproperties.NormalizedFieldPropertyRow;
 import com.spookymvlder.formtools.settings.ErrorSettings;
 import com.spookymvlder.formtools.settings.ImportSettings;
 import com.spookymvlder.formtools.settings.ParserSettings;
@@ -23,8 +22,6 @@ public class ProcessFieldProperties {
     public static List<FieldProperty> processFieldProperties(List<FieldPropertyRow> csvFields) {
         //Initialize a wrapper to maintain the schema fields
         FieldProcessorContext context = new FieldProcessorContext();
-        List<FieldProperty> processedFieldProperties = new ArrayList<>();
-
         context.setAllRows(csvFields);
 
         //
@@ -63,7 +60,7 @@ public class ProcessFieldProperties {
             settings.addToFieldIdToName(field.getFieldId(), field.getFieldName());
             settings.addToFieldFromId(field.getFieldId(), field);
         }
-        return processedFieldProperties;
+        return context.getAllFields();
     }
 
     public static void iterateFields(FieldProcessorContext context) {
@@ -123,10 +120,6 @@ public class ProcessFieldProperties {
             }
         }
 
-        //Remove inactive ids from list now that loop is complete
-        for (FieldProperty field : inactiveFields) {
-            context.removeFromActiveFields(field);
-        }
         context.setActiveFields(activeFields);
         context.setIdToField(idToField);
         context.setSkippableFields(skippableFields);
@@ -137,7 +130,6 @@ public class ProcessFieldProperties {
     }
 
     public static void setFieldRelations(FieldProcessorContext context) {
-        List<String> inactiveIds = new ArrayList<>();
         FieldProperty anchor = context.getAnchor();
         for(FieldProperty field : context.getActiveFields()) {
             // If field is the anchor field, it won't have a parent ID. All other fields SHOULD have a parent ID.
@@ -181,30 +173,30 @@ public class ProcessFieldProperties {
         }
     }
 */
-public static void traverseTree(FieldProcessorContext context) {
-    // Track which active fields were reachable from root
-    Set<FieldProperty> reachable = new HashSet<>();
+    public static void traverseTree(FieldProcessorContext context) {
+        // Track which active fields were reachable from root
+        Set<FieldProperty> reachable = new HashSet<>();
 
-    // 3-color sets
-    Set<FieldProperty> visiting = new HashSet<>(); // GRAY
-    Set<FieldProperty> visited  = new HashSet<>(); // BLACK
+        // 3-color sets
+        Set<FieldProperty> visiting = new HashSet<>(); // GRAY
+        Set<FieldProperty> visited  = new HashSet<>(); // BLACK
 
-    detectCycleAndMarkReachable(context.getRoot(), reachable, visiting, visited);
+        detectCycleAndMarkReachable(context.getRoot(), reachable, visiting, visited);
 
-    // Anything active but not reachable is anf orphan
-    for (FieldProperty field : context.getActiveFields()) {
-        //TODO ensure that any list lookup is based on ID to avoid hashing error.
-        if (!reachable.contains(field) && !context.getAnchorList().contains(field)) {
-            errors.addToCurrentLog(new FieldPropertyValidationError(
-                    ErrorSource.SCHEME_HIERARCHY_CHECK,
-                    "Orphaned field detected.",
-                    ErrorSeverity.ERROR,
-                    field.getFieldId(),
-                    field.getFieldName()
-            ));
+        // Anything active but not reachable is an orphan
+        for (FieldProperty field : context.getActiveFields()) {
+            //TODO ensure that any list lookup is based on ID to avoid hashing error.
+            if (!reachable.contains(field) && !context.getAnchorList().contains(field)) {
+                errors.addToCurrentLog(new FieldPropertyValidationError(
+                        ErrorSource.SCHEME_HIERARCHY_CHECK,
+                        "Orphaned field detected.",
+                        ErrorSeverity.ERROR,
+                        field.getFieldId(),
+                        field.getFieldName()
+                ));
+            }
         }
     }
-}
 
     private static void detectCycleAndMarkReachable(
             FieldProperty field,

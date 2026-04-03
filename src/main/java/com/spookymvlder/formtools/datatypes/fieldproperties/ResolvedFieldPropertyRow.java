@@ -8,7 +8,8 @@ import com.spookymvlder.formtools.datatypes.LinkLogic;
 import java.time.LocalDate;
 import java.util.List;
 
-public record NormalizedFieldPropertyRow (
+// Represents a parsed, typed row with blanks normalized to null and cross-field defaults applied.
+public record ResolvedFieldPropertyRow (
     String fieldId,
     String fieldName,
     String displayName,

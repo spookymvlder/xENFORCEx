@@ -154,7 +154,7 @@ This may only be left blank for the anchor element.
 The expected hierarchy level for this element in the form. The anchor element 
 should have a hierarchy level of 0.\
 \
-Currently not used by the parser.
+Currently not imported or used by the parser.
 
 * * * 
 ### Versioning Columns

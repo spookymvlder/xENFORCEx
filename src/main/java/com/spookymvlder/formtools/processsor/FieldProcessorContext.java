@@ -2,7 +2,7 @@ package com.spookymvlder.formtools.processsor;
 
 import com.spookymvlder.formtools.datatypes.fieldproperties.FieldProperty;
 import com.spookymvlder.formtools.datatypes.fieldproperties.FieldPropertyRow;
-import com.spookymvlder.formtools.datatypes.fieldproperties.NormalizedFieldPropertyRow;
+import com.spookymvlder.formtools.datatypes.fieldproperties.ResolvedFieldPropertyRow;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -21,7 +21,7 @@ public class FieldProcessorContext {
 
 
 
-    List<NormalizedFieldPropertyRow> allNormalizedRows = new ArrayList<>();
+    List<ResolvedFieldPropertyRow> allResolvedRows = new ArrayList<>();
     List<FieldProperty> rootList = new ArrayList<>();
     List<String> duplicateNames = new ArrayList<>();
     List<FieldProperty> anchorList = new ArrayList<>();
@@ -32,12 +32,12 @@ public class FieldProcessorContext {
         return allFields;
     }
 
-    public List<NormalizedFieldPropertyRow> getAllNormalizedRows() {
-        return allNormalizedRows;
+    public List<ResolvedFieldPropertyRow> getAllResolvedRows() {
+        return allResolvedRows;
     }
 
-    public void setAllNormalizedRows(List<NormalizedFieldPropertyRow> allNormalizedRows) {
-        this.allNormalizedRows = allNormalizedRows;
+    public void setAllResolvedRows(List<ResolvedFieldPropertyRow> allResolvedRows) {
+        this.allResolvedRows = allResolvedRows;
     }
 
     public void setAllFields(List<FieldProperty> allFields) {

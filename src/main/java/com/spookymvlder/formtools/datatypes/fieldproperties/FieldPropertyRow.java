@@ -10,6 +10,7 @@ import com.spookymvlder.formtools.processsor.FieldPropertyConverter;
 import java.time.LocalDate;
 import java.util.List;
 
+// Represents OpenCSV import row
 public class FieldPropertyRow {
     // FIELD IDENTIFIER COLUMNS
     //TODO Consider field IDs that may not be numeric, maybe convert to numeric?

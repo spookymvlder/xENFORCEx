@@ -38,21 +38,10 @@ public class FieldCardinality {
         this.condRequiredSourceIds = condRequiredSourceIds;
         this.condRequiredValues = getProcessedCondRequiredValues(condRequiredValues);
         this.condRequiredLogic = condRequiredLogic;
-        setOccurs(minOccurs, maxOccurs, fieldRepeated, required);
+        this.minOccurs = minOccurs;
+        this.maxOccurs = maxOccurs;
     }
 
-    private void setOccurs(Integer minOccurs, Integer maxOccurs, ConditionalBool fieldRepeated, ConditionalBool required) {
-        if (minOccurs == null) {
-            if (required == ConditionalBool.FALSE) {
-                this.minOccurs = 0;
-            }
-        }
-        if (maxOccurs == null) {
-            if (fieldRepeated == ConditionalBool.FALSE) {
-                this.maxOccurs = 1;
-            }
-        }
-    }
 
     private List<String[]> getProcessedCondRepeatedValues(List<String> condRepeatedValues) {
         return condRepeatedValues.stream()

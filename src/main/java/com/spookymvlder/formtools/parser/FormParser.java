@@ -53,20 +53,6 @@ public class FormParser {
         }
 
 
-//        // Ensure we have a root relative path
-//        String rootPath = instanceRootProperty.getTemplatePath();
-//        if (rootPath == null) {
-//            rootPath = buildRelativePath(instanceRootProperty);
-//            if (rootPath != null) {
-//                instanceRootProperty.setTemplatePath(rootPath);
-//            }
-//        }
-//        if (rootPath == null) {
-//            // buildRelativePath already logged a fatal error
-//            this.pathContext = null;
-//        } else {
-//            this.pathContext = new XmlPathContext(xpath, rootPath);
-//        }
     }
 
     /**
@@ -189,41 +175,6 @@ public class FormParser {
      */
     //TODO consider changing name from root to start if not actual root.
     private NodeList findFormRootNode() throws XPathExpressionException {
-        /*
-        // Use XPath or a BFS to locate the first matching node
-        String rootPath = instanceRootProperty.getRelativePath();
-        if (rootPath == null) {
-            rootPath = buildRelativePath(instanceRootProperty);
-            if (rootPath != null) {
-                instanceRootProperty.setRelativePath(rootPath);
-            } else {
-                //TODO better handling? Should be handled already.
-                return null;
-            }
-        }
-
-        XPathExpression expr = xpath.compile("/" + rootPath);
-        NodeList rootNodes = (NodeList) expr.evaluate(xmlDoc, XPathConstants.NODESET);
-        if (rootNodes == null) {
-            errors.addToCurrentLog(new ErrorEntry(ErrorSource.PARSE_ERROR,
-                    "Form root node not found by parseForm.", ErrorSeverity.FATAL));
-            return null;
-        }
-        return rootNodes;
-
-         */
-//        if (pathContext == null) return null;
-//
-//        NodeList rootNodes = pathContext.selectRootNodes(xmlDoc);
-//        if (rootNodes == null || rootNodes.getLength() == 0) {
-//            errors.addToCurrentLog(new ErrorEntry(
-//                    ErrorSource.PARSE_ERROR,
-//                    "Form root node not found by parseForm. XPath: " + pathContext.getRootSetXPath(),
-//                    ErrorSeverity.FATAL
-//            ));
-//            return null;
-//        }
-//        return rootNodes;
         String rootTemplatePath = instanceRootProperty.getIdentity().getTemplatePath();
         if (rootTemplatePath == null) {
             errors.addToCurrentLog(new ErrorEntry(
@@ -412,6 +363,7 @@ public class FormParser {
         }
     }
 
+/*
     private FieldData parseSimpleField(String resolvedPath, FieldProperty prop) {
         String value = safeEvaluateFromDoc(resolvedPath);
         return new FieldData(value, prop.getValue().getDataType(), 0);
@@ -433,31 +385,6 @@ public class FormParser {
 
         return constituents;
     }
-
-    //Used to find if there are sibling elements for the same node to get their relative path correctly.
-    //TODO test that this works correctly for anything not the first element.
-    private int getElementIndex(Node node) {
-        if (node == null || node.getNodeType() != Node.ELEMENT_NODE) return -1;
-
-        Node parent = node.getParentNode();
-        if (parent == null) return -1;
-
-        NodeList siblings = parent.getChildNodes();
-        String targetName = node.getNodeName();
-        int count = 0;
-
-        for (int i = 0; i < siblings.getLength(); i++) {
-            Node sibling = siblings.item(i);
-            if (sibling.getNodeType() == Node.ELEMENT_NODE && sibling.getNodeName().equals(targetName)) {
-                count++;
-                if (sibling == node) {
-                    return count;  // XPath is 1-based index
-                }
-            }
-        }
-        return -1;
-    }
-
-
+*/
 
 }

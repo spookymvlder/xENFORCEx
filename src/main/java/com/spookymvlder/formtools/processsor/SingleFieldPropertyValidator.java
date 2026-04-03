@@ -14,8 +14,6 @@ import com.spookymvlder.formtools.utilities.StringUtils;
 
 import java.time.LocalDate;
 
-import static java.lang.System.in;
-
 //TODO add validation that name is unique
 public class SingleFieldPropertyValidator {
     static final ErrorSettings errors = ErrorSettings.getInstance();
