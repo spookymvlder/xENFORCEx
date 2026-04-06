@@ -8,7 +8,7 @@ import com.spookymvlder.formtools.datatypes.fieldproperties.FieldPropertyRow;
 import com.spookymvlder.formtools.processsor.ProcessFieldProperties;
 import com.spookymvlder.formtools.settings.ErrorSettings;
 import com.spookymvlder.formtools.settings.ImportSettings;
-import com.spookymvlder.formtools.settings.ParserSettings;
+import com.spookymvlder.formtools.settings.ProcessingOverrides;
 import com.spookymvlder.formtools.utilities.*;
 
 import java.io.*;
@@ -85,7 +85,7 @@ public class ReadCSV {
         ErrorSettings errors = ErrorSettings.getInstance();
         //TODO move this elsewhere
         errors.startNewLog();
-        ParserSettings.getInstance().setConverters();
+        ProcessingOverrides.getInstance().setConverters();
 
         try (BufferedReader br = new BufferedReader(new FileReader(filePath))) {
             CSVReader reader = new CSVReader(br);
@@ -120,13 +120,13 @@ public class ReadCSV {
         */
         ErrorSettings errors = ErrorSettings.getInstance();
         errors.startNewLog();
-        ParserSettings.getInstance().setConverters();
+        ProcessingOverrides.getInstance().setConverters();
 
         // Step 1: CSV schema validation
         validateCsvHeaders(filePath);
 
         // Abort early if fatal errors
-        if (errors.getSeverityOfCurrentLog() >= 3) {
+        if (errors.checkCurrentLogOverThreshold()) {
             ImportSettings.getInstance().setSpecImported(false);
             return List.of();
         }
@@ -137,12 +137,11 @@ public class ReadCSV {
         List<FieldProperty> processedProperties = new ArrayList<>();
 
         // Step 3: Process fields
-        if (errors.getSeverityOfCurrentLog() < 3) {
+        if (!errors.checkCurrentLogOverThreshold()) {
             processedProperties = ProcessFieldProperties.processFieldProperties(csvFields);
         }
 
-        boolean success = errors.getSeverityOfCurrentLog() < 3;
-        ImportSettings.getInstance().setSpecImported(success);
+        ImportSettings.getInstance().setSpecImported(!errors.checkCurrentLogOverThreshold());
 
         return processedProperties;
     }

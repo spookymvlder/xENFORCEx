@@ -260,10 +260,12 @@ public class FormParser {
                     break;
                 }
                 case CONSTITUENT: {
-                    errors.addToCurrentLog(new ErrorEntry(
+                    errors.addToCurrentLog(new ParserError(
                             ErrorSource.PARSE_ERROR,
                             "Unexpected constituent found: " + prop.getFieldId(),
-                            ErrorSeverity.ERROR
+                            ErrorSeverity.ERROR,
+                            thisNode.getNodeName(),
+                            resolvedXPath
                     ));
                     continue;
                 }

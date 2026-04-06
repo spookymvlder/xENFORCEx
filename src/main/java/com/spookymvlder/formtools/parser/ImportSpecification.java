@@ -2,12 +2,10 @@ package com.spookymvlder.formtools.parser;
 
 import com.spookymvlder.formtools.datatypes.fieldproperties.FieldProperty;
 import com.spookymvlder.formtools.settings.ImportSettings;
-import com.spookymvlder.formtools.settings.ParserSettings;
 
 import java.util.List;
 
 public class ImportSpecification {
-    private static final ParserSettings settings = ParserSettings.getInstance();
 
     public static void importSpec(String specPath) {
         //TODO Replace with path in settings

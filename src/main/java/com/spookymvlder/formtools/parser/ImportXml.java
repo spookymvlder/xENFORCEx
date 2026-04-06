@@ -1,10 +1,10 @@
 package com.spookymvlder.formtools.parser;
 
-import com.spookymvlder.formtools.datatypes.ErrorEntry;
 import com.spookymvlder.formtools.datatypes.FormInstance;
 import com.spookymvlder.formtools.settings.ErrorSettings;
 import com.spookymvlder.formtools.settings.ImportSettings;
 
+import com.spookymvlder.formtools.utilities.FormDebugPrinter;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -35,28 +35,21 @@ public class ImportXml {
 
         //If we don't have a successful spec import, quit out.
         if(!settings.getSpecImported()) {
+            System.out.println("Spec Import Failed.");
             return;
         }
 
 
 
         try{
-        Document doc = importXML();
-        //TODO send rootField from fieldProcessorContext instead
-        FormParser parser = new FormParser(doc, settings.getRootField());
-        List<FormInstance> forms = parser.parseForm();
-        //ParseDoc.parseDoc(doc);
-            //TODO remove
-            System.out.println(forms);
+            Document doc = importXML();
+            //TODO send rootField from fieldProcessorContext instead
+            FormParser parser = new FormParser(doc, settings.getRootField());
+            List<FormInstance> forms = parser.parseForm();
+            //ParseDoc.parseDoc(doc);
+            FormDebugPrinter.printForms(forms);
             ErrorSettings errors = ErrorSettings.getInstance();
-            //TODO this is only checking latest log, but log is currently only opened once per run.
-            System.out.println("Errors: " + errors.getCurrentLog().size());
-            for (int i = 1; i <= errors.getLogCount(); i++) {
-                List<ErrorEntry> errorLog = errors.getErrorLog(i);
-                for (ErrorEntry errorEntry : errorLog) {
-                    System.out.println(errorEntry);
-                }
-            }
+            errors.printErrorLogs();
         }
         catch(Exception e){
             e.printStackTrace();

@@ -8,7 +8,6 @@ import com.spookymvlder.formtools.datatypes.fieldproperties.FieldPropertyRow;
 import com.spookymvlder.formtools.datatypes.FieldPropertyValidationError;
 import com.spookymvlder.formtools.settings.ErrorSettings;
 import com.spookymvlder.formtools.settings.ImportSettings;
-import com.spookymvlder.formtools.settings.ParserSettings;
 import com.spookymvlder.formtools.utilities.ErrorSeverity;
 import com.spookymvlder.formtools.utilities.ErrorSource;
 
@@ -43,7 +42,7 @@ public class ProcessFieldProperties {
         );
         for (Runnable step : validationSteps) {
             step.run();
-            if (errors.getSeverityOfCurrentLog() >= errors.getErrorThreshold()) {
+            if (errors.checkCurrentLogOverThreshold()) {
                 System.out.println("Breaking due to errors!");
                 break;
             }
@@ -53,13 +52,6 @@ public class ProcessFieldProperties {
 
 
             //TODO consider returning root instead.
-
-        //TODO move someplace else
-        ParserSettings settings = ParserSettings.getInstance();
-        for (FieldProperty field : context.getAllFields()) {
-            settings.addToFieldIdToName(field.getFieldId(), field.getFieldName());
-            settings.addToFieldFromId(field.getFieldId(), field);
-        }
         return context.getAllFields();
     }
 

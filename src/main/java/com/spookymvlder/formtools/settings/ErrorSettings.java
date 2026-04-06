@@ -2,25 +2,29 @@ package com.spookymvlder.formtools.settings;
 
 import com.spookymvlder.formtools.datatypes.ErrorEntry;
 import com.spookymvlder.formtools.utilities.ErrorSeverity;
+import com.spookymvlder.formtools.utilities.ErrorSource;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+
 public class ErrorSettings {
     private static ErrorSettings instance;
     private Integer logCount;
     private Map<Integer, List<ErrorEntry>> errorLogs;
-    private Map<Integer, Integer> logSeverity;
-    private Integer errorThreshold;
+    private Map<Integer, ErrorSeverity> logSeverity;
+    private ErrorSeverity errorThreshold;
+    private Integer currentLogId;
 
     private ErrorSettings() {
         this.logCount = 0;
-        this.errorThreshold = ErrorSeverity.ERROR.getSeverityLevel();
+        this.currentLogId = null;
+        this.errorThreshold = ErrorSeverity.ERROR;
         this.errorLogs = new HashMap<>();
         this.logSeverity = new HashMap<>();
-        this.logSeverity.put(0, ErrorSeverity.NONE.getSeverityLevel());
     }
 
     public static ErrorSettings getInstance() {
@@ -31,61 +35,122 @@ public class ErrorSettings {
     }
 
     public Integer getLogCount() {
-        return logCount;
+        return this.logCount;
+    }
+
+    public ErrorSeverity getErrorThreshold() {
+        return this.errorThreshold;
+    }
+
+    public void updateErrorThreshold(ErrorSeverity severity) {
+        this.errorThreshold = severity;
+        for (Integer logNumber : this.errorLogs.keySet()) {
+            // Reset severity of log so recompute happens.
+            this.logSeverity.put(logNumber, ErrorSeverity.NONE);
+            for (ErrorEntry errorEntry : this.errorLogs.get(logNumber)) {
+                updateLogSeverity(logNumber, errorEntry);
+            }
+        }
     }
 
     public void startNewLog() {
-        logCount++;
-        //TODO make this safer.
-        errorLogs.put(logCount, new ArrayList<>());
+        this.logCount++;
+        int curLog = this.logCount - 1;
+        this.errorLogs.put(curLog, new ArrayList<>());
+        this.logSeverity.put(curLog, ErrorSeverity.NONE);
+        this.currentLogId = curLog;
+        addToCurrentLog(new ErrorEntry(
+                ErrorSource.ERROR_LOG_SETUP,
+                "New log started at " + LocalDateTime.now() + ".",
+                ErrorSeverity.NONE));
     }
 
-    public List<ErrorEntry> getErrorLog(Integer logNumber) {
-        if (logNumber < 1 || logNumber > logCount) {
-            return new ArrayList<>();
+    public boolean logExists(Integer logId) {
+        return errorLogs.containsKey(logId);
+    }
+
+    public List<ErrorEntry> getErrorLog(Integer logNumber) throws IndexOutOfBoundsException {
+        if (logExists(logNumber)) {
+            return errorLogs.get(logNumber);
         }
-        return errorLogs.get(logNumber);
+        throw new IndexOutOfBoundsException("Log number " + logNumber + " not found. Unable to return log.");
     }
 
-    //TODO consider forcing use of currentLog for everything else will need to worry about logNumber < logCount
-    public void addErrorToLog(Integer logNumber, ErrorEntry errorEntry) {
+    public List<ErrorEntry> getCurrentLog() {
+        return errorLogs.get(this.currentLogId);
+    }
+
+
+    private void addToLog(Integer logNumber, ErrorEntry errorEntry) throws IndexOutOfBoundsException {
+        if (!logExists(logNumber)) {
+            throw new IndexOutOfBoundsException("Log number " + logNumber + " not found. Unable to add error to log.");
+        }
         this.updateLogSeverity(logNumber, errorEntry);
+        // Compute if absent present to make it slightly easier to update, no intention to create new log.
         this.errorLogs.computeIfAbsent(logNumber, k -> new ArrayList<>()).add(errorEntry);
     }
 
     public void addToCurrentLog(ErrorEntry errorEntry) {
-        addErrorToLog(this.logCount, errorEntry);
+        addToLog(this.currentLogId, errorEntry);
     }
 
-    public List<ErrorEntry> getCurrentLog() {
-        return errorLogs.get(this.logCount);
+
+    public ErrorSeverity getSeverityOfLog(Integer logNumber) throws IndexOutOfBoundsException {
+        if (logExists(logNumber)) {
+            return this.logSeverity.get(logNumber);
+        }
+        throw new IndexOutOfBoundsException("Log number " + logNumber + " not found. Unable to provide severity.");
     }
 
-    public int getSeverityOfLog(Integer logNumber) {
-        return this.logSeverity.get(logNumber);
+    public ErrorSeverity getSeverityOfCurrentLog() {
+
+        return getSeverityOfLog(this.currentLogId);
     }
 
-    public int getSeverityOfCurrentLog() {
-
-        return getSeverityOfLog(this.logCount - 1);
-    }
-
-    private void updateLogSeverity(int logNumber, ErrorEntry errorEntry) {
-        int severity = errorEntry.getSeverity().getSeverityLevel();
-        if (this.logSeverity.get(logNumber) == null || severity > this.logSeverity.get(logNumber)) {
-            this.logSeverity.put(logNumber, severity);
+    private void updateLogSeverity(int logNumber, ErrorEntry errorEntry) throws IndexOutOfBoundsException {
+        if  (!logExists(logNumber)) {
+            throw new IndexOutOfBoundsException("Log number " + logNumber + " not found. Unable to set severity.");
+        }
+        if (errorEntry.getSeverity().isGreaterThan(getSeverityOfLog(logNumber))) {
+            this.logSeverity.put(logNumber, errorEntry.getSeverity());
         }
     }
 
-    public Integer getErrorThreshold() {
-        return errorThreshold;
+
+    public boolean checkLogOverThreshold(int logNumber) throws IndexOutOfBoundsException {
+        if (!logExists(logNumber)) {
+            throw new IndexOutOfBoundsException("Log number " + logNumber + " not found. Unable to check against threshold.");
+        }
+        return getSeverityOfLog(logNumber).isAtLeast(getErrorThreshold());
     }
 
-    public void setErrorThreshold(Integer errorThreshold) {
-        this.errorThreshold = errorThreshold;
+    /**
+     * Checks if the severity of the current error log is at least the system specified threshold.
+     * @return - true if severity of log >= threshold severity, as boolean.
+     */
+    public boolean checkCurrentLogOverThreshold(){
+        return checkLogOverThreshold(this.currentLogId);
     }
 
-    public void setErrorThreshold(ErrorSeverity severity) {
-        this.errorThreshold = severity.getSeverityLevel();
+
+
+    public void printErrorLogs() {
+        for  (Integer logNumber : this.errorLogs.keySet()) {
+            printErrorLog(logNumber);
+        }
+    }
+
+    public void printErrorLog(int logNumber) {
+        if (!logExists(logNumber)) {
+            return;
+        }
+        System.out.println("Error log " + logNumber + " size: " + this.errorLogs.get(logNumber).size());
+        for (ErrorEntry errorEntry : this.errorLogs.get(logNumber)) {
+            System.out.println(errorEntry);
+        }
+    }
+
+    public void printCurrentLog() {
+        printErrorLog(this.currentLogId);
     }
 }

@@ -3,6 +3,7 @@ package com.spookymvlder.formtools.processsor;
 import com.spookymvlder.formtools.datatypes.ConditionalBool;
 import com.spookymvlder.formtools.datatypes.GroupingType;
 import com.spookymvlder.formtools.datatypes.fieldproperties.*;
+import com.spookymvlder.formtools.settings.ProcessingOverrides;
 
 import static com.spookymvlder.formtools.processsor.FieldPropertyConverter.*;
 
@@ -131,8 +132,69 @@ public class FieldPropertyFactory {
         return buildFieldProperty(parseRow(row));
     }
 
+    public static ResolvedFieldPropertyRow applyOverrides(ResolvedFieldPropertyRow row) {
+        ProcessingOverrides overrides = ProcessingOverrides.getInstance();
+        String displayName = overrides.getDisplayNameOverride(row.fieldId());
+        Boolean active = overrides.getActiveOverride(row.fieldId());
+        Boolean skipImport = overrides.getSkipImportOverride(row.fieldId());
+
+        if (displayName == null && active == null && skipImport == null) {
+            return row;
+        }
+
+        return new ResolvedFieldPropertyRow(
+                row.fieldId(),
+                row.fieldName(),
+                displayName != null ? displayName : row.displayName(),
+
+                row.parentId(),
+
+                active != null ? active : row.active(),
+                row.expireDate(),
+
+                row.fieldRepeated(),
+                row.minOccurs(),
+                row.maxOccurs(),
+                row.condRepeatedSourceIds(),
+                row.condRepeatedValues(),
+                row.condRepeatedLogic(),
+
+                row.required(),
+                row.condRequiredSourceIds(),
+                row.condRequiredValues(),
+                row.condRequiredLogic(),
+
+                row.codeSystemName(),
+                row.codeSystemId(),
+                row.codeSystemVersion(),
+                row.codeSystemCode(),
+
+                row.dataType(),
+                row.rangeStart(),
+                row.rangeEnd(),
+                row.rangeStartInclusive(),
+                row.rangeEndInclusive(),
+                row.minLength(),
+                row.maxLength(),
+                row.enumerations(),
+                row.regexPattern(),
+
+                row.isAttribute(),
+                row.attributeName(),
+
+                row.uiControl(),
+                row.unit(),
+                row.displayOrder(),
+                row.validationMessage(),
+
+                skipImport != null ? skipImport : row.skipImport(),
+                row.groupingType(),
+                row.componentOf()
+        );
+    }
+
     public static FieldProperty buildFieldProperty(ResolvedFieldPropertyRow row) {
-        ResolvedFieldPropertyRow resolved = applyDefaults(row);
+        ResolvedFieldPropertyRow resolved = applyOverrides(applyDefaults(row));
 
         FieldIdentity identity = buildIdentity(resolved);
         FieldRelation relation = buildRelation(resolved);
