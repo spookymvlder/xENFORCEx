@@ -2,6 +2,7 @@ package com.spookymvlder.formtools.processsor;
 
 
 import com.spookymvlder.formtools.datatypes.ErrorEntry;
+import com.spookymvlder.formtools.datatypes.GroupingType;
 import com.spookymvlder.formtools.datatypes.fieldproperties.FieldIdentity;
 import com.spookymvlder.formtools.datatypes.fieldproperties.FieldProperty;
 import com.spookymvlder.formtools.datatypes.fieldproperties.FieldPropertyRow;
@@ -149,6 +150,20 @@ public class ProcessFieldProperties {
                 continue;
             }
             field.createConnections(parent);
+
+            if (field.getRelation().getGroupingType() == GroupingType.CONSTITUENT) {
+                if (parent.getRelation().getGroupingType() != GroupingType.COMPOSITE) {
+                    ErrorSettings.getInstance().addToCurrentLog(new FieldPropertyValidationError(
+                            ErrorSource.FIELD_RELATIONSHIP_VALIDATION,
+                            "Constituent field's parent is not a composite field.",
+                            ErrorSeverity.ERROR,
+                            field.getFieldId(),
+                            field.getFieldName()
+                    ));
+                } else {
+                    parent.getRelation().addConstituent(field);
+                }
+            }
         }
     }
 /*
