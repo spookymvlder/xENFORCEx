@@ -3,7 +3,7 @@ package com.spookymvlder.formtools.datatypes.fieldproperties;
 import com.spookymvlder.formtools.datatypes.GroupingType;
 
 import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -12,7 +12,7 @@ public class FieldRelation {
     private String componentOf;
     private GroupingType groupingType;
 
-    private Set<FieldProperty> childFields = new HashSet<>();
+    private Set<FieldProperty> childFields = new LinkedHashSet<>();
     private FieldProperty parentField = null;
 
     private List<FieldProperty> constituents = new ArrayList<>();
