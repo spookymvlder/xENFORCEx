@@ -1,7 +1,7 @@
 package com.spookymvlder.formtools.datatypes;
 
 //https://www.w3schools.com/xml/schema_elements_ref.asp
-public enum FieldDataTypes {
+public enum FieldDataType {
     STRING,
     INTEGER,
     DECIMAL,
@@ -37,5 +37,6 @@ public enum FieldDataTypes {
     CURRENCY,
     PERCENTAGE,
     CUSTOM,
-    RAW_XML
+    RAW_XML,
+    ROOT
 }

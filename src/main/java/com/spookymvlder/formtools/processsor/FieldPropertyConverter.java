@@ -2,6 +2,11 @@ package com.spookymvlder.formtools.processsor;
 
 import com.opencsv.bean.AbstractBeanField;
 import com.opencsv.exceptions.CsvDataTypeMismatchException;
+import com.spookymvlder.formtools.datatypes.ConditionalBool;
+import com.spookymvlder.formtools.datatypes.FieldDataType;
+import com.spookymvlder.formtools.datatypes.GroupingType;
+import com.spookymvlder.formtools.datatypes.LinkLogic;
+import com.spookymvlder.formtools.datatypes.fieldproperties.FieldPropertyRow;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -44,4 +49,65 @@ public class FieldPropertyConverter {
             throw new CsvDataTypeMismatchException("Invalid Y/N value: " + value);
         }
     }
+
+    public static class TFBooleanConverter extends AbstractBeanField<Boolean, String> {
+        @Override
+        protected Boolean convert(String fieldValue) throws IllegalArgumentException {
+            if (fieldValue == null|| fieldValue.isBlank()){
+                return null;
+            }
+            return switch (fieldValue.trim().toUpperCase()) {
+                case "T", "TRUE" -> true;
+                case "F", "FALSE" -> false;
+                default -> throw new IllegalArgumentException("Invalid boolean value: " + fieldValue);
+            };
+        }
+    }
+
+
+
+    public static String normalizeBlank(String value) {
+        if (value == null) {
+            return null;
+        }
+
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    public static FieldDataType parseDataType(String value) {
+        String normalizedValue = normalizeBlank(value);
+        if (normalizedValue == null) {
+            return null;
+        }
+
+        return FieldDataType.valueOf(normalizedValue.toUpperCase());
+    }
+
+    public static GroupingType parseGroupingType(String value) {
+        String normalizedValue = normalizeBlank(value);
+        if (normalizedValue == null) {
+            return null;
+        }
+
+        return GroupingType.valueOf(normalizedValue.toUpperCase());
+    }
+
+    public static LinkLogic parseLinkLogic(String value) {
+        String normalizedValue = normalizeBlank(value);
+        if (normalizedValue == null) {
+            return null;
+        }
+        return LinkLogic.valueOf(normalizedValue.toUpperCase());
+    }
+
+    public static ConditionalBool parseConditionalBool(Character value) {
+        String normalizedValue = normalizeBlank(String.valueOf(value));
+        if (normalizedValue == null) {
+            return null;
+        }
+        return ConditionalBool.valueOfAbbreviation(normalizedValue.toUpperCase());
+    }
+
+
 }

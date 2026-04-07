@@ -1,8 +1,10 @@
 package com.spookymvlder.formtools.parser;
 
+import com.spookymvlder.formtools.datatypes.FormInstance;
+import com.spookymvlder.formtools.settings.ErrorSettings;
 import com.spookymvlder.formtools.settings.ImportSettings;
 
-import com.spookymvlder.formtools.settings.ParserSettings;
+import com.spookymvlder.formtools.utilities.FormDebugPrinter;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -26,18 +28,28 @@ public class ImportXml {
 
     // Temp main for testing.
     public static void main(String[] args) {
+        //TODO remove when unnecessary.
+
+        TEMPSETTINGS.setTestSettings();
+        ImportSpecification.importSpec(settings.getSpecFilePath());
 
         //If we don't have a successful spec import, quit out.
         if(!settings.getSpecImported()) {
+            System.out.println("Spec Import Failed.");
             return;
         }
 
-        //TODO remove when unnecessary.
-        TEMPSETTINGS.setTestSettings();
+
 
         try{
-        Document doc = importXML();
-        ParseDoc.parseDoc(doc);
+            Document doc = importXML();
+            //TODO send rootField from fieldProcessorContext instead
+            FormParser parser = new FormParser(doc, settings.getRootField());
+            List<FormInstance> forms = parser.parseForm();
+            //ParseDoc.parseDoc(doc);
+            FormDebugPrinter.printForms(forms);
+            ErrorSettings errors = ErrorSettings.getInstance();
+            errors.printErrorLogs();
         }
         catch(Exception e){
             e.printStackTrace();
@@ -64,7 +76,7 @@ public class ImportXml {
         if(!settings.getXmlFilePath().toLowerCase().endsWith(".xml")) {
             return false;
         }
-        return settings.getFormRoot() != null;
+        return settings.getAnchorElementName() != null && settings.getRootId() != null;
     }
 
     private static Boolean validateXsdSettings() {
@@ -88,7 +100,7 @@ public class ImportXml {
         Document doc = builder.parse(xmlFile);
         doc.getDocumentElement().normalize();
         //TODO ensure comments are stripped out too
-        stripEmptyElements(doc.getElementsByTagName(settings.getFormRoot()).item(settings.getFormRootIndex()));
+        stripEmptyElements(doc.getElementsByTagName(settings.getAnchorElementName()).item(settings.getAnchorElementIndex()));
         return doc;
     }
 

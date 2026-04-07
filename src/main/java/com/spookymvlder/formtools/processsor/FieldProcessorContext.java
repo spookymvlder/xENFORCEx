@@ -1,6 +1,8 @@
 package com.spookymvlder.formtools.processsor;
 
-import com.spookymvlder.formtools.datatypes.FieldProperties;
+import com.spookymvlder.formtools.datatypes.fieldproperties.FieldProperty;
+import com.spookymvlder.formtools.datatypes.fieldproperties.FieldPropertyRow;
+import com.spookymvlder.formtools.datatypes.fieldproperties.ResolvedFieldPropertyRow;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -8,35 +10,59 @@ import java.util.List;
 import java.util.Map;
 
 public class FieldProcessorContext {
-    Map<String, FieldProperties> idToField = new HashMap<>();
-    List<FieldProperties> skippableFields = new ArrayList<>();
-    List<FieldProperties> inactiveFields = new ArrayList<>();
+    Map<String, FieldProperty> idToField = new HashMap<>();
+    List<FieldProperty> skippableFields = new ArrayList<>();
+    List<FieldProperty> inactiveFields = new ArrayList<>();
     //List<String> fieldNames = new ArrayList<>();
-    FieldProperties root = null;
-    List<FieldProperties> activeFields = new ArrayList<>();
-    List<FieldProperties> allFields = new ArrayList<>();
-    List<FieldProperties> rootList = new ArrayList<>();
+    FieldProperty root = null;
+    List<FieldProperty> activeFields = new ArrayList<>();
+    List<FieldProperty> allFields = new ArrayList<>();
+    List<FieldPropertyRow> allRows = new ArrayList<>();
 
-    public List<FieldProperties> getAllFields() {
+
+
+    List<ResolvedFieldPropertyRow> allResolvedRows = new ArrayList<>();
+    List<FieldProperty> rootList = new ArrayList<>();
+    List<String> duplicateNames = new ArrayList<>();
+    List<FieldProperty> anchorList = new ArrayList<>();
+    FieldProperty anchor = null;
+
+
+    public List<FieldProperty> getAllFields() {
         return allFields;
     }
 
-    public void setAllFields(List<FieldProperties> allFields) {
+    public List<ResolvedFieldPropertyRow> getAllResolvedRows() {
+        return allResolvedRows;
+    }
+
+    public void setAllResolvedRows(List<ResolvedFieldPropertyRow> allResolvedRows) {
+        this.allResolvedRows = allResolvedRows;
+    }
+
+    public void setAllFields(List<FieldProperty> allFields) {
         this.allFields = allFields;
     }
 
-    public Map<String, FieldProperties> getIdToField() {
+    public List<FieldPropertyRow> getAllRows() {
+        return allRows;
+    }
+    public void setAllRows(List<FieldPropertyRow> allRows) {
+        this.allRows = allRows;
+    }
+
+    public Map<String, FieldProperty> getIdToField() {
         return idToField;
     }
 
-    public void setIdToField(Map<String, FieldProperties> idToField) {
+    public void setIdToField(Map<String, FieldProperty> idToField) {
         this.idToField = idToField;
     }
 
-    public FieldProperties getField(String id) {
+    public FieldProperty getField(String id) {
         return idToField.get(id);
     }
-    public void appendIdToField(String id, FieldProperties field) {
+    public void appendIdToField(String id, FieldProperty field) {
         idToField.put(id, field);
     }
 
@@ -44,59 +70,83 @@ public class FieldProcessorContext {
         idToField.remove(id);
     }
 
-    public List<FieldProperties> getSkippableFields() {
+    public List<FieldProperty> getSkippableFields() {
         return skippableFields;
     }
 
-    public void setSkippableFields(List<FieldProperties> skippableFields) {
+    public void setSkippableFields(List<FieldProperty> skippableFields) {
         this.skippableFields = skippableFields;
     }
 
-    public void appendSkippableFields(FieldProperties field) {
+    public void appendSkippableFields(FieldProperty field) {
         this.skippableFields.add(field);
     }
 
-    public List<FieldProperties> getInactiveFields() {
+    public List<FieldProperty> getInactiveFields() {
         return inactiveFields;
     }
 
-    public void setInactiveFields(List<FieldProperties> inactiveFields) {
+    public void setInactiveFields(List<FieldProperty> inactiveFields) {
         this.inactiveFields = inactiveFields;
     }
 
-    public void appendInactiveIds(FieldProperties field) {
+    public void appendInactiveIds(FieldProperty field) {
         this.inactiveFields.add(field);
     }
 
-    public FieldProperties getRoot() {
+    public FieldProperty getRoot() {
         return root;
     }
 
-    public void setRoot(FieldProperties root) {
+    public void setRoot(FieldProperty root) {
         this.root = root;
     }
 
-    public List<FieldProperties> getActiveFields() {
+    public List<FieldProperty> getActiveFields() {
         return activeFields;
     }
 
-    public void setActiveFields(List<FieldProperties> activeFields) {
+    public void setActiveFields(List<FieldProperty> activeFields) {
         this.activeFields = activeFields;
     }
 
-    public void appendActiveFields(FieldProperties field) {
+    public void appendActiveFields(FieldProperty field) {
         this.activeFields.add(field);
     }
 
-    public void removeFromActiveFields(FieldProperties field) {
+    public void removeFromActiveFields(FieldProperty field) {
         this.activeFields.remove(field);
     }
 
-    public List<FieldProperties> getRootList() {
+    public List<FieldProperty> getRootList() {
         return rootList;
     }
 
-    public void setRootList(List<FieldProperties> rootList) {
+    public void setRootList(List<FieldProperty> rootList) {
         this.rootList = rootList;
+    }
+
+    public List<String> getDuplicateNames() {
+        return duplicateNames;
+    }
+
+    public void setDuplicateNames(List<String> duplicateNames) {
+        this.duplicateNames = duplicateNames;
+    }
+
+    public List<FieldProperty> getAnchorList() {
+        return anchorList;
+    }
+
+    public void setAnchorList(List<FieldProperty> anchorFields) {
+        this.anchorList = anchorFields;
+    }
+
+    public FieldProperty getAnchor() {
+        return anchor;
+    }
+
+    public void setAnchor(FieldProperty anchor) {
+        this.anchor = anchor;
     }
 }

@@ -1,28 +1,32 @@
 package com.spookymvlder.formtools.settings;
 
-import com.spookymvlder.formtools.datatypes.FieldProperties;
+import com.spookymvlder.formtools.datatypes.fieldproperties.FieldProperty;
 
 public class ImportSettings {
     private static ImportSettings instance;
     private String xmlFilePath;
     private String xsdFilePath;
+    private String specFilePath;
     //Where the form starts, but not necessarily the beginning of data.
-    private String formRoot;
-    private FieldProperties rootField;
+    private String anchorElementName;
+    private FieldProperty rootField;
     //Usually 0, what node stripping should start at.
     //Default to firstChildElement. It may be possible that the form root has data,
-    private int formRootIndex;
+    private int anchorElementIndex;
     private boolean testIgnoreXSD;
     private Boolean specImported;
+    private String rootId;
 
     private ImportSettings() {
         this.xmlFilePath = null;
         this.xsdFilePath = null;
-        this.formRoot = null;
-        this.formRootIndex = 0;
+        this.specFilePath = null;
+        this.anchorElementName = null;
+        this.anchorElementIndex = 0;
         this.testIgnoreXSD = false;
         this.specImported = false;
         this.rootField = null;
+        this.rootId = null;
     }
 
     public static ImportSettings getInstance() {
@@ -32,11 +36,11 @@ public class ImportSettings {
         return instance;
     }
 
-    public FieldProperties getRootField() {
+    public FieldProperty getRootField() {
         return rootField;
     }
 
-    public void setRootField(FieldProperties rootField) {
+    public void setRootField(FieldProperty rootField) {
         this.rootField = rootField;
     }
 
@@ -48,6 +52,10 @@ public class ImportSettings {
         return xsdFilePath;
     }
 
+    public String getSpecFilePath() {
+        return specFilePath;
+    }
+
     public void setXmlFilePath(String xmlFilePath) {
         this.xmlFilePath = xmlFilePath;
     }
@@ -56,20 +64,24 @@ public class ImportSettings {
         this.xsdFilePath = xsdFilePath;
     }
 
-    public String getFormRoot() {
-        return formRoot;
+    public void setSpecFilePath(String specFilePath) {
+        this.specFilePath = specFilePath;
     }
 
-    public void setFormRoot(String formRoot) {
-        this.formRoot = formRoot;
+    public String getAnchorElementName() {
+        return anchorElementName;
     }
 
-    public int getFormRootIndex() {
-        return formRootIndex;
+    public void setAnchorElementName(String anchorElementName) {
+        this.anchorElementName = anchorElementName;
     }
 
-    public void setFormRootIndex(int formRootIndex) {
-        this.formRootIndex = formRootIndex;
+    public int getAnchorElementIndex() {
+        return anchorElementIndex;
+    }
+
+    public void setAnchorElementIndex(int anchorElementIndex) {
+        this.anchorElementIndex = anchorElementIndex;
     }
 
     public boolean getTestIgnoreXSD() {
@@ -86,5 +98,13 @@ public class ImportSettings {
 
     public void setSpecImported(Boolean specImported) {
         this.specImported = specImported;
+    }
+
+    public String getRootId() {
+        return rootId;
+    }
+
+    public void setRootId(String rootId) {
+        this.rootId = rootId;
     }
 }

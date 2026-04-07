@@ -1,5 +1,7 @@
 package com.spookymvlder.formtools.utilities;
 
+import java.util.Comparator;
+
 public enum ErrorSeverity {
     NONE(0),                   //For empty error log
     NOTIFICATION(1),           //FYI this could be better
@@ -18,4 +20,11 @@ public enum ErrorSeverity {
         return severityLevel;
     }
 
+    public boolean isAtLeast(ErrorSeverity other){
+        return this.severityLevel >= other.getSeverityLevel();
+    }
+
+    public boolean isGreaterThan(ErrorSeverity other){
+        return this.severityLevel > other.getSeverityLevel();
+    }
     }

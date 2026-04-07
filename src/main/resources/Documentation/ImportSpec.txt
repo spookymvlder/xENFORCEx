@@ -51,10 +51,13 @@ enumeration (String[], Optional) - If only specific values should be accepted fo
 unit (String, Optional) - The unit corresponding to the field, used for display.
 regexPattern (String, Optional) - If the field should match a pattern, provide that pattern.
 
-xpathOverride (String, Optional) - The relative path to use as the XPATH for a field. Useful if the name of the field storing a value is located in multiple locations in order to guarantee the correct field is selected.
+
 isAttribute (Boolean, Optional) - If the value for the field is retrieved from a node's attribute rather than as a text field value.
 attributeName (String, Required if "isAttribute" == T) - Required if the value is found in an attribute tag, list the name of the appropriate tag.
 
 uiControl (String, Optional) - Helper for downstream user for how to render data.
 validationMessage (String, Optional) - A custom error message to log if this field fails to be parsed successfully, in addition to any system errors logged.
 skipImport (Boolean, Optional) - Indicates that the field should be skipped during import, for example if the field corresponds to a label that doesn't need to be parsed. This differs from an inactive field in that the skippable field's relationships will be bridged (the parent of this field will receive this record's children and vice versa).
+
+3/4/26
+Removed xpathOverride
