@@ -305,8 +305,8 @@ public class FormParser {
     private FieldData parseFieldValueFromNode(Node thisNode, FieldProperty prop, int position) {
         String value = "";
 
-        if (prop.getValue().getAttribute()) {
-            String attr = prop.getValue().getAttributeName();
+        if (prop.getValueRestriction().getAttribute()) {
+            String attr = prop.getValueRestriction().getAttributeName();
             if (attr != null && !attr.isBlank()) {
                 // XPath against the node is simplest for attributes
                 value = safeEvaluate(thisNode, "@" + attr);
@@ -315,7 +315,7 @@ public class FormParser {
             value = safeEvaluate(thisNode, "text()");
         }
 
-        return new FieldData(value, prop.getValue().getDataType(), position);
+        return new FieldData(value, prop.getValueRestriction().getDataType(), position);
     }
 
     private Map<String, FieldData> parseConstituentsFromNode(Node thisNode, FieldProperty property) {
@@ -326,8 +326,8 @@ public class FormParser {
             String name = constituent.getFieldName();
             String v = "";
 
-            if (constituent.getValue().getAttribute()) {
-                String attr = constituent.getValue().getAttributeName();
+            if (constituent.getValueRestriction().getAttribute()) {
+                String attr = constituent.getValueRestriction().getAttributeName();
                 if (attr != null && !attr.isBlank()) v = safeEvaluate(thisNode, "@" + attr);
             } else {
                 // constituent elements are typically children of the composite node
@@ -335,7 +335,7 @@ public class FormParser {
             }
 
             constituents.put(constituent.getIdentity().getDisplayName(),
-                    new FieldData(v, constituent.getValue().getDataType(), counter++));
+                    new FieldData(v, constituent.getValueRestriction().getDataType(), counter++));
         }
 
         return constituents;

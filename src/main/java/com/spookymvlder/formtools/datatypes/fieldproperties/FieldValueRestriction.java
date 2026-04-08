@@ -6,8 +6,8 @@ import java.util.List;
 
 public class FieldValueRestriction {
     private FieldDataType dataType;
-    private Double rangeStart;
-    private Double rangeEnd;
+    private String rangeStart;
+    private String rangeEnd;
     private Boolean rangeStartInclusive;
     private Boolean rangeEndInclusive;
     private Integer minLength;
@@ -20,8 +20,8 @@ public class FieldValueRestriction {
     private String attributeName;
 
     public FieldValueRestriction(FieldDataType dataType,
-                                 Double rangeStart,
-                                 Double rangeEnd,
+                                 String rangeStart,
+                                 String rangeEnd,
                                  Boolean rangeStartInclusive,
                                  Boolean rangeEndInclusive,
                                  Integer minLength,
@@ -49,11 +49,11 @@ public class FieldValueRestriction {
         return dataType;
     }
 
-    public Double getRangeStart() {
+    public String getRangeStart() {
         return rangeStart;
     }
 
-    public Double getRangeEnd() {
+    public String getRangeEnd() {
         return rangeEnd;
     }
 

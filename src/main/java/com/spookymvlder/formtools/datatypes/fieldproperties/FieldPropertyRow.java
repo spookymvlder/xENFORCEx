@@ -83,9 +83,9 @@ public class FieldPropertyRow {
     @CsvBindByName (column = "dataType", required = false)
     private String dataType;
     @CsvBindByName
-    private Double rangeStart;
+    private String rangeStart;
     @CsvBindByName
-    private Double rangeEnd;
+    private String rangeEnd;
     @CsvCustomBindByName (column="rangeStartInclusive", converter = FieldPropertyConverter.TFBooleanConverter.class)
     private Boolean rangeStartInclusive;
     @CsvCustomBindByName (column="rangeEndInclusive", converter = FieldPropertyConverter.TFBooleanConverter.class)
@@ -221,11 +221,11 @@ public class FieldPropertyRow {
         return dataType;
     }
 
-    public Double getRangeStart() {
+    public String getRangeStart() {
         return rangeStart;
     }
 
-    public Double getRangeEnd() {
+    public String getRangeEnd() {
         return rangeEnd;
     }
 

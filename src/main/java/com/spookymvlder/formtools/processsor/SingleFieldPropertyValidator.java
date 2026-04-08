@@ -1,6 +1,7 @@
 package com.spookymvlder.formtools.processsor;
 
 import com.spookymvlder.formtools.datatypes.ConditionalBool;
+import com.spookymvlder.formtools.datatypes.ErrorEntry;
 import com.spookymvlder.formtools.datatypes.fieldproperties.FieldCardinality;
 import com.spookymvlder.formtools.datatypes.fieldproperties.FieldIdentity;
 import com.spookymvlder.formtools.datatypes.fieldproperties.FieldProperty;
@@ -29,7 +30,7 @@ public class SingleFieldPropertyValidator {
     }
 
     public static void validateAttributes(FieldProperty field) {
-        FieldValueRestriction value = field.getValue();
+        FieldValueRestriction value = field.getValueRestriction();
         //If there is a name for the attribute and isAttribute is not true
         if (!StringUtils.isNullOrEmpty(value.getAttributeName()) && !value.getAttribute()) {
             errors.addToCurrentLog(new FieldPropertyValidationError(ErrorSource.SCHEME_FIELD_PROPERTY_VALIDATION,"isAttribute is required when attributeName is set.", ErrorSeverity.ERROR, field.getFieldId(), field.getFieldName()));
@@ -43,15 +44,28 @@ public class SingleFieldPropertyValidator {
 
 
     public static void validateRanges(FieldProperty field) {
-        FieldValueRestriction value = field.getValue();
-        if (value.getRangeStart() != null && value.getRangeEnd() != null) {
-            if (value.getRangeStart() > value.getRangeEnd()) {
-                errors.addToCurrentLog(new FieldPropertyValidationError(ErrorSource.SCHEME_FIELD_PROPERTY_VALIDATION,"rangeStart must be less than or equal to rangeEnd.", ErrorSeverity.ERROR, field.getFieldId(), field.getFieldName()));
-            }
-            if (value.getRangeStart().equals(value.getRangeEnd())) {
-                errors.addToCurrentLog(new FieldPropertyValidationError(ErrorSource.SCHEME_FIELD_PROPERTY_VALIDATION,"No valid values for ranges.", ErrorSeverity.ERROR, field.getFieldId(), field.getFieldName()));
+        FieldValueRestriction value = field.getValueRestriction();
+        if (value.getDataType().isNumeric()) {
+            try {
+                Double rangeStart = (value.getRangeStart() != null)  ? Double.parseDouble(value.getRangeStart()) : Double.NEGATIVE_INFINITY;
+                Double rangeEnd = (value.getRangeEnd()) != null ? Double.parseDouble(value.getRangeEnd()) : Double.POSITIVE_INFINITY;
+                if (value.getRangeStart() != null && value.getRangeEnd() != null) {
+                    if (rangeStart > rangeEnd) {
+                        errors.addToCurrentLog(new FieldPropertyValidationError(ErrorSource.SCHEME_FIELD_PROPERTY_VALIDATION,"rangeStart must be less than or equal to rangeEnd.", ErrorSeverity.ERROR, field.getFieldId(), field.getFieldName()));
+                    }
+                    if (rangeStart.equals(rangeEnd)) {
+                        errors.addToCurrentLog(new FieldPropertyValidationError(ErrorSource.SCHEME_FIELD_PROPERTY_VALIDATION,"No valid values for ranges.", ErrorSeverity.ERROR, field.getFieldId(), field.getFieldName()));
+                    }
+                }
+            } catch (NumberFormatException e) {
+                errors.addToCurrentLog(new ErrorEntry(ErrorSource.SCHEME_FIELD_PROPERTY_VALIDATION,
+                        "FieldProperty " + field.getFieldId() + " has a range that cannot be be converted to a " +
+                                "numeric data type, despite being a " +
+                                value.getDataType() + " data type.",
+                        ErrorSeverity.ERROR));
             }
         }
+
     }
 
 
@@ -93,7 +107,7 @@ public class SingleFieldPropertyValidator {
     public static void validateGroupingType(FieldProperty field) {
         if ((field.getRelation().getGroupingType() == GroupingType.CONTAINER
                 || field.getRelation().getGroupingType() == GroupingType.COMPOSITE)
-                && field.getValue().getDataType() != null) {
+                && field.getValueRestriction().getDataType() != null) {
             errors.addToCurrentLog(new FieldPropertyValidationError(ErrorSource.SCHEME_FIELD_PROPERTY_VALIDATION,
                     field.getRelation().getGroupingType() + " field associated with a data type",
                     ErrorSeverity.ERROR, field.getFieldId(), field.getFieldName()));

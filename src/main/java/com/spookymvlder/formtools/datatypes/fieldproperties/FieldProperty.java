@@ -37,7 +37,7 @@ public class FieldProperty {
         return cardinality;
     }
 
-    public FieldValueRestriction getValue() {
+    public FieldValueRestriction getValueRestriction() {
         return value;
     }
 

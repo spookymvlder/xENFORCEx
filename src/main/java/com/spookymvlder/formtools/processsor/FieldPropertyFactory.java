@@ -61,6 +61,8 @@ public class FieldPropertyFactory {
         );
     }
 
+
+    // Note that any updates to defaults must also update ValidateFormExtract
     public static ResolvedFieldPropertyRow applyDefaults(ResolvedFieldPropertyRow row) {
         Boolean active = row.active() != null ? row.active() : true;
         ConditionalBool fieldRepeated = row.fieldRepeated() != null ? row.fieldRepeated() : ConditionalBool.FALSE;

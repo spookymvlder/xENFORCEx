@@ -37,8 +37,8 @@ public record ResolvedFieldPropertyRow (
     String codeSystemCode,
 
     FieldDataType dataType,
-    Double rangeStart,
-    Double rangeEnd,
+    String rangeStart,
+    String rangeEnd,
     Boolean rangeStartInclusive,
     Boolean rangeEndInclusive,
     Integer minLength,
