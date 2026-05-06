@@ -382,11 +382,11 @@ Planned support for:
 
 
 #### rangeStart
-(Double, Optional)\
+(String, Optional)\
 If value should be limited to a range, start of that value range.
 
 #### rangeEnd
-(Double, Optional)\
+(String, Optional)\
 If value should be limited to a range, end of that value range.
 
 #### rangeStartInclusive
