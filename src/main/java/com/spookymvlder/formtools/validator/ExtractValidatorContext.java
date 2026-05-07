@@ -10,9 +10,12 @@ import java.util.Map;
 
 public class ExtractValidatorContext {
     Map<String, FieldProperty> propertyMap = new HashMap<>();
+    Map<String, List<String>> schemaPaths = new HashMap<>();
     Map<String, List<FormField>> formMap = new HashMap<>();
     Map<String, List<String>> attributeMap = new HashMap<>();
     List<String> missingFields = new ArrayList<>();
+    FieldProperty rootProperty;
+    FormField startField;
 
     public Map<String, FieldProperty> getPropertyMap() {
         return propertyMap;
@@ -24,6 +27,14 @@ public class ExtractValidatorContext {
 
     public void setPropertyMap(Map<String, FieldProperty> propertyMap) {
         this.propertyMap = propertyMap;
+    }
+
+    public Map<String, List<String>> getSchemaPaths() {
+        return schemaPaths;
+    }
+
+    public void setSchemaPaths(Map<String, List<String>> schemaPaths) {
+        this.schemaPaths = schemaPaths;
     }
 
 
@@ -55,6 +66,22 @@ public class ExtractValidatorContext {
 
     public void setMissingFields(List<String> missingFields) {
         this.missingFields = missingFields;
+    }
+
+    public FieldProperty getRootProperty() {
+        return rootProperty;
+    }
+
+    public void setRootProperty(FieldProperty rootProperty) {
+        this.rootProperty = rootProperty;
+    }
+
+    public FormField getStartField() {
+        return startField;
+    }
+
+    public void setStartField(FormField startField) {
+        this.startField = startField;
     }
 
 }

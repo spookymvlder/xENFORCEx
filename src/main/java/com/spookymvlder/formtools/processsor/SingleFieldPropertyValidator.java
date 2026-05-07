@@ -43,9 +43,10 @@ public class SingleFieldPropertyValidator {
     }
 
 
+    //TODO support ranges on ordered non-numeric types (e.g. GMONTH March-August, DATE, TIME).
     public static void validateRanges(FieldProperty field) {
         FieldValueRestriction value = field.getValueRestriction();
-        if (value.getDataType().isNumeric()) {
+        if (value.getDataType() != null && value.getDataType().isNumeric()) {
             try {
                 Double rangeStart = (value.getRangeStart() != null)  ? Double.parseDouble(value.getRangeStart()) : Double.NEGATIVE_INFINITY;
                 Double rangeEnd = (value.getRangeEnd()) != null ? Double.parseDouble(value.getRangeEnd()) : Double.POSITIVE_INFINITY;

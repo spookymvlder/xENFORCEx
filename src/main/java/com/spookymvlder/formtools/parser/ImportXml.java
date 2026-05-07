@@ -22,6 +22,8 @@ import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.*;
 
+import static com.spookymvlder.formtools.validator.ValidateFormExtract.validateForm;
+
 public class ImportXml {
 
     private static final ImportSettings settings = ImportSettings.getInstance();
@@ -48,8 +50,11 @@ public class ImportXml {
             List<FormInstance> forms = parser.parseForm();
             //ParseDoc.parseDoc(doc);
             FormDebugPrinter.printForms(forms);
+
+            validateForm(forms,  settings.getRootField());
             ErrorSettings errors = ErrorSettings.getInstance();
             errors.printErrorLogs();
+
         }
         catch(Exception e){
             e.printStackTrace();

@@ -2,6 +2,7 @@ package com.spookymvlder.formtools.processsor;
 
 import com.spookymvlder.formtools.datatypes.ConditionalBool;
 import com.spookymvlder.formtools.datatypes.GroupingType;
+import com.spookymvlder.formtools.datatypes.Usage;
 import com.spookymvlder.formtools.datatypes.fieldproperties.*;
 import com.spookymvlder.formtools.settings.ProcessingOverrides;
 
@@ -27,7 +28,7 @@ public class FieldPropertyFactory {
                 row.getCondRepeatedValues(),
                 parseLinkLogic(row.getCondRepeatedLogic()),
 
-                parseConditionalBool(row.getRequired()),
+                parseUsage(row.getRequired()),
                 row.getCondRequiredSourceIds(),
                 row.getCondRequiredValues(),
                 parseLinkLogic(row.getCondRequiredLogic()),
@@ -66,10 +67,10 @@ public class FieldPropertyFactory {
     public static ResolvedFieldPropertyRow applyDefaults(ResolvedFieldPropertyRow row) {
         Boolean active = row.active() != null ? row.active() : true;
         ConditionalBool fieldRepeated = row.fieldRepeated() != null ? row.fieldRepeated() : ConditionalBool.FALSE;
-        ConditionalBool required = row.required() != null ? row.required() : ConditionalBool.FALSE;
+        Usage required = row.required() != null ? row.required() : Usage.O;
 
         Integer minOccurs = row.minOccurs() != null ? row.minOccurs()
-                : (required == ConditionalBool.TRUE ? 1 : 0);
+                : (required == Usage.R ? 1 : 0);
 
         Integer maxOccurs = row.maxOccurs() != null ? row.maxOccurs()
                 : (fieldRepeated == ConditionalBool.FALSE ? 1 : null);

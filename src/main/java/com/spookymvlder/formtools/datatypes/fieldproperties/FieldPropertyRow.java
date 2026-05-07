@@ -54,9 +54,8 @@ public class FieldPropertyRow {
     private String condRepeatedLogic;
 
     // REQUIRED FIELD COLUMNS
-    //TODO change to Char or enum, or process later
-    @CsvCustomBindByName(column="required", converter = FieldPropertyConverter.RepeatConverter.class)
-    private Character required;
+    @CsvBindByName
+    private String required;
 
     //TODO import separate conditionally mandatory logic if complicated.
     @CsvBindAndSplitByName(elementType=String.class, splitOn = ",")
@@ -185,7 +184,7 @@ public class FieldPropertyRow {
         return condRepeatedLogic;
     }
 
-    public Character getRequired() {
+    public String getRequired() {
         return required;
     }
 

@@ -6,6 +6,7 @@ import com.spookymvlder.formtools.datatypes.ConditionalBool;
 import com.spookymvlder.formtools.datatypes.FieldDataType;
 import com.spookymvlder.formtools.datatypes.GroupingType;
 import com.spookymvlder.formtools.datatypes.LinkLogic;
+import com.spookymvlder.formtools.datatypes.Usage;
 import com.spookymvlder.formtools.datatypes.fieldproperties.FieldPropertyRow;
 
 import java.time.LocalDate;
@@ -99,6 +100,18 @@ public class FieldPropertyConverter {
             return null;
         }
         return LinkLogic.valueOf(normalizedValue.toUpperCase());
+    }
+
+    public static Usage parseUsage(String value) {
+        String normalizedValue = normalizeBlank(value);
+        if (normalizedValue == null) {
+            return null;
+        }
+        Usage usage = Usage.valueOfAbbreviation(normalizedValue.toUpperCase());
+        if (usage == null) {
+            throw new IllegalArgumentException("Invalid required usage code: " + value);
+        }
+        return usage;
     }
 
     public static ConditionalBool parseConditionalBool(Character value) {
