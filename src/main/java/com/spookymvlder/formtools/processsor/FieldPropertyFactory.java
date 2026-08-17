@@ -39,8 +39,8 @@ public class FieldPropertyFactory {
                 normalizeBlank(row.getCodeSystemCode()),
 
                 parseDataType(row.getDataType()),
-                row.getRangeStart(),
-                row.getRangeEnd(),
+                normalizeBlank(row.getRangeStart()),
+                normalizeBlank(row.getRangeEnd()),
                 row.getRangeStartInclusive(),
                 row.getRangeEndInclusive(),
                 row.getMinLength(),

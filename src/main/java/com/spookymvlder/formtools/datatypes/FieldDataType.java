@@ -11,7 +11,7 @@ public enum FieldDataType {
     DATE(Boolean.FALSE),
     TIME(Boolean.FALSE),
     DATETIME(Boolean.FALSE),
-    DURATION(Boolean.TRUE),
+    DURATION(Boolean.FALSE),
     CHARACTER(Boolean.FALSE),
     //
     ANYURI(Boolean.FALSE),                 //URL or relative path?

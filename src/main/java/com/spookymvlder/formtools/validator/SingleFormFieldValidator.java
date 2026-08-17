@@ -2,6 +2,7 @@ package com.spookymvlder.formtools.validator;
 
 import com.spookymvlder.formtools.datatypes.ErrorEntry;
 import com.spookymvlder.formtools.datatypes.FieldDataType;
+import com.spookymvlder.formtools.datatypes.TypedPredicateFactory;
 import com.spookymvlder.formtools.datatypes.fieldproperties.FieldProperty;
 import com.spookymvlder.formtools.datatypes.fieldproperties.FieldValueRestriction;
 import com.spookymvlder.formtools.datatypes.fields.CompositeField;
@@ -14,10 +15,6 @@ import com.spookymvlder.formtools.utilities.ErrorSeverity;
 import com.spookymvlder.formtools.utilities.ErrorSource;
 import com.spookymvlder.formtools.utilities.StringUtils;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.format.DateTimeParseException;
 import java.util.List;
 
 public class SingleFormFieldValidator {
@@ -50,15 +47,27 @@ public class SingleFormFieldValidator {
 
         if (dataType != null) {
             if (dataType.isNumeric()) {
-                validateNumeric(value, property);
+                validateOrderedValue(value, property, "numeric value");
             } else if (dataType == FieldDataType.BOOLEAN) {
                 validateBoolean(value, property);
             } else if (dataType == FieldDataType.DATE) {
-                validateDate(value, property);
+                validateOrderedValue(value, property, "ISO-8601 date (yyyy-MM-dd)");
             } else if (dataType == FieldDataType.TIME) {
-                validateTime(value, property);
+                validateOrderedValue(value, property, "ISO-8601 time (HH:mm[:ss])");
             } else if (dataType == FieldDataType.DATETIME) {
-                validateDateTime(value, property);
+                validateOrderedValue(value, property, "ISO-8601 datetime (yyyy-MM-ddTHH:mm[:ss])");
+            } else if (dataType == FieldDataType.GYEAR) {
+                validateOrderedValue(value, property, "ISO-8601 year (yyyy)");
+            } else if (dataType == FieldDataType.GYEARMONTH) {
+                validateOrderedValue(value, property, "ISO-8601 year-month (yyyy-MM)");
+            } else if (dataType == FieldDataType.GMONTH) {
+                validateOrderedValue(value, property, "month (1-12, #N index, or month name)");
+            } else if (dataType == FieldDataType.GDAY) {
+                validateOrderedValue(value, property, "day of month (---DD or 1-31)");
+            } else if (dataType == FieldDataType.GMONTHDAY) {
+                validateOrderedValue(value, property, "ISO-8601 month-day (--MM-DD)");
+            } else if (dataType == FieldDataType.DURATION) {
+                validateOrderedValue(value, property, "ISO-8601 duration (PnDTnHnMn.nS)");
             } else if (dataType == FieldDataType.CHARACTER) {
                 validateCharacter(value, property);
             }
@@ -69,41 +78,50 @@ public class SingleFormFieldValidator {
         validateRegex(value, property);
     }
 
-    //TODO support ranges on ordered non-numeric types (e.g. GMONTH March-August, DATE, TIME).
-    private static void validateNumeric(String value, FieldProperty property) {
-        try {
-            double parsed = Double.parseDouble(value);
-            validateNumericRange(parsed, property);
-        } catch (NumberFormatException e) {
+    private static void validateOrderedValue(String value, FieldProperty property, String formatHint) {
+        FieldDataType dataType = property.getValueRestriction().getDataType();
+        if (!TypedPredicateFactory.isParseable(value, dataType)) {
             errors.addToCurrentLog(new ErrorEntry(ErrorSource.FORM_EXTRACT_VALIDATION,
                     "A form field for FieldProperty " + property.getFieldId() + " has been assigned a value " +
-                            "that cannot be converted to a numeric data type, despite being a " +
-                            property.getValueRestriction().getDataType() + " data type.",
+                            "that cannot be parsed as a " + formatHint + ".",
                     ErrorSeverity.ERROR));
+            return;
         }
+        validateValueRange(value, property);
     }
 
-    private static void validateNumericRange(double value, FieldProperty property) {
+    private static void validateValueRange(String value, FieldProperty property) {
         FieldValueRestriction restriction = property.getValueRestriction();
-        double rangeStart = restriction.getRangeStart() != null
-                ? Double.parseDouble(restriction.getRangeStart()) : Double.NEGATIVE_INFINITY;
-        double rangeEnd = restriction.getRangeEnd() != null
-                ? Double.parseDouble(restriction.getRangeEnd()) : Double.POSITIVE_INFINITY;
-
-        if ((restriction.getRangeStartInclusive() && value < rangeStart) ||
-                (!restriction.getRangeStartInclusive() && value <= rangeStart)) {
-            errors.addToCurrentLog(new ErrorEntry(ErrorSource.FORM_EXTRACT_VALIDATION,
-                    "A form field for FieldProperty " + property.getFieldId() + " has been assigned a value " +
-                            "that is less than the minimum range accepted for the field.",
-                    ErrorSeverity.ERROR));
+        FieldDataType dataType = restriction.getDataType();
+        String rangeStart = restriction.getRangeStart();
+        String rangeEnd = restriction.getRangeEnd();
+        if (rangeStart == null && rangeEnd == null) {
+            return;
         }
 
-        if ((restriction.getRangeEndInclusive() && value > rangeEnd) ||
-                (!restriction.getRangeEndInclusive() && value >= rangeEnd)) {
-            errors.addToCurrentLog(new ErrorEntry(ErrorSource.FORM_EXTRACT_VALIDATION,
-                    "FieldProperty " + property.getFieldId() + " has been assigned a value that is greater than " +
-                            "the maximum range accepted for the field.",
-                    ErrorSeverity.ERROR));
+        if (rangeStart != null) {
+            Integer cmp = TypedPredicateFactory.compareValues(value, rangeStart, dataType);
+            if (cmp != null) {
+                boolean inclusive = restriction.getRangeStartInclusive();
+                if (inclusive ? cmp < 0 : cmp <= 0) {
+                    errors.addToCurrentLog(new ErrorEntry(ErrorSource.FORM_EXTRACT_VALIDATION,
+                            "A form field for FieldProperty " + property.getFieldId() + " has been assigned a value " +
+                                    "that is less than the minimum range accepted for the field.",
+                            ErrorSeverity.ERROR));
+                }
+            }
+        }
+        if (rangeEnd != null) {
+            Integer cmp = TypedPredicateFactory.compareValues(value, rangeEnd, dataType);
+            if (cmp != null) {
+                boolean inclusive = restriction.getRangeEndInclusive();
+                if (inclusive ? cmp > 0 : cmp >= 0) {
+                    errors.addToCurrentLog(new ErrorEntry(ErrorSource.FORM_EXTRACT_VALIDATION,
+                            "FieldProperty " + property.getFieldId() + " has been assigned a value that is greater than " +
+                                    "the maximum range accepted for the field.",
+                            ErrorSeverity.ERROR));
+                }
+            }
         }
     }
 
@@ -116,39 +134,6 @@ public class SingleFormFieldValidator {
             errors.addToCurrentLog(new ErrorEntry(ErrorSource.FORM_EXTRACT_VALIDATION,
                     "FieldProperty " + property.getFieldId() + " has been assigned a value that " +
                             "cannot be parsed as a boolean.",
-                    ErrorSeverity.ERROR));
-        }
-    }
-
-    private static void validateDate(String value, FieldProperty property) {
-        try {
-            LocalDate.parse(value);
-        } catch (DateTimeParseException e) {
-            errors.addToCurrentLog(new ErrorEntry(ErrorSource.FORM_EXTRACT_VALIDATION,
-                    "FieldProperty " + property.getFieldId() + " has been assigned a value that " +
-                            "cannot be parsed as a date (expected ISO-8601 yyyy-MM-dd).",
-                    ErrorSeverity.ERROR));
-        }
-    }
-
-    private static void validateTime(String value, FieldProperty property) {
-        try {
-            LocalTime.parse(value);
-        } catch (DateTimeParseException e) {
-            errors.addToCurrentLog(new ErrorEntry(ErrorSource.FORM_EXTRACT_VALIDATION,
-                    "FieldProperty " + property.getFieldId() + " has been assigned a value that " +
-                            "cannot be parsed as a time (expected ISO-8601 HH:mm[:ss]).",
-                    ErrorSeverity.ERROR));
-        }
-    }
-
-    private static void validateDateTime(String value, FieldProperty property) {
-        try {
-            LocalDateTime.parse(value);
-        } catch (DateTimeParseException e) {
-            errors.addToCurrentLog(new ErrorEntry(ErrorSource.FORM_EXTRACT_VALIDATION,
-                    "FieldProperty " + property.getFieldId() + " has been assigned a value that " +
-                            "cannot be parsed as a datetime (expected ISO-8601 yyyy-MM-ddTHH:mm[:ss]).",
                     ErrorSeverity.ERROR));
         }
     }
@@ -182,6 +167,9 @@ public class SingleFormFieldValidator {
     }
 
     private static void validateEnumeration(String value, FieldProperty property) {
+        if (property.getValueRestriction().getDataType() != FieldDataType.ENUMERATION) {
+            return;
+        }
         List<String> enumerations = property.getValueRestriction().getEnumerations();
         if (enumerations == null || enumerations.isEmpty()) {
             return;

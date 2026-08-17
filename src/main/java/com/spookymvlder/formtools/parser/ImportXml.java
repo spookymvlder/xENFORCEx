@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.*;
 
+import static com.spookymvlder.formtools.processsor.ProcessFormExtract.processForms;
 import static com.spookymvlder.formtools.validator.ValidateFormExtract.validateForm;
 
 public class ImportXml {
@@ -38,6 +39,7 @@ public class ImportXml {
         //If we don't have a successful spec import, quit out.
         if(!settings.getSpecImported()) {
             System.out.println("Spec Import Failed.");
+            ErrorSettings.getInstance().printErrorLogs();
             return;
         }
 
@@ -51,6 +53,7 @@ public class ImportXml {
             //ParseDoc.parseDoc(doc);
             FormDebugPrinter.printForms(forms);
 
+            processForms(forms, settings.getRootField());
             validateForm(forms,  settings.getRootField());
             ErrorSettings errors = ErrorSettings.getInstance();
             errors.printErrorLogs();

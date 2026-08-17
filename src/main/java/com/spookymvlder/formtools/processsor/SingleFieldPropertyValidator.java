@@ -1,6 +1,8 @@
 package com.spookymvlder.formtools.processsor;
 
 import com.spookymvlder.formtools.datatypes.ConditionalBool;
+import com.spookymvlder.formtools.datatypes.FieldDataType;
+import com.spookymvlder.formtools.datatypes.TypedPredicateFactory;
 import com.spookymvlder.formtools.datatypes.ErrorEntry;
 import com.spookymvlder.formtools.datatypes.fieldproperties.FieldCardinality;
 import com.spookymvlder.formtools.datatypes.fieldproperties.FieldIdentity;
@@ -26,7 +28,27 @@ public class SingleFieldPropertyValidator {
         validateRepeatOccurrences(field);
         validateActiveRange(field);
         validateGroupingType(field);
+        validateEnumerations(field);
+    }
 
+    public static void validateEnumerations(FieldProperty field) {
+        FieldValueRestriction value = field.getValueRestriction();
+        boolean hasEnumerations = value.getEnumerations() != null && !value.getEnumerations().isEmpty();
+        boolean isEnumerationType = value.getDataType() == FieldDataType.ENUMERATION;
+
+        if (isEnumerationType && !hasEnumerations) {
+            errors.addToCurrentLog(new FieldPropertyValidationError(
+                    ErrorSource.SCHEME_FIELD_PROPERTY_VALIDATION,
+                    "FieldProperty with dataType ENUMERATION must declare at least one entry in the enumeration list.",
+                    ErrorSeverity.ERROR, field.getFieldId(), field.getFieldName()));
+        }
+        if (!isEnumerationType && hasEnumerations) {
+            errors.addToCurrentLog(new FieldPropertyValidationError(
+                    ErrorSource.SCHEME_FIELD_PROPERTY_VALIDATION,
+                    "The enumerations column is only valid when dataType is ENUMERATION. " +
+                            "Use ENUMERATION (or the future CODED_VALUE / CUSTOM types) for restricted value sets.",
+                    ErrorSeverity.ERROR, field.getFieldId(), field.getFieldName()));
+        }
     }
 
     public static void validateAttributes(FieldProperty field) {
@@ -43,30 +65,56 @@ public class SingleFieldPropertyValidator {
     }
 
 
-    //TODO support ranges on ordered non-numeric types (e.g. GMONTH March-August, DATE, TIME).
     public static void validateRanges(FieldProperty field) {
         FieldValueRestriction value = field.getValueRestriction();
-        if (value.getDataType() != null && value.getDataType().isNumeric()) {
-            try {
-                Double rangeStart = (value.getRangeStart() != null)  ? Double.parseDouble(value.getRangeStart()) : Double.NEGATIVE_INFINITY;
-                Double rangeEnd = (value.getRangeEnd()) != null ? Double.parseDouble(value.getRangeEnd()) : Double.POSITIVE_INFINITY;
-                if (value.getRangeStart() != null && value.getRangeEnd() != null) {
-                    if (rangeStart > rangeEnd) {
-                        errors.addToCurrentLog(new FieldPropertyValidationError(ErrorSource.SCHEME_FIELD_PROPERTY_VALIDATION,"rangeStart must be less than or equal to rangeEnd.", ErrorSeverity.ERROR, field.getFieldId(), field.getFieldName()));
-                    }
-                    if (rangeStart.equals(rangeEnd)) {
-                        errors.addToCurrentLog(new FieldPropertyValidationError(ErrorSource.SCHEME_FIELD_PROPERTY_VALIDATION,"No valid values for ranges.", ErrorSeverity.ERROR, field.getFieldId(), field.getFieldName()));
-                    }
-                }
-            } catch (NumberFormatException e) {
-                errors.addToCurrentLog(new ErrorEntry(ErrorSource.SCHEME_FIELD_PROPERTY_VALIDATION,
-                        "FieldProperty " + field.getFieldId() + " has a range that cannot be be converted to a " +
-                                "numeric data type, despite being a " +
-                                value.getDataType() + " data type.",
-                        ErrorSeverity.ERROR));
-            }
+        FieldDataType type = value.getDataType();
+        String rangeStart = value.getRangeStart();
+        String rangeEnd = value.getRangeEnd();
+
+        if (rangeStart == null && rangeEnd == null) {
+            return;
         }
 
+        if (type == null || !TypedPredicateFactory.supportsRanges(type)) {
+            errors.addToCurrentLog(new FieldPropertyValidationError(
+                    ErrorSource.SCHEME_FIELD_PROPERTY_VALIDATION,
+                    "rangeStart/rangeEnd are only valid for ordered data types (numeric, DATE, TIME, " +
+                            "DATETIME, GYEAR, GYEARMONTH, GMONTH).",
+                    ErrorSeverity.ERROR, field.getFieldId(), field.getFieldName()));
+            return;
+        }
+
+        if (rangeStart != null && !TypedPredicateFactory.isParseable(rangeStart, type)) {
+            errors.addToCurrentLog(new FieldPropertyValidationError(
+                    ErrorSource.SCHEME_FIELD_PROPERTY_VALIDATION,
+                    "rangeStart value " + rangeStart + " cannot be parsed as a " + type + ".",
+                    ErrorSeverity.ERROR, field.getFieldId(), field.getFieldName()));
+            return;
+        }
+        if (rangeEnd != null && !TypedPredicateFactory.isParseable(rangeEnd, type)) {
+            errors.addToCurrentLog(new FieldPropertyValidationError(
+                    ErrorSource.SCHEME_FIELD_PROPERTY_VALIDATION,
+                    "rangeEnd value " + rangeEnd + " cannot be parsed as a " + type + ".",
+                    ErrorSeverity.ERROR, field.getFieldId(), field.getFieldName()));
+            return;
+        }
+
+        if (rangeStart != null && rangeEnd != null) {
+            Integer cmp = TypedPredicateFactory.compareValues(rangeStart, rangeEnd, type);
+            if (cmp != null) {
+                if (cmp > 0) {
+                    errors.addToCurrentLog(new FieldPropertyValidationError(
+                            ErrorSource.SCHEME_FIELD_PROPERTY_VALIDATION,
+                            "rangeStart must be less than or equal to rangeEnd.",
+                            ErrorSeverity.ERROR, field.getFieldId(), field.getFieldName()));
+                } else if (cmp == 0) {
+                    errors.addToCurrentLog(new FieldPropertyValidationError(
+                            ErrorSource.SCHEME_FIELD_PROPERTY_VALIDATION,
+                            "rangeStart equals rangeEnd; no valid values in range.",
+                            ErrorSeverity.ERROR, field.getFieldId(), field.getFieldName()));
+                }
+            }
+        }
     }
 
 

@@ -2,6 +2,8 @@ package com.spookymvlder.formtools.validator;
 
 import com.spookymvlder.formtools.datatypes.FieldDataType;
 import com.spookymvlder.formtools.datatypes.LinkLogic;
+import com.spookymvlder.formtools.datatypes.TypedPredicate;
+import com.spookymvlder.formtools.datatypes.TypedPredicateFactory;
 import com.spookymvlder.formtools.datatypes.fieldproperties.FieldCardinality;
 import com.spookymvlder.formtools.datatypes.fieldproperties.FieldProperty;
 import com.spookymvlder.formtools.datatypes.fields.FieldData;
@@ -11,14 +13,11 @@ import com.spookymvlder.formtools.datatypes.fields.SimpleField;
 import com.spookymvlder.formtools.utilities.StringUtils;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
 public class ConditionalRequirementEvaluator {
 
-    //TODO support enumeration-index value references and ranges/comparators on ordered non-numeric
-    //     types (DATE, TIME, GMONTH, etc. — each needs its own comparison semantics).
     //TODO support across-instance ALL semantics (currently across-instance is OR — "any matching
     //     instance fires"). The form-author opt-in for "all instances must satisfy" is future work.
     public static boolean isConditionRequired(FormField dependentParent, FieldProperty dependent,
@@ -35,7 +34,6 @@ public class ConditionalRequirementEvaluator {
         if (logic == LinkLogic.OR) {
             return evaluateOr(dependentParent, dependent.getFieldId(), sourceIds, valueSets, context);
         }
-        // Default to AND when logic is null or AND.
         return evaluateAnd(dependentParent, dependent.getFieldId(), sourceIds, valueSets, context);
     }
 
@@ -120,18 +118,18 @@ public class ConditionalRequirementEvaluator {
         List<String> dependentPath = paths.get(dependentFieldId);
         List<String> sourcePath = paths.get(sourceFieldId);
         if (dependentPath == null || sourcePath == null) {
-            return Collections.emptyList();
+            return List.of();
         }
 
         int lcaIdx = lcaIndex(List.of(dependentPath, sourcePath));
         if (lcaIdx < 0) {
-            return Collections.emptyList();
+            return List.of();
         }
 
         String lcaFieldId = sourcePath.get(lcaIdx);
         FormField lcaInstance = climbToFieldId(dependentParent, lcaFieldId);
         if (lcaInstance == null) {
-            return Collections.emptyList();
+            return List.of();
         }
 
         return collectInstances(lcaInstance, sourcePath, lcaIdx + 1, sourcePath.size() - 1);
@@ -225,8 +223,6 @@ public class ConditionalRequirementEvaluator {
             }
         }
 
-        boolean numericSource = isNumericSource(source);
-
         if (exclusionMode) {
             // Empty/absent source has no value to compare; no match (consistent with **ANY).
             if (!isPopulated(source)) {
@@ -238,7 +234,7 @@ public class ConditionalRequirementEvaluator {
                     continue;
                 }
                 String inner = trimmed.startsWith("**!") ? trimmed.substring(3).trim() : trimmed;
-                if (tokenMatches(source, inner, numericSource)) {
+                if (tokenMatches(source, inner)) {
                     return false;
                 }
             }
@@ -256,21 +252,64 @@ public class ConditionalRequirementEvaluator {
                 }
                 continue;
             }
-            if (tokenMatches(source, trimmed, numericSource)) {
+            if (tokenMatches(source, trimmed)) {
                 return true;
             }
         }
         return false;
     }
 
-    private static boolean tokenMatches(FormField source, String token, boolean numericSource) {
-        if (numericSource) {
-            NumericPredicate pred = tryParseNumericPredicate(token);
-            if (pred != null) {
-                return matchesNumericPredicate(source, pred);
+    private static boolean tokenMatches(FormField source, String token) {
+        if (source instanceof SimpleField simple) {
+            FieldProperty property = simple.getProperty();
+            FieldDataType dataType = property != null
+                    ? property.getValueRestriction().getDataType() : null;
+            TypedPredicate predicate = TypedPredicateFactory.tryParseToken(token, dataType);
+            if (predicate != null) {
+                FieldData data = simple.getValue();
+                if (data == null) {
+                    return false;
+                }
+                String value = data.getValue();
+                if (StringUtils.isNullOrEmpty(value)) {
+                    return false;
+                }
+                return predicate.test(value);
             }
         }
+        // #N enum-index reference (ENUMERATION sources)
+        if (token.length() > 1 && token.charAt(0) == '#') {
+            String resolved = resolveEnumIndex(source, token);
+            if (resolved == null) {
+                return false;
+            }
+            return matchesExact(source, resolved);
+        }
         return matchesExact(source, token);
+    }
+
+    private static String resolveEnumIndex(FormField source, String token) {
+        if (!(source instanceof SimpleField simple)) {
+            return null;
+        }
+        FieldProperty property = simple.getProperty();
+        if (property == null) {
+            return null;
+        }
+        List<String> enumerations = property.getValueRestriction().getEnumerations();
+        if (enumerations == null || enumerations.isEmpty()) {
+            return null;
+        }
+        int idx;
+        try {
+            idx = Integer.parseInt(token.substring(1).trim());
+        } catch (NumberFormatException e) {
+            return null;
+        }
+        if (idx < 1 || idx > enumerations.size()) {
+            return null;
+        }
+        return enumerations.get(idx - 1);
     }
 
     private static boolean matchesExact(FormField source, String expected) {
@@ -283,145 +322,6 @@ public class ConditionalRequirementEvaluator {
             return value != null && value.equals(expected);
         }
         return false;
-    }
-
-    private static boolean isNumericSource(FormField source) {
-        if (!(source instanceof SimpleField simple)) {
-            return false;
-        }
-        FieldProperty property = simple.getProperty();
-        if (property == null) {
-            return false;
-        }
-        FieldDataType dataType = property.getValueRestriction().getDataType();
-        return dataType != null && dataType.isNumeric();
-    }
-
-    private static boolean matchesNumericPredicate(FormField source, NumericPredicate pred) {
-        if (!(source instanceof SimpleField simple)) {
-            return false;
-        }
-        FieldData data = simple.getValue();
-        if (data == null) {
-            return false;
-        }
-        String valueStr = data.getValue();
-        if (StringUtils.isNullOrEmpty(valueStr)) {
-            return false;
-        }
-        try {
-            return pred.test(Double.parseDouble(valueStr));
-        } catch (NumberFormatException e) {
-            return false;
-        }
-    }
-
-    // Parses comparator/range tokens against numeric sources. Returns null for non-numeric tokens
-    // (bare values, strings) so the caller can fall through to exact match.
-    //   <X, <=X, >X, >=X     — single bound
-    //   X:Y                  — inclusive range [X, Y]
-    //   >X:Y, X:<Y, >X:<Y    — range with exclusive endpoints (the comparator-prefix on a side
-    //                          makes that side exclusive; bare endpoint is inclusive)
-    private static NumericPredicate tryParseNumericPredicate(String token) {
-        if (token == null || token.isEmpty()) {
-            return null;
-        }
-
-        int colonIdx = token.indexOf(':');
-        if (colonIdx >= 0) {
-            String leftPart = token.substring(0, colonIdx).trim();
-            String rightPart = token.substring(colonIdx + 1).trim();
-            if (leftPart.isEmpty() || rightPart.isEmpty()) {
-                return null;
-            }
-
-            // Range left side may only carry an optional '>' (lower bound, exclusive marker).
-            boolean lowerInclusive = true;
-            String leftNum = leftPart;
-            if (leftPart.startsWith(">=") || leftPart.startsWith("<=") || leftPart.startsWith("<")) {
-                return null;
-            }
-            if (leftPart.startsWith(">")) {
-                lowerInclusive = false;
-                leftNum = leftPart.substring(1).trim();
-            }
-
-            // Range right side may only carry an optional '<' (upper bound, exclusive marker).
-            boolean upperInclusive = true;
-            String rightNum = rightPart;
-            if (rightPart.startsWith(">=") || rightPart.startsWith("<=") || rightPart.startsWith(">")) {
-                return null;
-            }
-            if (rightPart.startsWith("<")) {
-                upperInclusive = false;
-                rightNum = rightPart.substring(1).trim();
-            }
-
-            try {
-                double lower = Double.parseDouble(leftNum);
-                double upper = Double.parseDouble(rightNum);
-                return new NumericPredicate(lower, lowerInclusive, upper, upperInclusive);
-            } catch (NumberFormatException e) {
-                return null;
-            }
-        }
-
-        if (token.startsWith("<=")) {
-            return parseSingleBound(token.substring(2).trim(), false, true);
-        }
-        if (token.startsWith(">=")) {
-            return parseSingleBound(token.substring(2).trim(), true, true);
-        }
-        if (token.startsWith("<")) {
-            return parseSingleBound(token.substring(1).trim(), false, false);
-        }
-        if (token.startsWith(">")) {
-            return parseSingleBound(token.substring(1).trim(), true, false);
-        }
-        return null;
-    }
-
-    private static NumericPredicate parseSingleBound(String numStr, boolean isLower, boolean inclusive) {
-        if (numStr.isEmpty()) {
-            return null;
-        }
-        try {
-            double n = Double.parseDouble(numStr);
-            if (isLower) {
-                return new NumericPredicate(n, inclusive, null, true);
-            }
-            return new NumericPredicate(null, true, n, inclusive);
-        } catch (NumberFormatException e) {
-            return null;
-        }
-    }
-
-    private static final class NumericPredicate {
-        private final Double lower;
-        private final boolean lowerInclusive;
-        private final Double upper;
-        private final boolean upperInclusive;
-
-        NumericPredicate(Double lower, boolean lowerInclusive, Double upper, boolean upperInclusive) {
-            this.lower = lower;
-            this.lowerInclusive = lowerInclusive;
-            this.upper = upper;
-            this.upperInclusive = upperInclusive;
-        }
-
-        boolean test(double value) {
-            if (lower != null) {
-                if (lowerInclusive ? value < lower : value <= lower) {
-                    return false;
-                }
-            }
-            if (upper != null) {
-                if (upperInclusive ? value > upper : value >= upper) {
-                    return false;
-                }
-            }
-            return true;
-        }
     }
 
     static boolean isPopulated(FormField field) {

@@ -12,6 +12,14 @@ plugins {
 group 'XML-Auto-Validate'
 version '1.0'
 
+// Sequenced-collection methods (List.getFirst) require 21+. Pinning the toolchain keeps the
+// build off whatever JDK happens to be on JAVA_HOME.
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
 repositories {
     mavenCentral()
 }
