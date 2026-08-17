@@ -69,8 +69,11 @@ public class FieldPropertyFactory {
         ConditionalBool fieldRepeated = row.fieldRepeated() != null ? row.fieldRepeated() : ConditionalBool.FALSE;
         Usage required = row.required() != null ? row.required() : Usage.O;
 
-        Integer minOccurs = row.minOccurs() != null ? row.minOccurs()
-                : (required == Usage.R ? 1 : 0);
+        // Deliberately NOT derived from required. Usage is the sole authority on required-presence
+        // (validateRequiredFields), including the conditional CR/CE cases that a static minOccurs
+        // cannot express. minOccurs enforces only a count the form author declared outright, so the
+        // two validation stages stay disjoint and neither relies on the other to catch a missing field.
+        Integer minOccurs = row.minOccurs() != null ? row.minOccurs() : 0;
 
         Integer maxOccurs = row.maxOccurs() != null ? row.maxOccurs()
                 : (fieldRepeated == ConditionalBool.FALSE ? 1 : null);

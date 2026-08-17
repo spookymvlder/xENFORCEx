@@ -121,20 +121,45 @@ public class SingleFieldPropertyValidator {
 
     public static void validateRepeatOccurrences(FieldProperty field) {
         FieldCardinality cardinality = field.getCardinality();
-        //Quit early if field is not repeated.
-        if (cardinality.getFieldRepeated().equals(ConditionalBool.FALSE)) {
-            return;
+        Integer minOccurs = cardinality.getMinOccurs();
+        Integer maxOccurs = cardinality.getMaxOccurs();
+        ConditionalBool fieldRepeated = cardinality.getFieldRepeated();
+        // C and T both permit repetition; only F forbids it.
+        boolean mayRepeat = fieldRepeated != null && fieldRepeated != ConditionalBool.FALSE;
+
+        // Bounds sanity applies whether or not the field repeats. A non-repeating field still carries
+        // an implied maxOccurs of 1, so quitting early for those let minOccurs > maxOccurs through and
+        // produced a schema no document could satisfy, reported against the document rather than the CSV.
+        if (minOccurs != null && minOccurs < 0) {
+            errors.addToCurrentLog(new FieldPropertyValidationError(ErrorSource.SCHEME_FIELD_PROPERTY_VALIDATION,
+                    "minOccurs, if populated, must be at least 0.",
+                    ErrorSeverity.ERROR, field.getFieldId(), field.getFieldName()));
         }
-        if (cardinality.getMinOccurs() != null && cardinality.getMaxOccurs() != null) {
-            if (cardinality.getMinOccurs() > cardinality.getMaxOccurs()) {
-                errors.addToCurrentLog(new FieldPropertyValidationError(ErrorSource.SCHEME_FIELD_PROPERTY_VALIDATION,"minOccurs must be less than or equal to maxOccurs.", ErrorSeverity.ERROR, field.getFieldId(), field.getFieldName()));
+        if (minOccurs != null && maxOccurs != null && minOccurs > maxOccurs) {
+            errors.addToCurrentLog(new FieldPropertyValidationError(ErrorSource.SCHEME_FIELD_PROPERTY_VALIDATION,
+                    "minOccurs (" + minOccurs + ") must be less than or equal to maxOccurs (" + maxOccurs + ")."
+                            + (mayRepeat ? "" : " A field with fieldRepeated=F allows at most one occurrence."),
+                    ErrorSeverity.ERROR, field.getFieldId(), field.getFieldName()));
+        }
+
+        // fieldRepeated and maxOccurs encode overlapping intent. Report the disagreement rather than
+        // picking a winner, so the author resolves it in the CSV instead of the engine guessing.
+        // Whether the contradiction actually bites depends on how many instances the document carries,
+        // which is not known until form validation, so both directions are reported here as errors.
+        if (maxOccurs != null) {
+            if (mayRepeat && maxOccurs < 2) {
+                errors.addToCurrentLog(new FieldPropertyValidationError(ErrorSource.SCHEME_FIELD_PROPERTY_VALIDATION,
+                        "maxOccurs (" + maxOccurs + ") forbids repetition but fieldRepeated is "
+                                + fieldRepeated.getAbbreviation() + ". Set maxOccurs to at least 2, or set "
+                                + "fieldRepeated to F.",
+                        ErrorSeverity.ERROR, field.getFieldId(), field.getFieldName()));
             }
-        }
-        if (cardinality.getMaxOccurs() != null && cardinality.getMaxOccurs() < 2) {
-            errors.addToCurrentLog(new FieldPropertyValidationError(ErrorSource.SCHEME_FIELD_PROPERTY_VALIDATION,"maxOccurs, if populated, must be greater than 1.", ErrorSeverity.ERROR, field.getFieldId(), field.getFieldName()));
-        }
-        if (cardinality.getMinOccurs() != null && cardinality.getMinOccurs() < 0) {
-            errors.addToCurrentLog(new FieldPropertyValidationError(ErrorSource.SCHEME_FIELD_PROPERTY_VALIDATION,"minOccurs, if populated, must be at least 0.", ErrorSeverity.ERROR, field.getFieldId(), field.getFieldName()));
+            if (!mayRepeat && maxOccurs >= 2) {
+                errors.addToCurrentLog(new FieldPropertyValidationError(ErrorSource.SCHEME_FIELD_PROPERTY_VALIDATION,
+                        "maxOccurs (" + maxOccurs + ") permits repetition but fieldRepeated is F. Set "
+                                + "fieldRepeated to T (or C) if the field repeats, otherwise remove maxOccurs.",
+                        ErrorSeverity.ERROR, field.getFieldId(), field.getFieldName()));
+            }
         }
     }
 
