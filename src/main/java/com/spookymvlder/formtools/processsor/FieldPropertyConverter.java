@@ -12,6 +12,8 @@ import com.spookymvlder.formtools.datatypes.fieldproperties.FieldPropertyRow;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.util.ArrayList;
+import java.util.List;
 
 public class FieldPropertyConverter {
     public static class CustomDateConverter extends AbstractBeanField<LocalDate, String> {
@@ -74,6 +76,27 @@ public class FieldPropertyConverter {
 
         String trimmed = value.trim();
         return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    /**
+     * Blank-normalizes a column bound by one of OpenCSV's split annotations. Splitting an empty cell
+     * yields a single-element list holding an empty string, which survives both null and isEmpty
+     * checks and reads downstream as "this column was populated". Returns null when nothing real
+     * remains, so an unpopulated column is indistinguishable from an absent one.
+     */
+    public static List<String> normalizeList(List<String> values) {
+        if (values == null) {
+            return null;
+        }
+
+        List<String> normalized = new ArrayList<>();
+        for (String value : values) {
+            String entry = normalizeBlank(value);
+            if (entry != null) {
+                normalized.add(entry);
+            }
+        }
+        return normalized.isEmpty() ? null : normalized;
     }
 
     public static FieldDataType parseDataType(String value) {

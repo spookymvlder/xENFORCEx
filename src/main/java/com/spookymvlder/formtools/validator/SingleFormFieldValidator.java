@@ -15,8 +15,6 @@ import com.spookymvlder.formtools.utilities.ErrorSeverity;
 import com.spookymvlder.formtools.utilities.ErrorSource;
 import com.spookymvlder.formtools.utilities.StringUtils;
 
-import java.util.List;
-
 public class SingleFormFieldValidator {
     static final ErrorSettings errors = ErrorSettings.getInstance();
 
@@ -74,7 +72,9 @@ public class SingleFormFieldValidator {
         }
 
         validateLength(value, property);
-        validateEnumeration(value, property);
+        // ENUMERATION membership is settled upstream in ProcessFormExtract, which resolves #N index
+        // references and case-insensitive matches before reporting a value it could not canonicalize.
+        // Re-checking here only produced a second message for the same problem, with less detail.
         validateRegex(value, property);
     }
 
@@ -162,22 +162,6 @@ public class SingleFormFieldValidator {
             errors.addToCurrentLog(new ErrorEntry(ErrorSource.FORM_EXTRACT_VALIDATION,
                     "FieldProperty " + property.getFieldId() + " has been assigned a value that is " +
                             "longer than the maximum length of " + maxLength + ".",
-                    ErrorSeverity.ERROR));
-        }
-    }
-
-    private static void validateEnumeration(String value, FieldProperty property) {
-        if (property.getValueRestriction().getDataType() != FieldDataType.ENUMERATION) {
-            return;
-        }
-        List<String> enumerations = property.getValueRestriction().getEnumerations();
-        if (enumerations == null || enumerations.isEmpty()) {
-            return;
-        }
-        if (!enumerations.contains(value)) {
-            errors.addToCurrentLog(new ErrorEntry(ErrorSource.FORM_EXTRACT_VALIDATION,
-                    "FieldProperty " + property.getFieldId() + " has been assigned a value that does " +
-                            "not match any of the enumerated allowed values.",
                     ErrorSeverity.ERROR));
         }
     }

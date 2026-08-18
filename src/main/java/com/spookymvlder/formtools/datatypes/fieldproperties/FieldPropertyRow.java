@@ -93,7 +93,9 @@ public class FieldPropertyRow {
     private Integer minLength;
     @CsvBindByName
     private Integer maxLength;
-    @CsvBindByName
+    // Column is singular; the field is plural. Needs the split binding like the other list columns,
+    // otherwise the pipe-delimited value never becomes a list.
+    @CsvBindAndSplitByName(elementType=String.class, splitOn = "\\|", column="enumeration")
     private List<String> enumerations;
 
     @CsvBindByName

@@ -6,6 +6,7 @@ import com.spookymvlder.formtools.datatypes.GroupingType;
 import com.spookymvlder.formtools.datatypes.fieldproperties.FieldIdentity;
 import com.spookymvlder.formtools.datatypes.fieldproperties.FieldProperty;
 import com.spookymvlder.formtools.datatypes.fieldproperties.FieldPropertyRow;
+import com.spookymvlder.formtools.datatypes.fieldproperties.FieldValueRestriction;
 import com.spookymvlder.formtools.datatypes.FieldPropertyValidationError;
 import com.spookymvlder.formtools.settings.ErrorSettings;
 import com.spookymvlder.formtools.settings.ImportSettings;
@@ -56,18 +57,35 @@ public class ProcessFieldProperties {
         return context.getAllFields();
     }
 
+    /**
+     * Identity a duplicate fieldName could actually be confused with. FormParser resolves a property
+     * to a node by walking a parent's children by element name, so two properties are only
+     * indistinguishable when they share a parent. The same element name repeated under different
+     * parents is normal and was previously warned about on every occurrence.
+     * <p>
+     * Siblings may also legitimately share an element name when each reads a different attribute of
+     * it, so the value target forms part of the key. Only two siblings reading the same element name
+     * AND the same part of that element are genuinely ambiguous.
+     */
+    private static List<String> siblingIdentityKey(FieldProperty field) {
+        FieldValueRestriction value = field.getValueRestriction();
+        String target = value.getAttribute() ? "@" + value.getAttributeName() : "#text";
+        // A list key rather than a delimited string: no separator can be forged, and parentId is
+        // null on the anchor field, which Arrays.asList tolerates and List.of would reject.
+        return Arrays.asList(field.getRelation().getParentId(), field.getFieldName(), target);
+    }
+
     public static void iterateFields(FieldProcessorContext context) {
         Map<String, FieldProperty> idToField = new HashMap<>();
         List<FieldProperty> skippableFields = new ArrayList<>();
         List<FieldProperty> inactiveFields = new ArrayList<>();
-        List<String> fieldNames = new ArrayList<>();
+        Set<List<String>> siblingIdentities = new HashSet<>();
         List<FieldProperty> roots = new ArrayList<>();
         List<String> duplicateNames = new ArrayList<>();
         ImportSettings settings = ImportSettings.getInstance();
         List<FieldProperty> anchorFields = new ArrayList<>();
         List<FieldProperty> activeFields = new ArrayList<>();
 
-        //TODO - duplicate name checking should be no name is a descendant of the same name
         //Step 1 - build a map of all active fields and perform field specific validation
         for (FieldProperty field : context.getAllFields()) {
             FieldIdentity identity = field.getIdentity();
@@ -87,14 +105,17 @@ public class ProcessFieldProperties {
 
 
             //Get fields being skipped to preserve links when building a tree. Also validate name while we know the field isn't being skipped.
-            //TODO need to allow skippable field, handle constituent skippable different, and treat duplicate name differently if part of grouping
+            //TODO need to allow skippable field, handle constituent skippable different
             if (identity.getSkipImport()) {
                 skippableFields.add(field);
-            } else if (fieldNames.contains(field.getFieldName())) {
+            } else if (!siblingIdentities.add(siblingIdentityKey(field))) {
                 duplicateNames.add(field.getFieldName());
-                errors.addToCurrentLog(new FieldPropertyValidationError(ErrorSource.SCHEME_HIERARCHY_CHECK, "Multiple active fields with the same name exist, which may cause unintended behavior.", ErrorSeverity.WARNING, field.getFieldId(), field.getFieldName()));
-            } else {
-                fieldNames.add(field.getFieldName());
+                errors.addToCurrentLog(new FieldPropertyValidationError(ErrorSource.SCHEME_HIERARCHY_CHECK,
+                        "Another active field under parentId " + field.getRelation().getParentId() + " already uses "
+                                + "this fieldName and reads the same part of the element, so the two cannot be told "
+                                + "apart while parsing. Siblings may share a fieldName only when each reads a "
+                                + "different attribute.",
+                        ErrorSeverity.WARNING, field.getFieldId(), field.getFieldName()));
             }
 
             //TODO populate idToField at field creation to possibly make this more efficient.

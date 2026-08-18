@@ -24,13 +24,13 @@ public class FieldPropertyFactory {
                 parseConditionalBool(row.getFieldRepeated()),
                 row.getMinOccurs(),
                 row.getMaxOccurs(),
-                row.getCondRepeatedSourceIds(),
-                row.getCondRepeatedValues(),
+                normalizeList(row.getCondRepeatedSourceIds()),
+                normalizeList(row.getCondRepeatedValues()),
                 parseLinkLogic(row.getCondRepeatedLogic()),
 
                 parseUsage(row.getRequired()),
-                row.getCondRequiredSourceIds(),
-                row.getCondRequiredValues(),
+                normalizeList(row.getCondRequiredSourceIds()),
+                normalizeList(row.getCondRequiredValues()),
                 parseLinkLogic(row.getCondRequiredLogic()),
 
                 normalizeBlank(row.getCodeSystemName()),
@@ -45,7 +45,7 @@ public class FieldPropertyFactory {
                 row.getRangeEndInclusive(),
                 row.getMinLength(),
                 row.getMaxLength(),
-                row.getEnumerations(),
+                normalizeList(row.getEnumerations()),
                 normalizeBlank(row.getRegexPattern()),
 
                 row.getAttribute(),
