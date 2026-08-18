@@ -13,13 +13,17 @@ import com.spookymvlder.formtools.datatypes.fields.SimpleField;
 import com.spookymvlder.formtools.utilities.StringUtils;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
 public class ConditionalRequirementEvaluator {
 
-    //TODO support across-instance ALL semantics (currently across-instance is OR — "any matching
-    //     instance fires"). The form-author opt-in for "all instances must satisfy" is future work.
+    // Per-group ALL (requiring every instance of a shared AND-ancestor to satisfy the whole
+    // per-instance condition, rather than per-source instances of one field) remains unimplemented.
+    // It only has meaning for AND conditions with >1 source sharing a real repeating ancestor, and
+    // was deferred in favor of the per-source axis below, which covers ordinary single-source and
+    // OR-connected cases too.
     public static boolean isConditionRequired(FormField dependentParent, FieldProperty dependent,
                                               ExtractValidatorContext context) {
         FieldCardinality cardinality = dependent.getCardinality();
@@ -31,7 +35,11 @@ public class ConditionalRequirementEvaluator {
             return false;
         }
 
-        if (logic == LinkLogic.OR) {
+        // AND and OR are indistinguishable for a single source, and evaluateAnd's LCA-of-one-path
+        // case degenerates to that source's own position rather than a real shared ancestor (nothing
+        // to compare it against), which would silently break **ALL for the common single-source rule.
+        // Route it through evaluateOr explicitly rather than falling into that degenerate case.
+        if (sourceIds.size() == 1 || logic == LinkLogic.OR) {
             return evaluateOr(dependentParent, dependent.getFieldId(), sourceIds, valueSets, context);
         }
         return evaluateAnd(dependentParent, dependent.getFieldId(), sourceIds, valueSets, context);
@@ -44,10 +52,8 @@ public class ConditionalRequirementEvaluator {
             String[] expected = expectedFor(valueSets, i);
             List<FormField> instances = findAllSources(dependentParent, dependentFieldId,
                     sourceIds.get(i), context);
-            for (FormField instance : instances) {
-                if (matches(instance, expected)) {
-                    return true;
-                }
+            if (matchesSource(instances, expected)) {
+                return true;
             }
         }
         return false;
@@ -95,8 +101,11 @@ public class ConditionalRequirementEvaluator {
             boolean allMatch = true;
             for (int i = 0; i < sourceIds.size(); i++) {
                 String[] expected = expectedFor(valueSets, i);
-                FormField source = descendFromAnchor(anchor, sourcePaths.get(i), sLcaIndex + 1);
-                if (!matches(source, expected)) {
+                List<String> sourcePath = sourcePaths.get(i);
+                // collectInstances (not a single-child descent) so a source repeating below the
+                // shared anchor is fully collected, not just its first occurrence.
+                List<FormField> sources = collectInstances(anchor, sourcePath, sLcaIndex + 1, sourcePath.size() - 1);
+                if (!matchesSource(sources, expected)) {
                     allMatch = false;
                     break;
                 }
@@ -189,23 +198,51 @@ public class ConditionalRequirementEvaluator {
         return results;
     }
 
-    private static FormField descendFromAnchor(FormField anchor, List<String> path, int startIdx) {
-        FormField current = anchor;
-        for (int i = startIdx; i < path.size(); i++) {
-            String stepId = path.get(i);
-            FormField next = null;
-            for (FormField child : current.getChildren()) {
-                if (child.getProperty() != null && stepId.equals(child.getProperty().getFieldId())) {
-                    next = child;
-                    break;
+    /**
+     * Evaluates {@code expected} against every instance of a (possibly repeating) source field, per
+     * the {@code **ALL} token: absent by default, an instance matching satisfies the whole set
+     * ("any instance" — the pre-existing behavior). With {@code **ALL} present, every instance must
+     * match. Zero instances never matches either way, consistent with how {@code **ANY} already
+     * treats an absent field as a non-match rather than vacuously true.
+     */
+    private static boolean matchesSource(List<FormField> instances, String[] expected) {
+        if (instances.isEmpty()) {
+            return false;
+        }
+        boolean requireAll = containsAllModifier(expected);
+        String[] valueTokens = requireAll ? stripAllModifier(expected) : expected;
+        if (requireAll) {
+            for (FormField instance : instances) {
+                if (!matches(instance, valueTokens)) {
+                    return false;
                 }
             }
-            if (next == null) {
-                return null;
-            }
-            current = next;
+            return true;
         }
-        return current;
+        for (FormField instance : instances) {
+            if (matches(instance, valueTokens)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean containsAllModifier(String[] expected) {
+        if (expected == null) {
+            return false;
+        }
+        for (String token : expected) {
+            if (token != null && token.trim().equals("**ALL")) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static String[] stripAllModifier(String[] expected) {
+        return Arrays.stream(expected)
+                .filter(token -> token == null || !token.trim().equals("**ALL"))
+                .toArray(String[]::new);
     }
 
     private static boolean matches(FormField source, String[] expected) {
