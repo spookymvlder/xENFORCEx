@@ -100,7 +100,7 @@ public class SingleFormFieldValidator {
         }
 
         if (rangeStart != null) {
-            Integer cmp = TypedPredicateFactory.compareValues(value, rangeStart, dataType);
+            Integer cmp = TypedPredicateFactory.compareValueToBound(value, rangeStart, dataType);
             if (cmp != null) {
                 boolean inclusive = restriction.getRangeStartInclusive();
                 if (inclusive ? cmp < 0 : cmp <= 0) {
@@ -112,7 +112,7 @@ public class SingleFormFieldValidator {
             }
         }
         if (rangeEnd != null) {
-            Integer cmp = TypedPredicateFactory.compareValues(value, rangeEnd, dataType);
+            Integer cmp = TypedPredicateFactory.compareValueToBound(value, rangeEnd, dataType);
             if (cmp != null) {
                 boolean inclusive = restriction.getRangeEndInclusive();
                 if (inclusive ? cmp > 0 : cmp >= 0) {

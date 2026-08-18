@@ -65,6 +65,22 @@ public class SingleFieldPropertyValidator {
     }
 
 
+    /**
+     * A form author's likeliest mistake with a DATE/DATETIME bound is a relative offset missing its
+     * required +/- sign (see TypedPredicateFactory's class javadoc for why the sign can't be
+     * defaulted). Calling that out specifically, rather than a generic parse failure, makes it
+     * discoverable without already knowing the token grammar exists.
+     */
+    private static String describeBoundParseFailure(String column, String rawValue, FieldDataType type) {
+        boolean isDateFamily = type == FieldDataType.DATE || type == FieldDataType.DATETIME;
+        if (isDateFamily && TypedPredicateFactory.looksLikeUnsignedRelativeOffset(rawValue)) {
+            return column + " value " + rawValue + " looks like a relative offset but is missing the "
+                    + "required +/- sign indicating direction, e.g. -P6M for six months ago or +P1Y for "
+                    + "one year from now.";
+        }
+        return column + " value " + rawValue + " cannot be parsed as a " + type + ".";
+    }
+
     public static void validateRanges(FieldProperty field) {
         FieldValueRestriction value = field.getValueRestriction();
         FieldDataType type = value.getDataType();
@@ -84,23 +100,23 @@ public class SingleFieldPropertyValidator {
             return;
         }
 
-        if (rangeStart != null && !TypedPredicateFactory.isParseable(rangeStart, type)) {
+        if (rangeStart != null && !TypedPredicateFactory.isBoundParseable(rangeStart, type)) {
             errors.addToCurrentLog(new FieldPropertyValidationError(
                     ErrorSource.SCHEME_FIELD_PROPERTY_VALIDATION,
-                    "rangeStart value " + rangeStart + " cannot be parsed as a " + type + ".",
+                    describeBoundParseFailure("rangeStart", rangeStart, type),
                     ErrorSeverity.ERROR, field.getFieldId(), field.getFieldName()));
             return;
         }
-        if (rangeEnd != null && !TypedPredicateFactory.isParseable(rangeEnd, type)) {
+        if (rangeEnd != null && !TypedPredicateFactory.isBoundParseable(rangeEnd, type)) {
             errors.addToCurrentLog(new FieldPropertyValidationError(
                     ErrorSource.SCHEME_FIELD_PROPERTY_VALIDATION,
-                    "rangeEnd value " + rangeEnd + " cannot be parsed as a " + type + ".",
+                    describeBoundParseFailure("rangeEnd", rangeEnd, type),
                     ErrorSeverity.ERROR, field.getFieldId(), field.getFieldName()));
             return;
         }
 
         if (rangeStart != null && rangeEnd != null) {
-            Integer cmp = TypedPredicateFactory.compareValues(rangeStart, rangeEnd, type);
+            Integer cmp = TypedPredicateFactory.compareBounds(rangeStart, rangeEnd, type);
             if (cmp != null) {
                 if (cmp > 0) {
                     errors.addToCurrentLog(new FieldPropertyValidationError(
