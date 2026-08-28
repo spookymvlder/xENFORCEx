@@ -42,6 +42,10 @@ public class ErrorSettings {
         return this.logCount;
     }
 
+    public Integer getCurrentLogId() {
+        return this.currentLogId;
+    }
+
     public ErrorSeverity getErrorThreshold() {
         return this.errorThreshold;
     }
