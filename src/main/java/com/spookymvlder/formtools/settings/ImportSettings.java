@@ -13,7 +13,9 @@ public class ImportSettings {
     //Usually 0, what node stripping should start at.
     //Default to firstChildElement. It may be possible that the form root has data,
     private int anchorElementIndex;
-    private boolean testIgnoreXSD;
+    // Renamed from testIgnoreXSD: this is now a permanent, user-facing setting (exposed in the CLI
+    // settings menu), not a testing scaffold. Default false: XSD validation runs unless disabled.
+    private boolean skipXsdValidation;
     private Boolean specImported;
     private String rootId;
 
@@ -23,7 +25,7 @@ public class ImportSettings {
         this.specFilePath = null;
         this.anchorElementName = null;
         this.anchorElementIndex = 0;
-        this.testIgnoreXSD = false;
+        this.skipXsdValidation = false;
         this.specImported = false;
         this.rootField = null;
         this.rootId = null;
@@ -84,12 +86,12 @@ public class ImportSettings {
         this.anchorElementIndex = anchorElementIndex;
     }
 
-    public boolean getTestIgnoreXSD() {
-        return testIgnoreXSD;
+    public boolean getSkipXsdValidation() {
+        return skipXsdValidation;
     }
 
-    public void setTestIgnoreXSD(boolean testIgnoreXSD) {
-        this.testIgnoreXSD = testIgnoreXSD;
+    public void setSkipXsdValidation(boolean skipXsdValidation) {
+        this.skipXsdValidation = skipXsdValidation;
     }
 
     public Boolean getSpecImported() {
