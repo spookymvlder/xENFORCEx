@@ -18,6 +18,8 @@ public class ImportSettings {
     private boolean skipXsdValidation;
     private Boolean specImported;
     private String rootId;
+    // Blank/null means "next to the source XML" - see PipelineRunner.commit.
+    private String outputDirectory;
 
     private ImportSettings() {
         this.xmlFilePath = null;
@@ -29,6 +31,7 @@ public class ImportSettings {
         this.specImported = false;
         this.rootField = null;
         this.rootId = null;
+        this.outputDirectory = null;
     }
 
     public static ImportSettings getInstance() {
@@ -108,5 +111,13 @@ public class ImportSettings {
 
     public void setRootId(String rootId) {
         this.rootId = rootId;
+    }
+
+    public String getOutputDirectory() {
+        return outputDirectory;
+    }
+
+    public void setOutputDirectory(String outputDirectory) {
+        this.outputDirectory = outputDirectory;
     }
 }

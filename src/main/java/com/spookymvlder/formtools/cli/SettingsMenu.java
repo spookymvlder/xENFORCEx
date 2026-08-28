@@ -70,6 +70,7 @@ public class SettingsMenu {
         System.out.println("5. skipXsdValidation  = " + c.isSkipXsdValidation());
         System.out.println("6. dateFormat         = " + c.getDateFormat());
         System.out.println("7. errorThreshold     = " + c.getErrorThreshold());
+        System.out.println("8. outputDirectory    = " + display(c.getOutputDirectory()) + " (blank = next to the source XML)");
     }
 
     private static String display(String value) {
@@ -86,22 +87,40 @@ public class SettingsMenu {
                     promptBoolean(scanner, "skipXsdValidation", working.isSkipXsdValidation()));
             case "6" -> working.setDateFormat(promptString(scanner, "dateFormat", working.getDateFormat()));
             case "7" -> working.setErrorThreshold(promptSeverity(scanner, working.getErrorThreshold()));
+            case "8" -> working.setOutputDirectory(promptDirectory(scanner, working.getOutputDirectory()));
             default -> System.out.println("Unrecognized option: " + input);
         }
     }
 
-    /** Blank input keeps the current value rather than clearing it - there's no sensible reason a
-     * form author would want any of these settings to become blank as a normal edit. */
+    /** Blank input keeps the current value; a single "-" explicitly clears it back to unset. Most
+     * settings have no real reason to want blank, but outputDirectory does (blank means "use the
+     * source XML's own directory"), so the sentinel is here rather than only on that one field. */
     private static String promptString(Scanner scanner, String label, String current) {
-        System.out.print("New " + label + " [" + display(current) + "]: ");
+        System.out.print("New " + label + " [" + display(current) + "], or - to clear: ");
         String value = scanner.nextLine().trim();
-        return value.isEmpty() ? current : value;
+        if (value.isEmpty()) {
+            return current;
+        }
+        return value.equals("-") ? null : value;
     }
 
     private static String promptPath(Scanner scanner, String label, String current) {
         String value = promptString(scanner, label, current);
         if (value != null && !new File(value).exists()) {
             System.out.println("Warning: no file currently exists at that path.");
+        }
+        return value;
+    }
+
+    private static String promptDirectory(Scanner scanner, String current) {
+        String value = promptString(scanner, "outputDirectory", current);
+        if (value != null) {
+            File dir = new File(value);
+            if (dir.exists() && !dir.isDirectory()) {
+                System.out.println("Warning: that path exists but is not a directory.");
+            } else if (!dir.exists()) {
+                System.out.println("Note: that directory doesn't exist yet - it will be created when needed.");
+            }
         }
         return value;
     }

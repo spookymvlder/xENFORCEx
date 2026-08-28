@@ -34,6 +34,7 @@ public class ConfigFileManager {
         config.setXsdFilePath(props.getProperty("xsdFilePath"));
         config.setSpecFilePath(props.getProperty("specFilePath"));
         config.setRootId(props.getProperty("rootId"));
+        config.setOutputDirectory(props.getProperty("outputDirectory"));
         config.setSkipXsdValidation(Boolean.parseBoolean(props.getProperty("skipXsdValidation", "false")));
         config.setDateFormat(props.getProperty("dateFormat", "yyyy-MM-dd"));
         String thresholdRaw = props.getProperty("errorThreshold", "FATAL").trim().toUpperCase();
@@ -51,6 +52,7 @@ public class ConfigFileManager {
         putIfNotNull(props, "xsdFilePath", config.getXsdFilePath());
         putIfNotNull(props, "specFilePath", config.getSpecFilePath());
         putIfNotNull(props, "rootId", config.getRootId());
+        putIfNotNull(props, "outputDirectory", config.getOutputDirectory());
         props.setProperty("skipXsdValidation", String.valueOf(config.isSkipXsdValidation()));
         props.setProperty("dateFormat", config.getDateFormat());
         props.setProperty("errorThreshold", config.getErrorThreshold().name());
@@ -73,6 +75,7 @@ public class ConfigFileManager {
         config.setXsdFilePath(importSettings.getXsdFilePath());
         config.setSpecFilePath(importSettings.getSpecFilePath());
         config.setRootId(importSettings.getRootId());
+        config.setOutputDirectory(importSettings.getOutputDirectory());
         config.setSkipXsdValidation(importSettings.getSkipXsdValidation());
         config.setDateFormat(ProcessingOverrides.getInstance().getDateFormat());
         config.setErrorThreshold(ErrorSettings.getInstance().getErrorThreshold());
@@ -86,6 +89,7 @@ public class ConfigFileManager {
         importSettings.setXsdFilePath(config.getXsdFilePath());
         importSettings.setSpecFilePath(config.getSpecFilePath());
         importSettings.setRootId(config.getRootId());
+        importSettings.setOutputDirectory(config.getOutputDirectory());
         importSettings.setSkipXsdValidation(config.isSkipXsdValidation());
         ProcessingOverrides.getInstance().setDateFormat(config.getDateFormat());
         ProcessingOverrides.getInstance().setConverters();

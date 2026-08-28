@@ -32,7 +32,7 @@ public class CliApp {
                 case "1" -> SettingsMenu.run(scanner);
                 case "2" -> runSchemaOnly();
                 case "3" -> runReview(scanner);
-                case "4" -> runCommit();
+                case "4" -> runCommit(scanner);
                 case "5" -> discardPending();
                 case "6" -> browseErrorLogs(scanner);
                 case "7" -> running = false;
@@ -75,7 +75,7 @@ public class CliApp {
             System.out.print("A form is already pending. [C]ommit, [D]iscard, or [A]bort this review? ");
             String choice = scanner.nextLine().trim().toUpperCase();
             if (choice.equals("C")) {
-                runCommit();
+                runCommit(scanner);
             } else if (choice.equals("D")) {
                 discardPending();
             } else {
@@ -83,8 +83,8 @@ public class CliApp {
                 return;
             }
             if (reviewSession.hasPending()) {
-                // Commit is a stub and never actually clears the pending form - don't start a
-                // second review on top of one that's still sitting there.
+                // Commit can leave the form pending on a declined overwrite or a write failure -
+                // don't start a second review on top of one that's still sitting there.
                 return;
             }
         }
@@ -99,12 +99,17 @@ public class CliApp {
         }
     }
 
-    private void runCommit() {
+    private void runCommit(Scanner scanner) {
         if (!reviewSession.hasPending()) {
             System.out.println("Nothing pending to commit.");
             return;
         }
-        PipelineRunner.commit(reviewSession.getForms());
+        boolean success = PipelineRunner.commit(reviewSession.getForms(), scanner);
+        if (success) {
+            reviewSession.clear();
+        } else {
+            System.out.println("Commit did not fully succeed - the pending form is still held so you can retry.");
+        }
     }
 
     private void discardPending() {

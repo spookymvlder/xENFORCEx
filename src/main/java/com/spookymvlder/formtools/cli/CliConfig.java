@@ -17,6 +17,7 @@ public class CliConfig {
     private boolean skipXsdValidation;
     private String dateFormat;
     private ErrorSeverity errorThreshold;
+    private String outputDirectory;
 
     public CliConfig() {
         this.skipXsdValidation = false;
@@ -33,6 +34,7 @@ public class CliConfig {
         copy.skipXsdValidation = this.skipXsdValidation;
         copy.dateFormat = this.dateFormat;
         copy.errorThreshold = this.errorThreshold;
+        copy.outputDirectory = this.outputDirectory;
         return copy;
     }
 
@@ -90,5 +92,13 @@ public class CliConfig {
 
     public void setErrorThreshold(ErrorSeverity errorThreshold) {
         this.errorThreshold = errorThreshold;
+    }
+
+    public String getOutputDirectory() {
+        return outputDirectory;
+    }
+
+    public void setOutputDirectory(String outputDirectory) {
+        this.outputDirectory = outputDirectory;
     }
 }
