@@ -1,14 +1,21 @@
 package com.spookymvlder.formtools.processsor;
 
 import com.spookymvlder.formtools.datatypes.ConditionalBool;
+import com.spookymvlder.formtools.datatypes.FieldDataType;
+import com.spookymvlder.formtools.datatypes.FieldPropertyValidationError;
 import com.spookymvlder.formtools.datatypes.GroupingType;
 import com.spookymvlder.formtools.datatypes.Usage;
 import com.spookymvlder.formtools.datatypes.fieldproperties.*;
+import com.spookymvlder.formtools.settings.ErrorSettings;
 import com.spookymvlder.formtools.settings.ProcessingOverrides;
+import com.spookymvlder.formtools.utilities.ErrorSeverity;
+import com.spookymvlder.formtools.utilities.ErrorSource;
 
 import static com.spookymvlder.formtools.processsor.FieldPropertyConverter.*;
 
 public class FieldPropertyFactory {
+
+    static final ErrorSettings errors = ErrorSettings.getInstance();
 
     public static ResolvedFieldPropertyRow parseRow(FieldPropertyRow row) {
         return new ResolvedFieldPropertyRow(
@@ -26,12 +33,12 @@ public class FieldPropertyFactory {
                 row.getMaxOccurs(),
                 normalizeList(row.getCondRepeatedSourceIds()),
                 normalizeList(row.getCondRepeatedValues()),
-                parseLinkLogic(row.getCondRepeatedLogic()),
+                parseLinkLogic("condRepeatedLogic", row.getCondRepeatedLogic()),
 
                 parseUsage(row.getRequired()),
                 normalizeList(row.getCondRequiredSourceIds()),
                 normalizeList(row.getCondRequiredValues()),
-                parseLinkLogic(row.getCondRequiredLogic()),
+                parseLinkLogic("condRequiredLogic", row.getCondRequiredLogic()),
 
                 normalizeBlank(row.getCodeSystemName()),
                 normalizeBlank(row.getCodeSystemId()),
@@ -83,6 +90,21 @@ public class FieldPropertyFactory {
         Boolean rangeEndInclusive = (row.rangeEndInclusive() != null || row.rangeEnd() == null)
                 ? row.rangeEndInclusive() : Boolean.TRUE;
 
+        GroupingType groupingType = row.groupingType() != null ? row.groupingType() : GroupingType.NONE;
+
+        // CONTAINER/COMPOSITE carry no value of their own, so a blank dataType there is correct and
+        // silent. Every other grouping type (including CONSTITUENT, which is a leaf value within a
+        // composite) needs a real dataType for validation to mean anything, so defaulting it silently
+        // like the other columns above would just recreate the exact blind spot this default is
+        // meant to close. Warn instead of erroring: the field still imports, but the author is told.
+        FieldDataType dataType = row.dataType();
+        if (dataType == null && groupingType != GroupingType.CONTAINER && groupingType != GroupingType.COMPOSITE) {
+            dataType = FieldDataType.STRING;
+            errors.addToCurrentLog(new FieldPropertyValidationError(ErrorSource.SCHEME_FIELD_PROPERTY_VALIDATION,
+                    "dataType was not set; defaulting to STRING. Set dataType explicitly to silence this warning.",
+                    ErrorSeverity.WARNING, row.fieldId(), row.fieldName()));
+        }
+
         return new ResolvedFieldPropertyRow(
                 row.fieldId(),
                 row.fieldName(),
@@ -110,7 +132,7 @@ public class FieldPropertyFactory {
                 row.codeSystemVersion(),
                 row.codeSystemCode(),
 
-                row.dataType(),
+                dataType,
                 row.rangeStart(),
                 row.rangeEnd(),
                 rangeStartInclusive,
@@ -129,7 +151,7 @@ public class FieldPropertyFactory {
                 row.validationMessage(),
 
                 row.skipImport(),
-                row.groupingType() != null ? row.groupingType() : GroupingType.NONE,
+                groupingType,
                 row.componentOf()
         );
     }

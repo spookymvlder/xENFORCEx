@@ -25,10 +25,52 @@ public class SingleFieldPropertyValidator {
     public static void validateWithErrors(FieldProperty field)  {
         validateAttributes(field);
         validateRanges(field);
+        validateLengthConstraints(field);
         validateRepeatOccurrences(field);
         validateActiveRange(field);
         validateGroupingType(field);
         validateEnumerations(field);
+    }
+
+    // Scope of supportsLength() is the single hook for expanding which types accept
+    // minLength/maxLength later; this method and SingleFormFieldValidator's document-side check both
+    // read it, so neither needs to change when that set grows.
+    public static void validateLengthConstraints(FieldProperty field) {
+        FieldValueRestriction value = field.getValueRestriction();
+        FieldDataType type = value.getDataType();
+        Integer minLength = value.getMinLength();
+        Integer maxLength = value.getMaxLength();
+
+        if (minLength == null && maxLength == null) {
+            return;
+        }
+
+        if (type == null || !type.supportsLength()) {
+            errors.addToCurrentLog(new FieldPropertyValidationError(
+                    ErrorSource.SCHEME_FIELD_PROPERTY_VALIDATION,
+                    "minLength/maxLength are only valid for STRING or CHARACTER fields.",
+                    ErrorSeverity.ERROR, field.getFieldId(), field.getFieldName()));
+            return;
+        }
+
+        if (minLength != null && minLength < 0) {
+            errors.addToCurrentLog(new FieldPropertyValidationError(
+                    ErrorSource.SCHEME_FIELD_PROPERTY_VALIDATION,
+                    "minLength, if populated, must be at least 0.",
+                    ErrorSeverity.ERROR, field.getFieldId(), field.getFieldName()));
+        }
+        if (maxLength != null && maxLength < 0) {
+            errors.addToCurrentLog(new FieldPropertyValidationError(
+                    ErrorSource.SCHEME_FIELD_PROPERTY_VALIDATION,
+                    "maxLength, if populated, must be at least 0.",
+                    ErrorSeverity.ERROR, field.getFieldId(), field.getFieldName()));
+        }
+        if (minLength != null && maxLength != null && minLength > maxLength) {
+            errors.addToCurrentLog(new FieldPropertyValidationError(
+                    ErrorSource.SCHEME_FIELD_PROPERTY_VALIDATION,
+                    "minLength must be less than or equal to maxLength.",
+                    ErrorSeverity.ERROR, field.getFieldId(), field.getFieldName()));
+        }
     }
 
     public static void validateEnumerations(FieldProperty field) {

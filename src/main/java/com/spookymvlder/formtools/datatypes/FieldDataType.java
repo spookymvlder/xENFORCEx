@@ -49,4 +49,21 @@ public enum FieldDataType {
     public boolean isNumeric() {
         return numeric;
     }
+
+    /**
+     * Whether minLength/maxLength are meaningful for this type's value. Scoped to STRING and
+     * CHARACTER for now. To extend later (e.g. EMAIL, URL, TELEPHONE, POSTAL_CODE, LABEL,
+     * COUNTRY_CODE are the natural next candidates — anything else with a free-form string
+     * representation), add it to this switch; both SingleFieldPropertyValidator's schema-side check
+     * and SingleFormFieldValidator's document-side check read this single source, so nothing else
+     * needs to change. Deliberately excludes ordered types (DATE, numeric, ...): their string
+     * representation is already fixed-length by parsing, so a length constraint there is either
+     * always true or impossible, never a meaningful check.
+     */
+    public boolean supportsLength() {
+        return switch (this) {
+            case STRING, CHARACTER -> true;
+            default -> false;
+        };
+    }
 }

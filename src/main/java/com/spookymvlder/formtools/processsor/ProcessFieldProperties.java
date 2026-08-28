@@ -263,7 +263,19 @@ public class ProcessFieldProperties {
     private static void convertFieldProperties(FieldProcessorContext context) {
         List<FieldProperty> allFields = new ArrayList<>();
         for (FieldPropertyRow row : context.getAllRows()) {
-            allFields.add(FieldPropertyFactory.buildFieldProperty(row));
+            try {
+                allFields.add(FieldPropertyFactory.buildFieldProperty(row));
+            } catch (IllegalArgumentException e) {
+                // dataType/required/groupingType/condRequiredLogic/condRepeatedLogic are parsed here,
+                // after OpenCSV's own binding step, so a bad value doesn't go through the try/catch
+                // that turns a bad active/fieldRepeated/expireDate value into a clean FATAL there.
+                // Catch it at this level instead of leaving it to escape as an uncaught crash. FATAL
+                // (not ERROR) because the row has no valid FieldProperty to fall back to; it's
+                // excluded from the tree, and the FATAL halts the run at this stage's boundary before
+                // any later stage has to reason about a schema missing one of its fields.
+                errors.addToCurrentLog(new FieldPropertyValidationError(ErrorSource.SCHEME_FIELD_PROPERTY_VALIDATION,
+                        e.getMessage(), ErrorSeverity.FATAL, row.getFieldId(), row.getFieldName()));
+            }
         }
         context.setAllFields(allFields);
 

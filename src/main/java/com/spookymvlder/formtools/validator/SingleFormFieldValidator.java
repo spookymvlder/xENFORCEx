@@ -71,7 +71,13 @@ public class SingleFormFieldValidator {
             }
         }
 
-        validateLength(value, property);
+        // Gated on supportsLength() rather than always running: for an ordered type (DATE, numeric,
+        // ...) the string representation is already fixed by parsing, so a length constraint there
+        // would be either always true or impossible, never a meaningful check. Expanding which types
+        // accept minLength/maxLength is a one-line change to FieldDataType.supportsLength() alone.
+        if (dataType != null && dataType.supportsLength()) {
+            validateLength(value, property);
+        }
         // ENUMERATION membership is settled upstream in ProcessFormExtract, which resolves #N index
         // references and case-insensitive matches before reporting a value it could not canonicalize.
         // Re-checking here only produced a second message for the same problem, with less detail.
