@@ -16,6 +16,8 @@ import com.spookymvlder.formtools.utilities.ErrorSource;
 import com.spookymvlder.formtools.utilities.StringUtils;
 
 import java.time.LocalDate;
+import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 
 //TODO add validation that name is unique
 public class SingleFieldPropertyValidator {
@@ -30,6 +32,27 @@ public class SingleFieldPropertyValidator {
         validateActiveRange(field);
         validateGroupingType(field);
         validateEnumerations(field);
+        validateRegexPattern(field);
+    }
+
+    // Catches a bad regexPattern once, at import, instead of only when a document happens to
+    // populate the field. Document-side validateRegex keeps its own try/catch too: an ERROR here
+    // doesn't halt the import, so a schema that still has the bad pattern by the time a document is
+    // validated needs its own defense against the same PatternSyntaxException, not just an earlier
+    // warning about it.
+    public static void validateRegexPattern(FieldProperty field) {
+        String pattern = field.getValueRestriction().getRegexPattern();
+        if (StringUtils.isNullOrEmpty(pattern)) {
+            return;
+        }
+        try {
+            Pattern.compile(pattern);
+        } catch (PatternSyntaxException e) {
+            errors.addToCurrentLog(new FieldPropertyValidationError(
+                    ErrorSource.SCHEME_FIELD_PROPERTY_VALIDATION,
+                    "regexPattern is not a valid regular expression: " + e.getMessage(),
+                    ErrorSeverity.ERROR, field.getFieldId(), field.getFieldName()));
+        }
     }
 
     // Scope of supportsLength() is the single hook for expanding which types accept
