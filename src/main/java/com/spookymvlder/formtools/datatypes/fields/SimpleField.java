@@ -36,7 +36,8 @@ public class SimpleField extends EntryField {
         return value;
     }
 
-
-
+    public void setValue(FieldData value) {
+        this.value = value;
+    }
 
 }

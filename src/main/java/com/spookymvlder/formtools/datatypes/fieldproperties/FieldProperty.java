@@ -37,7 +37,7 @@ public class FieldProperty {
         return cardinality;
     }
 
-    public FieldValueRestriction getValue() {
+    public FieldValueRestriction getValueRestriction() {
         return value;
     }
 
@@ -64,20 +64,5 @@ public class FieldProperty {
         this.relation.setParentField(parentField);
         parentField.getRelation().addChildField(this);
     }
-
-//
-//    public void removeFieldFromTree() {
-//        if (this.parentId.equalsIgnoreCase("root")) {
-//            ErrorSettings.getInstance().addToCurrentLog(new FieldPropertyValidationError(ErrorSource.FIELD_TREE_RESTRUCTURING, "Attempting to remove root node field.", ErrorSeverity.FATAL, fieldId, fieldName));
-//        } else {
-//            for (FieldProperty childField : this.childFields) {
-//                childField.setParentField(this.parentField);
-//                this.parentField.addChildField(childField);
-//            }
-//            this.parentField.removeChildField(this);
-//        }
-//    }
-
-
 
 }

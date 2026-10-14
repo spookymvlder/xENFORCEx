@@ -2,6 +2,7 @@ package com.spookymvlder.formtools.datatypes.fieldproperties;
 
 import com.spookymvlder.formtools.datatypes.ConditionalBool;
 import com.spookymvlder.formtools.datatypes.LinkLogic;
+import com.spookymvlder.formtools.datatypes.Usage;
 
 import java.util.List;
 
@@ -14,7 +15,7 @@ public class FieldCardinality {
     private List<String[]> condRepeatedValues;
     private LinkLogic condRepeatedLogic;
 
-    private ConditionalBool required;
+    private Usage required;
     //TODO import separate conditionally mandatory logic if complicated.
     private List<String> condRequiredSourceIds;
     private List<String[]> condRequiredValues;
@@ -26,7 +27,7 @@ public class FieldCardinality {
                             List<String> condRepeatedSourceIds,
                             List<String> condRepeatedValues,
                             LinkLogic condRepeatedLogic,
-                            ConditionalBool required,
+                            Usage required,
                             List<String> condRequiredSourceIds,
                             List<String> condRequiredValues,
                             LinkLogic condRequiredLogic) {
@@ -44,9 +45,7 @@ public class FieldCardinality {
 
 
     private List<String[]> getProcessedCondRepeatedValues(List<String> condRepeatedValues) {
-        return condRepeatedValues.stream()
-                .map(s -> s.split(","))
-                .toList();
+        return processValueSets(condRepeatedValues);
     }
 
     public ConditionalBool getFieldRepeated() {
@@ -74,12 +73,27 @@ public class FieldCardinality {
     }
 
     private List<String[]> getProcessedCondRequiredValues(List<String> condRequiredValues) {
-        return condRequiredValues.stream()
+        return processValueSets(condRequiredValues);
+    }
+
+    //TODO extend to recognize **!, comparators (<, >, <=, >=), ranges (a-b), enum-index references.
+    private static List<String[]> processValueSets(List<String> rawValueSets) {
+        if (rawValueSets == null) {
+            return new java.util.ArrayList<>();
+        }
+        return rawValueSets.stream()
+                .map(s -> s == null ? "" : s.trim())
+                .map(s -> {
+                    if (s.startsWith("{") && s.endsWith("}")) {
+                        return s.substring(1, s.length() - 1);
+                    }
+                    return s;
+                })
                 .map(s -> s.split(","))
                 .toList();
     }
 
-    public ConditionalBool getRequired() {
+    public Usage getRequired() {
         return required;
     }
 

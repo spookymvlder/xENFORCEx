@@ -1,6 +1,9 @@
 package com.spookymvlder.formtools.processsor;
 
 import com.spookymvlder.formtools.datatypes.ConditionalBool;
+import com.spookymvlder.formtools.datatypes.FieldDataType;
+import com.spookymvlder.formtools.datatypes.TypedPredicateFactory;
+import com.spookymvlder.formtools.datatypes.ErrorEntry;
 import com.spookymvlder.formtools.datatypes.fieldproperties.FieldCardinality;
 import com.spookymvlder.formtools.datatypes.fieldproperties.FieldIdentity;
 import com.spookymvlder.formtools.datatypes.fieldproperties.FieldProperty;
@@ -13,6 +16,8 @@ import com.spookymvlder.formtools.utilities.ErrorSource;
 import com.spookymvlder.formtools.utilities.StringUtils;
 
 import java.time.LocalDate;
+import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 
 //TODO add validation that name is unique
 public class SingleFieldPropertyValidator {
@@ -22,14 +27,97 @@ public class SingleFieldPropertyValidator {
     public static void validateWithErrors(FieldProperty field)  {
         validateAttributes(field);
         validateRanges(field);
+        validateLengthConstraints(field);
         validateRepeatOccurrences(field);
         validateActiveRange(field);
         validateGroupingType(field);
+        validateEnumerations(field);
+        validateRegexPattern(field);
+    }
 
+    // Catches a bad regexPattern once, at import, instead of only when a document happens to
+    // populate the field. Document-side validateRegex keeps its own try/catch too: an ERROR here
+    // doesn't halt the import, so a schema that still has the bad pattern by the time a document is
+    // validated needs its own defense against the same PatternSyntaxException, not just an earlier
+    // warning about it.
+    public static void validateRegexPattern(FieldProperty field) {
+        String pattern = field.getValueRestriction().getRegexPattern();
+        if (StringUtils.isNullOrEmpty(pattern)) {
+            return;
+        }
+        try {
+            Pattern.compile(pattern);
+        } catch (PatternSyntaxException e) {
+            errors.addToCurrentLog(new FieldPropertyValidationError(
+                    ErrorSource.SCHEME_FIELD_PROPERTY_VALIDATION,
+                    "regexPattern is not a valid regular expression: " + e.getMessage(),
+                    ErrorSeverity.ERROR, field.getFieldId(), field.getFieldName()));
+        }
+    }
+
+    // Scope of supportsLength() is the single hook for expanding which types accept
+    // minLength/maxLength later; this method and SingleFormFieldValidator's document-side check both
+    // read it, so neither needs to change when that set grows.
+    public static void validateLengthConstraints(FieldProperty field) {
+        FieldValueRestriction value = field.getValueRestriction();
+        FieldDataType type = value.getDataType();
+        Integer minLength = value.getMinLength();
+        Integer maxLength = value.getMaxLength();
+
+        if (minLength == null && maxLength == null) {
+            return;
+        }
+
+        if (type == null || !type.supportsLength()) {
+            errors.addToCurrentLog(new FieldPropertyValidationError(
+                    ErrorSource.SCHEME_FIELD_PROPERTY_VALIDATION,
+                    "minLength/maxLength are only valid for STRING or CHARACTER fields.",
+                    ErrorSeverity.ERROR, field.getFieldId(), field.getFieldName()));
+            return;
+        }
+
+        if (minLength != null && minLength < 0) {
+            errors.addToCurrentLog(new FieldPropertyValidationError(
+                    ErrorSource.SCHEME_FIELD_PROPERTY_VALIDATION,
+                    "minLength, if populated, must be at least 0.",
+                    ErrorSeverity.ERROR, field.getFieldId(), field.getFieldName()));
+        }
+        if (maxLength != null && maxLength < 0) {
+            errors.addToCurrentLog(new FieldPropertyValidationError(
+                    ErrorSource.SCHEME_FIELD_PROPERTY_VALIDATION,
+                    "maxLength, if populated, must be at least 0.",
+                    ErrorSeverity.ERROR, field.getFieldId(), field.getFieldName()));
+        }
+        if (minLength != null && maxLength != null && minLength > maxLength) {
+            errors.addToCurrentLog(new FieldPropertyValidationError(
+                    ErrorSource.SCHEME_FIELD_PROPERTY_VALIDATION,
+                    "minLength must be less than or equal to maxLength.",
+                    ErrorSeverity.ERROR, field.getFieldId(), field.getFieldName()));
+        }
+    }
+
+    public static void validateEnumerations(FieldProperty field) {
+        FieldValueRestriction value = field.getValueRestriction();
+        boolean hasEnumerations = value.getEnumerations() != null && !value.getEnumerations().isEmpty();
+        boolean isEnumerationType = value.getDataType() == FieldDataType.ENUMERATION;
+
+        if (isEnumerationType && !hasEnumerations) {
+            errors.addToCurrentLog(new FieldPropertyValidationError(
+                    ErrorSource.SCHEME_FIELD_PROPERTY_VALIDATION,
+                    "FieldProperty with dataType ENUMERATION must declare at least one entry in the enumeration list.",
+                    ErrorSeverity.ERROR, field.getFieldId(), field.getFieldName()));
+        }
+        if (!isEnumerationType && hasEnumerations) {
+            errors.addToCurrentLog(new FieldPropertyValidationError(
+                    ErrorSource.SCHEME_FIELD_PROPERTY_VALIDATION,
+                    "The enumerations column is only valid when dataType is ENUMERATION. " +
+                            "Use ENUMERATION (or the future CODED_VALUE / CUSTOM types) for restricted value sets.",
+                    ErrorSeverity.ERROR, field.getFieldId(), field.getFieldName()));
+        }
     }
 
     public static void validateAttributes(FieldProperty field) {
-        FieldValueRestriction value = field.getValue();
+        FieldValueRestriction value = field.getValueRestriction();
         //If there is a name for the attribute and isAttribute is not true
         if (!StringUtils.isNullOrEmpty(value.getAttributeName()) && !value.getAttribute()) {
             errors.addToCurrentLog(new FieldPropertyValidationError(ErrorSource.SCHEME_FIELD_PROPERTY_VALIDATION,"isAttribute is required when attributeName is set.", ErrorSeverity.ERROR, field.getFieldId(), field.getFieldName()));
@@ -42,14 +130,70 @@ public class SingleFieldPropertyValidator {
     }
 
 
+    /**
+     * A form author's likeliest mistake with a DATE/DATETIME bound is a relative offset missing its
+     * required +/- sign (see TypedPredicateFactory's class javadoc for why the sign can't be
+     * defaulted). Calling that out specifically, rather than a generic parse failure, makes it
+     * discoverable without already knowing the token grammar exists.
+     */
+    private static String describeBoundParseFailure(String column, String rawValue, FieldDataType type) {
+        boolean isDateFamily = type == FieldDataType.DATE || type == FieldDataType.DATETIME;
+        if (isDateFamily && TypedPredicateFactory.looksLikeUnsignedRelativeOffset(rawValue)) {
+            return column + " value " + rawValue + " looks like a relative offset but is missing the "
+                    + "required +/- sign indicating direction, e.g. -P6M for six months ago or +P1Y for "
+                    + "one year from now.";
+        }
+        return column + " value " + rawValue + " cannot be parsed as a " + type + ".";
+    }
+
     public static void validateRanges(FieldProperty field) {
-        FieldValueRestriction value = field.getValue();
-        if (value.getRangeStart() != null && value.getRangeEnd() != null) {
-            if (value.getRangeStart() > value.getRangeEnd()) {
-                errors.addToCurrentLog(new FieldPropertyValidationError(ErrorSource.SCHEME_FIELD_PROPERTY_VALIDATION,"rangeStart must be less than or equal to rangeEnd.", ErrorSeverity.ERROR, field.getFieldId(), field.getFieldName()));
-            }
-            if (value.getRangeStart().equals(value.getRangeEnd())) {
-                errors.addToCurrentLog(new FieldPropertyValidationError(ErrorSource.SCHEME_FIELD_PROPERTY_VALIDATION,"No valid values for ranges.", ErrorSeverity.ERROR, field.getFieldId(), field.getFieldName()));
+        FieldValueRestriction value = field.getValueRestriction();
+        FieldDataType type = value.getDataType();
+        String rangeStart = value.getRangeStart();
+        String rangeEnd = value.getRangeEnd();
+
+        if (rangeStart == null && rangeEnd == null) {
+            return;
+        }
+
+        if (type == null || !TypedPredicateFactory.supportsRanges(type)) {
+            errors.addToCurrentLog(new FieldPropertyValidationError(
+                    ErrorSource.SCHEME_FIELD_PROPERTY_VALIDATION,
+                    "rangeStart/rangeEnd are only valid for ordered data types (numeric, DATE, TIME, " +
+                            "DATETIME, GYEAR, GYEARMONTH, GMONTH).",
+                    ErrorSeverity.ERROR, field.getFieldId(), field.getFieldName()));
+            return;
+        }
+
+        if (rangeStart != null && !TypedPredicateFactory.isBoundParseable(rangeStart, type)) {
+            errors.addToCurrentLog(new FieldPropertyValidationError(
+                    ErrorSource.SCHEME_FIELD_PROPERTY_VALIDATION,
+                    describeBoundParseFailure("rangeStart", rangeStart, type),
+                    ErrorSeverity.ERROR, field.getFieldId(), field.getFieldName()));
+            return;
+        }
+        if (rangeEnd != null && !TypedPredicateFactory.isBoundParseable(rangeEnd, type)) {
+            errors.addToCurrentLog(new FieldPropertyValidationError(
+                    ErrorSource.SCHEME_FIELD_PROPERTY_VALIDATION,
+                    describeBoundParseFailure("rangeEnd", rangeEnd, type),
+                    ErrorSeverity.ERROR, field.getFieldId(), field.getFieldName()));
+            return;
+        }
+
+        if (rangeStart != null && rangeEnd != null) {
+            Integer cmp = TypedPredicateFactory.compareBounds(rangeStart, rangeEnd, type);
+            if (cmp != null) {
+                if (cmp > 0) {
+                    errors.addToCurrentLog(new FieldPropertyValidationError(
+                            ErrorSource.SCHEME_FIELD_PROPERTY_VALIDATION,
+                            "rangeStart must be less than or equal to rangeEnd.",
+                            ErrorSeverity.ERROR, field.getFieldId(), field.getFieldName()));
+                } else if (cmp == 0) {
+                    errors.addToCurrentLog(new FieldPropertyValidationError(
+                            ErrorSource.SCHEME_FIELD_PROPERTY_VALIDATION,
+                            "rangeStart equals rangeEnd; no valid values in range.",
+                            ErrorSeverity.ERROR, field.getFieldId(), field.getFieldName()));
+                }
             }
         }
     }
@@ -58,20 +202,45 @@ public class SingleFieldPropertyValidator {
 
     public static void validateRepeatOccurrences(FieldProperty field) {
         FieldCardinality cardinality = field.getCardinality();
-        //Quit early if field is not repeated.
-        if (cardinality.getFieldRepeated().equals(ConditionalBool.FALSE)) {
-            return;
+        Integer minOccurs = cardinality.getMinOccurs();
+        Integer maxOccurs = cardinality.getMaxOccurs();
+        ConditionalBool fieldRepeated = cardinality.getFieldRepeated();
+        // C and T both permit repetition; only F forbids it.
+        boolean mayRepeat = fieldRepeated != null && fieldRepeated != ConditionalBool.FALSE;
+
+        // Bounds sanity applies whether or not the field repeats. A non-repeating field still carries
+        // an implied maxOccurs of 1, so quitting early for those let minOccurs > maxOccurs through and
+        // produced a schema no document could satisfy, reported against the document rather than the CSV.
+        if (minOccurs != null && minOccurs < 0) {
+            errors.addToCurrentLog(new FieldPropertyValidationError(ErrorSource.SCHEME_FIELD_PROPERTY_VALIDATION,
+                    "minOccurs, if populated, must be at least 0.",
+                    ErrorSeverity.ERROR, field.getFieldId(), field.getFieldName()));
         }
-        if (cardinality.getMinOccurs() != null && cardinality.getMaxOccurs() != null) {
-            if (cardinality.getMinOccurs() > cardinality.getMaxOccurs()) {
-                errors.addToCurrentLog(new FieldPropertyValidationError(ErrorSource.SCHEME_FIELD_PROPERTY_VALIDATION,"minOccurs must be less than or equal to maxOccurs.", ErrorSeverity.ERROR, field.getFieldId(), field.getFieldName()));
+        if (minOccurs != null && maxOccurs != null && minOccurs > maxOccurs) {
+            errors.addToCurrentLog(new FieldPropertyValidationError(ErrorSource.SCHEME_FIELD_PROPERTY_VALIDATION,
+                    "minOccurs (" + minOccurs + ") must be less than or equal to maxOccurs (" + maxOccurs + ")."
+                            + (mayRepeat ? "" : " A field with fieldRepeated=F allows at most one occurrence."),
+                    ErrorSeverity.ERROR, field.getFieldId(), field.getFieldName()));
+        }
+
+        // fieldRepeated and maxOccurs encode overlapping intent. Report the disagreement rather than
+        // picking a winner, so the author resolves it in the CSV instead of the engine guessing.
+        // Whether the contradiction actually bites depends on how many instances the document carries,
+        // which is not known until form validation, so both directions are reported here as errors.
+        if (maxOccurs != null) {
+            if (mayRepeat && maxOccurs < 2) {
+                errors.addToCurrentLog(new FieldPropertyValidationError(ErrorSource.SCHEME_FIELD_PROPERTY_VALIDATION,
+                        "maxOccurs (" + maxOccurs + ") forbids repetition but fieldRepeated is "
+                                + fieldRepeated.getAbbreviation() + ". Set maxOccurs to at least 2, or set "
+                                + "fieldRepeated to F.",
+                        ErrorSeverity.ERROR, field.getFieldId(), field.getFieldName()));
             }
-        }
-        if (cardinality.getMaxOccurs() != null && cardinality.getMaxOccurs() < 2) {
-            errors.addToCurrentLog(new FieldPropertyValidationError(ErrorSource.SCHEME_FIELD_PROPERTY_VALIDATION,"maxOccurs, if populated, must be greater than 1.", ErrorSeverity.ERROR, field.getFieldId(), field.getFieldName()));
-        }
-        if (cardinality.getMinOccurs() != null && cardinality.getMinOccurs() < 0) {
-            errors.addToCurrentLog(new FieldPropertyValidationError(ErrorSource.SCHEME_FIELD_PROPERTY_VALIDATION,"minOccurs, if populated, must be at least 0.", ErrorSeverity.ERROR, field.getFieldId(), field.getFieldName()));
+            if (!mayRepeat && maxOccurs >= 2) {
+                errors.addToCurrentLog(new FieldPropertyValidationError(ErrorSource.SCHEME_FIELD_PROPERTY_VALIDATION,
+                        "maxOccurs (" + maxOccurs + ") permits repetition but fieldRepeated is F. Set "
+                                + "fieldRepeated to T (or C) if the field repeats, otherwise remove maxOccurs.",
+                        ErrorSeverity.ERROR, field.getFieldId(), field.getFieldName()));
+            }
         }
     }
 
@@ -93,7 +262,7 @@ public class SingleFieldPropertyValidator {
     public static void validateGroupingType(FieldProperty field) {
         if ((field.getRelation().getGroupingType() == GroupingType.CONTAINER
                 || field.getRelation().getGroupingType() == GroupingType.COMPOSITE)
-                && field.getValue().getDataType() != null) {
+                && field.getValueRestriction().getDataType() != null) {
             errors.addToCurrentLog(new FieldPropertyValidationError(ErrorSource.SCHEME_FIELD_PROPERTY_VALIDATION,
                     field.getRelation().getGroupingType() + " field associated with a data type",
                     ErrorSeverity.ERROR, field.getFieldId(), field.getFieldName()));

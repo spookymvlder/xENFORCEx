@@ -1,63 +1,252 @@
-fieldId (String, Required) - If import is part of a specification, the id linking this field to that specification. Else, a unique ID for the field that can be referenced by the parentId column. The id should not contain commas.
+FIELD PROPERTY CSV IMPORT SPECIFICATION
+
+Columns are listed in the order they appear in field_property_template.csv. Column names must match
+exactly (case-sensitive) or the value is silently ignored, so prefer starting from the template.
+Only parentId and dataType are structurally checked for presence; a misnamed column elsewhere binds
+to nothing rather than raising an error.
+
+Blank cells are normalized to empty (null) before validation, including for the pipe- and
+comma-delimited list columns, so an unpopulated column and an absent one behave identically.
+
+"Required" and "Optional" below describe what happens when a column is left blank, not just whether
+it's a good idea to set it. Required means blank is either an outright error, or produces a default
+that the engine itself flags as worth a second look (a logged WARNING). Optional means blank produces
+a default the engine treats as a normal, unremarkable choice, with no error and no warning.
+
+
+IDENTITY
+fieldId (String, Required) - If import is part of a specification, the id linking this field to that specification. Else, a unique ID for the field that can be referenced by the parentId column. The id should not contain commas. Duplicate fieldIds are FATAL.
 fieldName (String, Required) - The name of the field as it appears within the XML.
+namespaceUri (String, Optional) - The XML namespace URI the fieldName element must be in. Blank means
+    match by fieldName alone, regardless of namespace - the same behavior as before this column
+    existed, and still the right choice for an unnamespaced document. Set it when the same local name
+    is used for different things in different namespaces, or when a document uses a default xmlns:
+    without this column, matching is by local name only, and an unprefixed path can only ever match
+    an element with no namespace at all, so a document with a default namespace on its root would
+    silently fail to match anything.
+    -Applies to element matching only. It does not extend to a namespace-qualified ATTRIBUTE (e.g. an
+     xsi: attribute) - that remains unsupported; isAttribute/attributeName values are read unprefixed,
+     which is correct for the common case (XML attributes are never implicitly in an element's own
+     default namespace) but not for a genuinely namespace-qualified attribute.
+    -Each field's namespaceUri is independent, so a document can mix namespaced and unnamespaced
+     fields, or several different namespaces, as needed.
 displayName (String, Optional) - A longer, more descriptive name for the field, if necessary. fieldName is used if left blank.
+displayOrder (Integer, Optional) - The order the fields should appear in. Will be respected if possible. A node's children should have a lower value than any unprocessed sibling nodes. Currently imported and retained as UI metadata; no stage sorts by it yet.
 
-displayOrder (Integer, Optional) - The order the fields should appear in. Will be respected if possible. A node's children should have a lower value than any unprocessed sibling nodes.
-parentId (String, Required) - The FieldId of this field's direct parent. If this field is the root of form, parentId should be "root".
-hierarchyLevel (Integer, Optional) - The expected hierarchy level for this field. The root of the form should have a value of 0. If empty, the utility will rely on parent/child node relationships to form a hierarchy.
-sectionHeaderOverride (String, Optional) - If empty, utility will attempt to build Form Sections based on hierarchy level. Set for fields to force section groupings. Should be used to condense XML tree vertically, not to move a field's position horizontally within the structure.
 
-active (Boolean, Optional) - Whether this field is in use. Allows for specification to deprecate fields. If empty, fields are assumed to be active.
-expireDate (LocalDate, Required if "active" == FALSE) - The last date when this field should be considered active, if any. Required if active is set to False. Other active fields should not reference this field.
+HIERARCHY
+parentId (String, Required) - The FieldId of this field's direct parent. Exactly one field, the anchor of the whole tree, must leave this blank; every other field's parentId must resolve to a real fieldId, or it is FATAL, as is a parent/child cycle. Zero anchors or more than one is also FATAL. (The literal value "root" is not treated specially by anything currently active in the code and does not mark a field as the anchor - leave the cell blank instead.)
+hierarchyLevel (Integer, Optional) - The expected hierarchy level for this field. The root of the form should have a value of 0. If empty, the utility will rely on parent/child node relationships to form a hierarchy. NOT CURRENTLY IMPORTED - see OPEN QUESTIONS.
+sectionHeaderOverride (String, Optional) - If empty, utility will attempt to build Form Sections based on hierarchy level. Set for fields to force section groupings. Should be used to condense XML tree vertically, not to move a field's position horizontally within the structure. NOT CURRENTLY IMPORTED - see OPEN QUESTIONS.
 
-fieldRepeated (Character, Optional) - Is this field expected to appear more than once? Supports T, F, and C. C for conditionally recurring.
-minOccurs (Integer, Optional) - The minimum number of times the field must appear. Only referenced if fieldRepeated does not equal F.
-maxOccurs (Integer, Optional) - The maximum number of times the field may appear. Only referenced if fieldRepeated does not equal F.
+
+VERSIONING
+active (Boolean, Optional) - Whether this field is in use. Allows for specification to deprecate fields. T or F. If empty, fields are assumed to be active.
+expireDate (LocalDate, Required if "active" == F) - The last date when this field should be considered active, if any. Format yyyy-MM-dd. Other active fields should not reference this field.
+
+
+CARDINALITY
+fieldRepeated (Character, Optional) - Is this field expected to appear more than once? Supports T, F, and C. C for conditionally recurring. Defaults to F when blank.
+minOccurs (Integer, Optional) - The minimum number of times the field must appear. Defaults to 0. This column is NOT derived from "required": required-presence is enforced solely from the Usage code in the "required" column, so a field that must be present does not also need minOccurs set. Use minOccurs only to demand a count above one.
+maxOccurs (Integer, Optional) - The maximum number of times the field may appear. When blank, defaults to 1 if fieldRepeated is F, otherwise unbounded.
+    -maxOccurs and fieldRepeated must agree. maxOccurs of 1 with fieldRepeated F is valid and redundant. maxOccurs of 2 or more with fieldRepeated F is contradictory, as is maxOccurs of 1 with fieldRepeated T or C. Contradictions are reported rather than resolved; the engine will not infer one column from the other.
+    -minOccurs must be less than or equal to maxOccurs, and at least 0. Because a field with fieldRepeated F carries an implied maxOccurs of 1, a minOccurs above 1 on such a field is an impossible schema and is reported at import.
 condRepeatedSourceIds (String[], Required if "fieldRepeated" == C) - Indicates the fieldIds of the source fields that should be referenced to determine if this field is conditionally repeated. Field Ids should be comma-delimited.
-condRepeatedValues (List<String[]>, Required if "fieldRepeated" == C) - Which values in a source field determine that this field is necessary. If more than one source field, each value set should be piped-delimited and encased in curly braces.
-    -If any value in the source field would cause this field to be repeated, enter **ANY
-    -If the source field is numeric, a requirement threshold can be indicated via <, >, <=, >= followed by a numeric value, such as {<4}.
-    -An inclusive range can be indicated by a hyphen separating two numeric values. Inclusivity can be indicated by the presence of greater-than or less-than symbols. The condition {>2-5} would indicate values of 2.01 up to and including 5 would conditionally repeat the field being evaluated.
-    -To specify any value except for the value indicated, use **!. Any value for the source field other than the specified value will trigger this field to be conditionally repeated.
-    -If the source field had specified enumerations, numeric values will correspond to the enumeration at the specified position, 0-indexed.
-
-condRepeatedLogic (Enum [AND, OR], Required if condRepeatedSourceIds indicates more than one field and those fields can be present at the same time.) - logic to connect multiple conditional requirements.
+condRepeatedValues (List<String[]>, Required if "fieldRepeated" == C) - Which values in a source field determine that this field is repeated. If more than one source field, each value set should be piped-delimited and encased in curly braces. See CONDITION TOKEN SYNTAX below.
+condRepeatedLogic (Enum [AND, OR], Required if condRepeatedSourceIds indicates more than one field and those fields can be present at the same time.) - logic to connect multiple conditional repeats.
 
 
-required (Character, Required) - Supports T, F, and C. C for conditionally required based on the value present in another field. If a field is marked as required, it will only trigger an error if the section it belongs to is populated and the field is not present, or present and empty. If a section is listed as required,
-    the section must appear but each field within the section will need to be marked individually.
-condRequiredSourceIds (String[], Required if "required" == C) - Indicates the fieldIds of the source fields that should be referenced to determine if this field is conditionally required. Field Ids should be comma-delimited.
-condRequiredValues (List<String[]>, Required if "required" == C) - Which values in a source field determine that this field is necessary. If more than one source field, each value set should be piped-delimited and encased in curly braces.
-    -If any value in the source field would cause this field to be required, enter **ANY
-    -If the source field is numeric, a requirement threshold can be indicated via <, >, <=, >= followed by a numeric value, such as {<4}.
-    -An inclusive range can be indicated by a hyphen separating two numeric values. Inclusivity can be indicated by the presence of greater-than or less-than symbols. The condition {>2-5} would indicate values of 2.01 up to and including 5 would conditionally require the field being evaluated.
-    -To specify any value except for the value indicated, use **!. Any value for the source field other than the specified value will trigger this field to be conditionally required.
-    -If the source field had specified enumerations, numeric values will correspond to the enumeration at the specified position, 0-indexed.
+REQUIRED
+required (Usage code, Optional) - Whether the field must be present, and if present whether it must carry a value. Presence and populated-ness are separate axes. Defaults to O when blank, silently: unlike dataType below, an omitted value here is not itself flagged, since "this field has no presence requirement" is an ordinary, expected choice rather than something worth a warning.
+    -R  Required and populated. Must be present and must carry a non-empty value.
+    -RE Required, may be empty. Must be present, but the value may be empty.
+    -CR Conditionally required and populated. Resolves to R when the condition matches, otherwise O.
+    -CE Conditionally required, may be empty. Resolves to RE when the condition matches, otherwise O.
+    -O  Optional. No constraint on presence or value.
+    A required field is only reported as missing when its parent is present in the document; an absent subtree yields one error for the subtree root rather than one per descendant.
+condRequiredSourceIds (String[], Required if "required" == CR or CE) - Indicates the fieldIds of the source fields that should be referenced to determine if this field is conditionally required. Field Ids should be comma-delimited.
+condRequiredValues (List<String[]>, Required if "required" == CR or CE) - Which values in a source field determine that this field is necessary. If more than one source field, each value set should be piped-delimited and encased in curly braces. See CONDITION TOKEN SYNTAX below.
+condRequiredLogic (Enum [AND, OR], Required if condRequiredSourceIds indicates more than one field and those fields can be present at the same time.) - logic to connect multiple conditional requirements. AND is evaluated per instance: sources are conjoined within a single instance of their shared ancestor, and the condition fires if any such instance satisfies all of them. With exactly one source, AND and OR are equivalent and either may be left blank.
 
-condRequiredLogic (Enum [AND, OR], Required if condRequiredSourceIds indicates more than one field and those fields can be present at the same time.) - logic to connect multiple conditional requirements.
 
+CODE SYSTEM METADATA
 codeSystemName (String, Optional) - The name of the code system as it would appear in the XML. If populated, the name that should be stored to metadata.
 codeSystemId (String, Optional) - If the value type corresponds with a specific code system, provide the code system's ID.
 codeSystemVersion (String, Optional) - The version of the code system to expect.
 codeSystemCode (String, Optional) - If the fieldId does not correspond with a corresponding code in the code system, provide the field's code.
 
-dataType (String, Required) - Data type of field. Supports label, instance identifier, boolean, date, time, string, character, coded value, custom enumeration, integer, double, telephone, email, duration, decimal, all the numeric data types.
-rangeStart (Double, Optional) - If value should be limited to a range, start of that value range.
-rangeEnd (Double, Optional) - If value should be limited to a range, end of that value range.
-rangeInclusive (Boolean, Required if rangeStart or rangeEnd) - Are the range values provided inclusive or exclusive? T for inclusive, F for exclusive.
-minLength (Integer, Optional) - If string field, minimal length of field, inclusive.
-maxLength (Integer, Optional) - If string field, maximum length of field, inclusive.
-enumeration (String[], Optional) - If only specific values should be accepted for the field, list those values separated by |
+
+VALUE RESTRICTION
+dataType (String, Required) - Data type of field. Case-insensitive. Must be left blank for fields whose groupingType is CONTAINER or COMPOSITE, which hold no value of their own. For any other field, a blank value defaults to STRING and logs a WARNING; it is not silently accepted like a genuinely optional column, since a forgotten dataType otherwise disables all type-specific validation for that field with no signal at all. An unrecognized value (a typo) is FATAL, not defaulted.
+    Supported: STRING, INTEGER, DECIMAL, DOUBLE, FLOAT, LONG, BOOLEAN, CHARACTER, DATE, TIME,
+    DATETIME, DURATION, GYEAR, GYEARMONTH, GMONTH, GMONTHDAY, GDAY, ENUMERATION, CODED_VALUE,
+    CUSTOM, LABEL, EMAIL, TELEPHONE, URL, ANYURI, POSTAL_CODE, COUNTRY_CODE, CURRENCY, PERCENTAGE,
+    ID, IDREF, ENTITY, RAW_XML, ROOT
+    CODED_VALUE and CUSTOM are declared but their value-list mechanisms are not implemented yet.
+rangeStart (String, Optional) - If value should be limited to a range, start of that value range. Only valid for ordered types (the numeric types, DATE, TIME, DATETIME, GYEAR, GYEARMONTH, GMONTH, GDAY, GMONTHDAY, DURATION). Must parse as the field's dataType, or as a relative offset (DATE/DATETIME only, see below).
+rangeEnd (String, Optional) - If value should be limited to a range, end of that value range. Same constraints as rangeStart. Must be greater than rangeStart; equal values leave no valid input and are reported.
+    -For DATE and DATETIME, a bound may instead be a signed relative offset: -P6M ("6 months before
+     today"), +P1Y ("1 year from today"). The sign is required; there is no default direction, since
+     the engine has no way to know whether a field is past-anchored (a birthdate) or future-anchored
+     (an expiration date). Grammar is [+-]P(nY)(nM)(nW)(nD)(T(nH)(nM)(nS)) with every component
+     optional but at least one required; DATETIME accepts the T-time part, DATE does not.
+    -The offset resolves against the date/time at the moment a document is validated, not at the
+     moment the CSV was imported. A schema whose rangeStart and rangeEnd are both relative (or both
+     literal) is checked at import time as a day-independent invariant, since the relationship
+     between two offsets from the same anchor never depends on what that anchor actually is. Mixing
+     one relative and one literal bound is checked too, but only against the day the CSV happened to
+     be imported on; that combination is a known limitation, not a validated guarantee.
+    -This does not apply to DURATION field values themselves. A DURATION value like a call length has
+     no calendar position to resolve a year or month against, so it remains limited to the
+     exact-length PT.. / P..D forms — see OPEN QUESTIONS.
+rangeStartInclusive (Boolean, Optional) - Is rangeStart itself an accepted value? T or F. Defaults to T when rangeStart is populated.
+rangeEndInclusive (Boolean, Optional) - Is rangeEnd itself an accepted value? T or F. Defaults to T when rangeEnd is populated. The two ends are independent, so a range may be inclusive at one end only.
+minLength (Integer, Optional) - Minimum length of the value, inclusive. Valid only when dataType is
+    STRING or CHARACTER; set on any other type, it is reported as a schema error rather than applied.
+maxLength (Integer, Optional) - Maximum length of the value, inclusive. Same type restriction as
+    minLength. minLength must be less than or equal to maxLength, and both must be at least 0.
+enumeration (String[], Optional) - If only specific values should be accepted for the field, list those values separated by |. Valid only when dataType is ENUMERATION, and required when dataType is ENUMERATION.
+    -Document values are matched case-insensitively and normalized to the casing declared here.
+    -A document may reference an entry by position using #N, 1-indexed. #2 against "A|B|C" resolves to B.
 unit (String, Optional) - The unit corresponding to the field, used for display.
-regexPattern (String, Optional) - If the field should match a pattern, provide that pattern.
+regexPattern (String, Optional) - If the field should match a pattern, provide that pattern. Applied to the whole value. Checked for valid regex syntax at CSV import time; an invalid pattern is a schema error there, not just a failure the first time a document happens to populate the field.
 
 
-isAttribute (Boolean, Optional) - If the value for the field is retrieved from a node's attribute rather than as a text field value.
+ATTRIBUTES
+isAttribute (Boolean, Optional) - If the value for the field is retrieved from a node's attribute rather than as a text field value. T or F.
 attributeName (String, Required if "isAttribute" == T) - Required if the value is found in an attribute tag, list the name of the appropriate tag.
 
+
+UI METADATA
 uiControl (String, Optional) - Helper for downstream user for how to render data.
 validationMessage (String, Optional) - A custom error message to log if this field fails to be parsed successfully, in addition to any system errors logged.
-skipImport (Boolean, Optional) - Indicates that the field should be skipped during import, for example if the field corresponds to a label that doesn't need to be parsed. This differs from an inactive field in that the skippable field's relationships will be bridged (the parent of this field will receive this record's children and vice versa).
 
-3/4/26
-Removed xpathOverride
+
+IMPORT BEHAVIOR
+skipImport (Boolean, Optional) - Indicates that the field should be skipped during import, for example if the field corresponds to a label that doesn't need to be parsed. This differs from an inactive field in that the skippable field's relationships will be bridged (the parent of this field will receive this record's children and vice versa).
+groupingType (Enum [NONE, CONTAINER, COMPOSITE, CONSTITUENT], Optional) - The structural role of the field. Defaults to NONE.
+    -CONTAINER holds other fields and carries no value of its own.
+    -COMPOSITE holds constituent fields that together make up one logical value, and carries no value of its own.
+    -CONSTITUENT is one part of a COMPOSITE. There is no column naming the composite: a constituent's
+     parentId must already point at a COMPOSITE field, and that parent is the composite it belongs to.
+     The link is derived during processing, and a constituent whose parent is not a COMPOSITE is
+     reported. Constituent value validation is not implemented yet.
+    -CONTAINER and COMPOSITE must leave dataType blank.
+
+
+CONDITION TOKEN SYNTAX
+Applies to condRepeatedValues and condRequiredValues. Each source field gets one value set; sets are
+piped-delimited and encased in curly braces when more than one source is involved. Within a set, a
+comma-delimited list of tokens is matched as alternatives.
+    -To match any populated value, enter **ANY
+    -For an ordered dataType, a threshold can be given as <, >, <=, >= followed by a value, such as {<4}.
+    -A range is expressed with .. separating two values, such as {2..5}. The separator is .. rather
+     than a hyphen so it does not collide with the : and - in TIME, DATE, and DATETIME values.
+     Inclusivity is indicated by the presence of > or < markers on the bound.
+    -To match any value except the one indicated, prefix with **!. A set containing any **! token is
+     treated as an exclusion list in full; mix inclusion and exclusion by repeating the source id
+     rather than combining them in one set.
+    -If the source field declares enumerations, an entry may be referenced by position using #N,
+     1-indexed, matching the enumeration column's syntax.
+    -If the source field's dataType is DATE or DATETIME, a threshold or range endpoint may be a
+     signed relative offset (-P6M, +P1Y) instead of a literal value. Same grammar and same mandatory
+     sign as rangeStart/rangeEnd; see VALUE RESTRICTION above.
+    -By default, a source that repeats (directly or via a repeating ancestor) matches if ANY of its
+     instances satisfies the value set. Add **ALL anywhere in that source's own value set to require
+     that EVERY instance satisfy it instead. **ALL is per-source: with more than one source, some may
+     use it and others not. It composes with **! (every instance must avoid the excluded values) and
+     is ignored as a plain token match, not a value alternative. A source with zero instances never
+     matches, whether or not **ALL is present.
+
+
+ERROR SEVERITY AND STAGE BEHAVIOR
+Import and validation are staged. A stage always runs to completion, then halts the run only if a
+FATAL was logged; anything at ERROR or below is reported and processing continues, so a single pass
+surfaces as many real problems as possible.
+    -FATAL is reserved for conditions that make continuing meaningless: unreadable or empty file,
+     missing required columns, duplicate fieldId, unresolvable parentId, a cycle, or no single root
+     or anchor element.
+    -ERROR is a per-field problem that does not prevent other fields from being processed.
+    -WARNING flags a value that was accepted, possibly via a default, but is worth a second look:
+     a dataType left blank and defaulted to STRING, an active field with a past expiration date,
+     a duplicate field name under the same parent. Never blocks the import.
+Schema (CSV) validation runs before any document is parsed, so any check that depends on document
+contents cannot be evaluated at import time.
+
+
+OPEN QUESTIONS
+-hierarchyLevel and sectionHeaderOverride remain in the template and in the sample CSVs but have no
+ import binding, so values in these columns are ignored. Header/section lookup was removed from the
+ parser; decide whether to reinstate these or drop the columns.
+-Accepted boolean input formats for BOOLEAN-typed field values are not finalized. Validation
+ currently accepts true/false, t/f, and 1/0, case-insensitively.
+-DURATION field values only support the PT.. and P..D forms. ISO period durations such as P1Y or P3M
+ are deliberately not supported there: a year or month has no fixed length, and a standalone DURATION
+ value (e.g. a call length) has no calendar position to resolve one against, so any conversion would
+ be an unexplained approximation. Where a Y/M-scale threshold is actually needed, it is almost always
+ really a check against a DATE/DATETIME field relative to today (an age, a recency window) rather than
+ a comparison between two independent durations, and that case is supported directly - see the
+ relative-offset grammar under rangeStart/rangeEnd and CONDITION TOKEN SYNTAX.
+-The anchor for a DATE/DATETIME relative offset is always the current date/time. Anchoring to another
+ field's value instead (e.g. enrollmentDate + P6M) is planned, but as a setting rather than a new CSV
+ column - a settings mechanism doesn't exist yet, so this is deferred until one does rather than
+ guessing its shape now.
+-**ALL (see CONDITION TOKEN SYNTAX) quantifies over one source's own instances. A separate, per-group
+ axis remains open: for an AND condition with multiple sources sharing a repeating ancestor, requiring
+ that EVERY instance of that shared ancestor satisfy the whole per-instance AND (rather than any one
+ instance being sufficient, the current behavior) has no token yet. It only has meaning when there are
+ 2+ sources with a real shared repeating ancestor, so it was deferred rather than folded into **ALL.
+-namespaceUri covers element matching only, not a namespace-qualified attribute (e.g. xsi:type).
+ isAttribute/attributeName values are read unprefixed. This is the common case (attributes are never
+ implicitly in an element's own default namespace), but a field genuinely needing to match a prefixed
+ attribute has no way to express that yet. Not implemented speculatively since it's a separate concept
+ from element namespacing, not an extension of this column.
+-FieldPropertyRow still declares a componentOf binding with no corresponding column, kept as a slot
+ in case a COMPOSITE ever needs constituents nested below its direct children. Do not add the column
+ back without also consuming it: the composite link is derived from parentId, so a column value that
+ disagreed with the tree would be ignored rather than reported.
+
+
+CHANGE LOG
+3/4/26 Removed xpathOverride
+Replaced the required column's T/F/C with the R/RE/CR/CE/O Usage codes.
+Split rangeInclusive into rangeStartInclusive and rangeEndInclusive.
+Renamed the order column to displayOrder to match the import binding.
+Changed the condition range separator from a hyphen to ..
+Enumeration position references are 1-indexed via #N, previously documented as 0-indexed.
+rangeStart and rangeEnd are compared as typed strings rather than Doubles.
+minOccurs is no longer derived from the required column.
+Documented groupingType. A componentOf column was considered and rejected: it would only ever restate
+the constituent's parentId, and a value contradicting the tree would be ignored rather than reported.
+Added signed relative-offset bounds (-P6M, +P1Y) for DATE/DATETIME rangeStart/rangeEnd and condition
+tokens, resolved against today/now at document-validation time. DURATION field values are unaffected
+and still only support PT.. and P..D.
+Added the **ALL condition token (per-source: require every instance of a repeating source to match,
+rather than any one instance). Fixed a related bug in evaluateAnd where a source repeating below a
+shared AND-ancestor was silently checked against only its first occurrence rather than all of them.
+dataType/required/groupingType/condRequiredLogic/condRepeatedLogic typos now report a clean FATAL
+naming the bad column and value, instead of crashing the program with an uncaught exception.
+A blank dataType on any field not grouped as CONTAINER/COMPOSITE now defaults to STRING with a
+logged WARNING, instead of silently disabling all type-specific validation for that field.
+Fixed expireDate actually failing to parse in the documented yyyy-MM-dd format: ProcessingOverrides'
+default silently overrode CustomDateConverter's own (already correct) default with dd-MM-yyyy.
+minLength/maxLength are now enforced as STRING/CHARACTER-only (previously applied, unchecked, to any
+dataType's raw string representation). FieldDataType.supportsLength() is the single point to extend
+this list later; both the schema-side and document-side checks read it.
+regexPattern's syntax is now checked at CSV import time, not only when a document happens to
+populate the field. Document-side validation keeps its own catch too, since a schema ERROR doesn't
+halt the import and the pattern could still be bad by the time a document is validated.
+Added a preamble note on what "Required" and "Optional" mean for a blank cell, since the two words
+were being used for both "blank is an error" and "blank silently defaults" without distinguishing
+them. Relabeled required (the column) from Required to Optional to match: it silently defaults to O,
+with no warning, unlike dataType's warned STRING default. Fixed parentId's anchor instruction, which
+told authors to write the literal value "root" - that string isn't treated specially by anything
+currently active in the code (only by a commented-out check); the anchor is identified by parentId
+being left blank, and the working fixtures already do this. Left blank, not "root", is correct.
+Added namespaceUri (per-field, optional). Covers element matching: FormParser's DOM child-matching
+now compares local name plus an exact namespace check when set, and XPath-string construction
+(buildRelativePath, constituent lookups) qualifies the path with an internally-generated prefix bound
+to that URI via a new NamespaceRegistry. Blank behaves exactly as before this column existed - no
+namespace constraint at all - which is what keeps every existing schema's matching behavior unchanged.
+Previously, an unprefixed XPath path segment could only ever match a null-namespace element, so any
+document with a default xmlns on its root would have silently matched nothing.

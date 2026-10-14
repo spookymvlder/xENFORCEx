@@ -2,41 +2,68 @@ package com.spookymvlder.formtools.datatypes;
 
 //https://www.w3schools.com/xml/schema_elements_ref.asp
 public enum FieldDataType {
-    STRING,
-    INTEGER,
-    DECIMAL,
-    DOUBLE,
-    FLOAT,
-    BOOLEAN,
-    DATE,
-    TIME,
-    DATETIME,
-    DURATION,
-    CHARACTER,
+    STRING(Boolean.FALSE),
+    INTEGER(Boolean.TRUE),
+    DECIMAL(Boolean.TRUE),
+    DOUBLE(Boolean.TRUE),
+    FLOAT(Boolean.TRUE),
+    BOOLEAN(Boolean.FALSE),
+    DATE(Boolean.FALSE),
+    TIME(Boolean.FALSE),
+    DATETIME(Boolean.FALSE),
+    DURATION(Boolean.FALSE),
+    CHARACTER(Boolean.FALSE),
     //
-    ANYURI,                 //URL or relative path?
-    IDREF,                  //Reference to other element
-    ENTITY,                 //Constant to use within document
-    ID,                     //Identifier
+    ANYURI(Boolean.FALSE),                 //URL or relative path?
+    IDREF(Boolean.FALSE),                  //Reference to other element
+    ENTITY(Boolean.FALSE),                 //Constant to use within document
+    ID(Boolean.FALSE),                     //Identifier
     //NOTATION,
-    LONG,
-    GYEARMONTH,
-    GMONTHDAY,
-    GDAY,
-    GMONTH,
-    GYEAR,
+    LONG(Boolean.TRUE),
+    GYEARMONTH(Boolean.FALSE),
+    GMONTHDAY(Boolean.FALSE),
+    GDAY(Boolean.FALSE),
+    GMONTH(Boolean.FALSE),
+    GYEAR(Boolean.FALSE),
     //
-    CODED_VALUE,
-    ENUMERATION,
-    LABEL,
-    EMAIL,
-    TELEPHONE,              //Specify format requirements in settings
-    URL,
-    POSTAL_CODE,            //Specify format requirements in settings
-    COUNTRY_CODE,           //Could be 2 or 3
-    CURRENCY,
-    PERCENTAGE,
-    CUSTOM,
-    RAW_XML,
-    ROOT
+    CODED_VALUE(Boolean.FALSE),
+    ENUMERATION(Boolean.FALSE),
+    LABEL(Boolean.FALSE),
+    EMAIL(Boolean.FALSE),
+    TELEPHONE(Boolean.FALSE),              //Specify format requirements in settings
+    URL(Boolean.FALSE),
+    POSTAL_CODE(Boolean.FALSE),            //Specify format requirements in settings
+    COUNTRY_CODE(Boolean.FALSE),           //Could be 2 or 3
+    CURRENCY(Boolean.FALSE),
+    PERCENTAGE(Boolean.TRUE),
+    CUSTOM(Boolean.FALSE),
+    RAW_XML(Boolean.FALSE),
+    ROOT(Boolean.FALSE);
+
+    private final Boolean numeric;
+
+    FieldDataType(Boolean numeric) {
+        this.numeric = numeric;
+    }
+
+    public boolean isNumeric() {
+        return numeric;
+    }
+
+    /**
+     * Whether minLength/maxLength are meaningful for this type's value. Scoped to STRING and
+     * CHARACTER for now. To extend later (e.g. EMAIL, URL, TELEPHONE, POSTAL_CODE, LABEL,
+     * COUNTRY_CODE are the natural next candidates — anything else with a free-form string
+     * representation), add it to this switch; both SingleFieldPropertyValidator's schema-side check
+     * and SingleFormFieldValidator's document-side check read this single source, so nothing else
+     * needs to change. Deliberately excludes ordered types (DATE, numeric, ...): their string
+     * representation is already fixed-length by parsing, so a length constraint there is either
+     * always true or impossible, never a meaningful check.
+     */
+    public boolean supportsLength() {
+        return switch (this) {
+            case STRING, CHARACTER -> true;
+            default -> false;
+        };
+    }
 }

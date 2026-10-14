@@ -1,10 +1,7 @@
 package com.spookymvlder.formtools.parser;
 
-import com.spookymvlder.formtools.datatypes.FormInstance;
-import com.spookymvlder.formtools.settings.ErrorSettings;
 import com.spookymvlder.formtools.settings.ImportSettings;
 
-import com.spookymvlder.formtools.utilities.FormDebugPrinter;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -26,43 +23,14 @@ public class ImportXml {
 
     private static final ImportSettings settings = ImportSettings.getInstance();
 
-    // Temp main for testing.
-    public static void main(String[] args) {
-        //TODO remove when unnecessary.
-
-        TEMPSETTINGS.setTestSettings();
-        ImportSpecification.importSpec(settings.getSpecFilePath());
-
-        //If we don't have a successful spec import, quit out.
-        if(!settings.getSpecImported()) {
-            System.out.println("Spec Import Failed.");
-            return;
-        }
-
-
-
-        try{
-            Document doc = importXML();
-            //TODO send rootField from fieldProcessorContext instead
-            FormParser parser = new FormParser(doc, settings.getRootField());
-            List<FormInstance> forms = parser.parseForm();
-            //ParseDoc.parseDoc(doc);
-            FormDebugPrinter.printForms(forms);
-            ErrorSettings errors = ErrorSettings.getInstance();
-            errors.printErrorLogs();
-        }
-        catch(Exception e){
-            e.printStackTrace();
-        }
-    }
-
-
+    // Entry point is now com.spookymvlder.formtools.cli.CliApp, which calls importXML() (below) as
+    // one step of PipelineRunner's pipeline instead of this class running the whole thing inline.
 
     public static Document importXML() throws Exception {
         //TODO put in specification version ID for xml so can validate that against our xpaths saved. Also put in xml id and store that temporarily so we don't double parse.
         File xmlFile = new File(settings.getXmlFilePath());
         File xsdFile = new File(settings.getXsdFilePath());
-        if(!settings.getTestIgnoreXSD()) {
+        if(!settings.getSkipXsdValidation()) {
             validateXML(xmlFile, xsdFile);
         }
         return getDocument(xmlFile);
@@ -100,7 +68,9 @@ public class ImportXml {
         Document doc = builder.parse(xmlFile);
         doc.getDocumentElement().normalize();
         //TODO ensure comments are stripped out too
-        stripEmptyElements(doc.getElementsByTagName(settings.getAnchorElementName()).item(settings.getAnchorElementIndex()));
+        // "*" matches any namespace: this lookup is purely to find a node to start whitespace-stripping
+        // from, by local name, so it shouldn't start silently missing namespaced anchor elements.
+        stripEmptyElements(doc.getElementsByTagNameNS("*", settings.getAnchorElementName()).item(settings.getAnchorElementIndex()));
         return doc;
     }
 

@@ -2,6 +2,9 @@ plugins {
 // Build Java: https://docs.gradle.org/current/userguide/building_java_projects.html
     id 'java'
 
+// Enables `./gradlew run` - see the `run`/`application` config below.
+    id 'application'
+
 // https://docs.gradle.org/current/userguide/pmd_plugin.html#header
     id 'pmd'
 
@@ -9,8 +12,26 @@ plugins {
     id 'jacoco'
 }
 
-group 'XML-Auto-Validate'
+group 'xENFORCEx'
 version '1.0'
+
+application {
+    mainClass = 'com.spookymvlder.formtools.cli.CliApp'
+}
+
+// Gradle's `run` task does not forward the console's stdin by default, which would silently break
+// CliApp's interactive Scanner-based menu (input would just never arrive).
+tasks.named('run') {
+    standardInput = System.in
+}
+
+// Sequenced-collection methods (List.getFirst) require 21+. Pinning the toolchain keeps the
+// build off whatever JDK happens to be on JAVA_HOME.
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
 
 repositories {
     mavenCentral()
@@ -22,6 +43,9 @@ dependencies {
     implementation 'com.opencsv:opencsv:5.11.2'
     // Source: https://mvnrepository.com/artifact/org.apache.commons/commons-lang3
     implementation 'org.apache.commons:commons-lang3:3.20.0'
+    // JSON output for the "review/commit" pipeline - hand-rolled escaping/formatting was judged not
+    // worth the risk versus a well-tested library.
+    implementation 'com.google.code.gson:gson:2.11.0'
 }
 
 pmd {

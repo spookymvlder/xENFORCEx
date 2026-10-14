@@ -1,5 +1,59 @@
-# xml-auto-validator
-* * * 
+# xENFORCEX
+
+A validation engine for structured XML documents whose shape, required fields, and business rules are
+defined in a CSV — not in compiled Java classes or a hand-authored XSD. Edit the CSV and the engine's
+understanding of the document changes with it, no recompile needed.
+
+Point it at a CSV schema and an XML document, and it checks: which elements are required (and whether
+"required" means merely present or actually populated), conditional requirements based on other
+fields' values, numeric/date/time ranges and relative date offsets, enumerated value sets, ISO
+durations, and composite values assembled from several elements — then reports every problem it can
+find in one pass, rather than stopping at the first one. An XSD can still be layered in alongside this
+for structural validation; the two are complementary, not a choice between them.
+
+The conditional-requirement and value-restriction vocabulary draws conceptual inspiration from HL7 v2
+conformance methodology (presence vs. populated-ness as separate axes, for example), expressed in this
+project's own terms — it does not implement or claim conformance to any HL7 specification.
+
+There's no fixed output format yet; see [ROADMAP.md](ROADMAP.md) for what's planned and what's
+currently in progress. A JSON export of a validated document already works via the CLI's commit step.
+
+## Getting started
+
+Requires JDK 21+ (the Gradle wrapper pins the toolchain, so your system JDK doesn't need to match
+exactly).
+
+```bash
+./gradlew build
+./gradlew run
+```
+
+`./gradlew run` launches an interactive CLI. On first run it has no file paths configured yet — use
+the **Edit settings** menu to point `specFilePath` at your CSV schema and `xmlFilePath` at the document
+to validate, then **Apply and save** so those choices persist to `xenforcex.properties` (see
+[xenforcex.properties.example](xenforcex.properties.example) for every available
+setting, documented inline). From the main menu:
+
+- **Validate schema only** checks just the CSV for internal consistency, without touching an XML
+  document at all — useful while you're still authoring the schema.
+- **Review** runs the full pipeline and holds the result in memory without finalizing anything, so you
+  can look at every error and warning first.
+- **Commit** writes the reviewed form out (currently as JSON); declining to overwrite an existing file,
+  or a write failure, leaves the form held so you can retry rather than losing the review.
+
+### Example Files
+Example files to test the program can be found in [examples](src/main/resources/examples/).
+
+## Schema reference
+
+The full CSV column-by-column reference — every column's type, default, and validation rules — lives
+in [ImportSpec.txt](src/main/resources/documentation/ImportSpec.txt). It's kept in sync with the
+importer's actual behavior as the source of truth for the CSV format, including the condition-token
+grammar (`**ANY`, `**ALL`, `**!`, ranges, relative date offsets) used by conditional-requirement and
+conditional-repetition columns. This README doesn't duplicate it; what follows is the conceptual model
+the format is built on.
+
+* * *
 # Glossary
 The terminology used by this project may differ from established norms. The terms used throughout the project are 
 listed here.
@@ -24,17 +78,19 @@ multiple times, then each repetition receives its own field. Fields may hold dat
 See [Field Types](#field-types) for more information.
 #### Field Property
 A **field property** is a template that defines how the parser should process and validate form field information. Field 
-properties are currently imported via a CSV import specification. See [Field Property Information](#field-property-information) for more 
-details.
+properties are currently imported via a CSV import specification. See [Schema reference](#schema-reference) above for
+the full column reference.
 
 #### Anchor Element
-The **anchor element** is the top-level element of the structured document. It is not required that the start of the 
+The **anchor element** is the top-level element of the structured document — identified by having no
+`parentId` in the CSV schema, not by any special name. It is not required that the start of the
 structured document correspond with the beginning of a form instance. The anchor element ***CANNOT*** repeat. It is 
 expected that the first element in the document is the anchor element.
 
 #### Form Root
-The **form root** is the element that defines the beginning of a form instance. This element ***CAN*** repeat within the 
-document, but ***CANNOT*** repeat *within* the form. It may be the anchor element as long as there is only one instance 
+The **form root** is the element that defines the beginning of a form instance, configured via the
+`rootId` setting (see [xenforcex.properties.example](xenforcex.properties.example)).
+This element ***CAN*** repeat within the document, but ***CANNOT*** repeat *within* the form. It may be the anchor element as long as there is only one instance 
 of the form in the parsed document.
 ```
 <hrExport>                                  //This is the anchor element. It is shared by each instance of the form.
@@ -92,418 +148,14 @@ A **container field** stores no value, but maintains the hierarchy of the form.\
 In the composite field example, if `given` and `family` were instead imported as simple fields, `name` would exist as a 
 container field to reference the two simple fields. The two simple fields would be children of the container field.
 
-* * * 
-
-<a name="field-property-information"></a>
-## Field Property Information
-Field properties are primarily populated through the import specification CSV.
-
-- Column names referenced here match the CSV column names.
-- The data type listed in the definition refers to the Java type used to store the field property.
-- Each field property will have a data type column, which defines how the parsed field value is stored.
-- Required columns must appear in the CSV.
-- Optional columns may be omitted.
-- Default behavior for blank column values is listed when relevant.
-- The data type and whether the column is required will appear after the column name in parentheses.
-- A required column not being present will prevent the import from processing.
-- Unless otherwise noted, a missing value for a required column will cause an error to be logged.
-
-> [!NOTE]\
-> The field property data type may be boxed or primitive.
-* * * 
-
-### Field Identifier Columns
-
-#### fieldId
-(String, Required)\
-A unique identifier corresponding to an element in the structured document. Every element must 
-have an ID, even if it is not a part of the form as a field.\
-\
-If the form is associated with a specification, the ID provided by that specification should be used.
-
->[!IMPORTANT]\
-> The ID ***SHOULD NOT*** contain commas.
-
-#### fieldName
-(String, Required)\
-The name of an element as it appears within the structured document.\
-\
-Duplicate names are allowed as long as the `fieldId` is unique.
-
-#### displayName
-(String, Optional)\
-A longer, more descriptive name for the field. Display name is used for the name of the parsed field.\
-\
-Defaults to `fieldName`.
-* * * 
-
-### Field Hierarchy Columns
-> [!NOTE]\
-> `hierarchyLevel` is included in the import specification as it makes reviewing the actual CSV file easier. The 
-> column itself is not used by the parser.
-
-
-#### parentId
-(String, Required)\
-The `fieldId` of this field's direct parent.\
-\
-This may only be left blank for the anchor element.
-
-#### hierarchyLevel
-(Integer, Optional)\
-The expected hierarchy level for this element in the form. The anchor element 
-should have a hierarchy level of 0.\
-\
-Currently not imported or used by the parser.
-
-* * * 
-### Versioning Columns
-
-#### active
-(Boolean, Optional)\
-Whether this field is in use. Allows for specifications to version their import specifications.\
-\
-Defaults to `T`.
-
-#### expireDate
-(LocalDate, Required if `active == F`)\
-The last date when this field should be considered active.\
-\
-Currently only used to validate that the `active` flag is accurate at time of parsing.
-* * * 
-
-### Cardinality Columns
-
-#### fieldRepeated
-(Character, Optional)\
-Determines if the element is allowed to appear more than once. \
-\
-Allowed values:
->T → repeating\
->F → non-repeating\
->C → conditionally repeating
->
-Defaults to `F`.\
-\
-If a block of elements should be repeated, the container for those elements should indicate that repetition is allowed.\
-\
-In the example below, the `person` element would be considered repeating.
-```
-<person>
-    <name>
-        <given></given>
-        <family></family>
-    </name>
-</person>
-<person>
-    <name>
-        <given></given>
-        <family></family>
-    </name>
-</person>
-```
-
-#### minOccurs
-(Integer, Optional)\
-The minimum number of times the field must appear.\
-\
-Only referenced if `fieldRepeated != F`.\
-\
-Defaults to `1`.
-
-#### maxOccurs
-(Integer, Optional)\
-The maximum number of times the field may appear.\
-\
-Only referenced if `fieldRepeated != F`.\
-\
-Defaults to `1`.
-
-#### condRepeatedSourceIds
-(String[], Required if `fieldRepeated == C`)\
-Comma-delimited list of other fields that if present, determine that this field must be repeated.\
-\
-Fields should be referenced by `fieldId`.\
-\
-This column is ignored when the condition requiring it is not met.
-
-#### condRepeatedValues
-(List<String[]>, Required if `fieldRepeated == C`)\
-The triggering value set in `condRepeatedSourceIds` that indicate repetition should occur.\
-\
-If more than one source field, each value set should be piped-delimited and encased in curly braces. 
-- If any value in the source field would cause this field to be repeated, enter `**ANY`
-- If the source field is numeric, a requirement threshold can be indicated via `<`, `>`, `<=`, or `>=` followed by a 
-numeric value, such as `{<4}`.
-- An inclusive range can be indicated by a hyphen separating two numeric values. Inclusivity can be indicated by the 
-presence of greater-than or less-than symbols. The condition `{>2-5}` would indicate values of 2.01 up to and including 5 
-would conditionally repeat the field being evaluated.
-- To specify any value except for the value indicated, use `**!`.
-- If the source field had specified enumerations, numeric values will correspond to the enumeration at the specified 
-position, 0-indexed.
-
-This column is ignored when the condition requiring it is not met.
-
-#### condRepeatedLogic 
-(Enum [AND, OR], Required if `condRepeatedSourceIds` indicates more than one field and those fields can be populated at 
-the same time)\
-Logic to determine how multiple source fields are evaluated.\
-\
-This column is ignored when the condition requiring it is not met.
-* * * 
-
-### Required Field Columns
-
-#### required
-(Character, Required)\
-If the field is required.\
-\
-Allowed values:
->T → repeating\
->F → non-repeating\
->C → conditionally repeating
->
-A required field triggers an error only if its parent exists.
-If a field is marked as required, 'T', it will only trigger an error if the parent it belongs to is 
-populated and the field is not present, or present and empty. 
-\
-Defaults to `F`.
-
->If a parent element is listed as required, the parent element must appear but each of its children will need to have 
-> their behavior individually defined.
->
-> This makes it possible to have a field such as `startDate` be required if its parent element `job` is populated, but 
-> if there is no job to provide information for, then there would be no need to provide a start date.
-> 
-> Similarly, `job` could be marked as a required element so that it would appear in the form, and `startDate` could be 
-> set to conditionally required based on whether `job` was populated.
-
-
-#### condRequiredSourceIds 
-(String[], Required if `required == C`)\
-Indicates the `fieldId` of the source elements that should be referenced to determine if this field is conditionally 
-required.\
-\
-Field Ids should be comma-delimited.
-
-#### condRequiredValues
-(List<String[]>, Required if `required == C`)\
-The triggering value set in `condRequiredSourceIds` that indicates whether the field is required.\
-\
-If more than one source field, each value set should be piped-delimited and encased in curly braces.
-- If any value in the source field would cause this field to be required, enter `**ANY`.
-- If the source field is numeric, a requirement threshold can be indicated via `<`, `>`, `<=`, or `>=` followed by a 
-numeric value, such as `{<4}`.
-- An inclusive range can be indicated by a hyphen separating two numeric values. Inclusivity can be indicated by the 
-presence of greater-than or less-than symbols. The condition `{>2-5}` would indicate values of 2.01 up to and including 
-5 would conditionally require the field being evaluated.
-- To specify any value except for the value indicated, use `**!`.
-- If the source field had specified enumerations, numeric values will correspond to the enumeration at the specified 
-position, 0-indexed.
-
-This column is ignored when the condition requiring it is not met.
-
-#### condRequiredLogic
-(Enum [AND, OR], Required if `condRequiredSourceIds` indicates more than one field and those fields 
-can be present at the same time.)\
-Logic to determine how multiple source fields are evaluated.\
-\
-This column is ignored when the condition requiring it is not met.
-
-* * * 
-### Code System Metadata Columns
-Values for these columns are ignored when `codeSystemId` is blank.
-
-#### codeSystemName
-(String, Optional)\
-The name of the code system as it would appear in the structured document. If populated, the name that should be stored 
-to metadata.
-
-#### codeSystemId
-(String, Optional)\
-If the value type corresponds with a specific code system, provide the code system's ID.
-
-#### codeSystemVersion
-(String, Optional)\
-The version of the code system to expect.
-
-#### codeSystemCode
-(String, Optional)\
-If the `fieldId` does not correspond with the corresponding code in the code system, provide the field's code.
-* * * 
-
-### Field Value Restriction Columns
-For columns such as `rangeStart` and `rangeEnd` that are obviously paired, the behavior is as follows:
-- When both columns are empty, no restrictions are set for the value.
-- When only one column is empty, the populated column acts as a one-sided boundary on the data.
-
-#### dataType
-(String, Required if `groupingType != (COMPOSITE or CONTAINER`))\
-Data type of the field's value. If there is a boxed Java data type, that is the data type that will be used.\
-\
-Many data types may simply be stored as Strings with validation rules applied.\
-\
-Currently supported data types:
-> string\
-> integer\
-> decimal\
-> double\
-> float\
-> boolean\
-> date\
-> time\
-> datetime\
-> character\
-> long
-
-Planned support for:
-> duration\
-> anyuri\
-> idref\
-> entity\
-> id\
-> gyearmonth\
-> gmonthday\
-> gday\
-> gmonth\
-> gyear\
-> coded_value\
-> enumeration\
-> email\
-> telephone\
-> url\
-> postal_code\
-> country_code\
-> currency\
-> percentage\
-> custom\
-> raw_xml
-
-
-
-#### rangeStart
-(Double, Optional)\
-If value should be limited to a range, start of that value range.
-
-#### rangeEnd
-(Double, Optional)\
-If value should be limited to a range, end of that value range.
-
-#### rangeStartInclusive
-(Boolean, Optional)\
-Determines if `rangeStart` is inclusive.\
-\
-Behavior:
-> `T` -> inclusive\
-> `F` -> exclusive
->
-Defaults to `T`. Ignored when `rangeStart` is not populated.
-
-#### rangeEndInclusive
-(Boolean, Optional)\
-Determines if `rangeEnd` is inclusive.\
-\
-Behavior:
-> `T` -> inclusive\
-> `F` -> exclusive
->
-Defaults to `T`. Ignored when `rangeEnd` is not populated.
-
-#### minLength
-(Integer, Optional)\
-If string field, minimal length of field, inclusive.
-
-#### maxLength
-(Integer, Optional)\
-If string field, maximum length of field, inclusive.
-
-#### enumeration
-(String[], Optional)\
-Pipe-delimited list of allowed values.
-
-#### regexPattern
-(String, Optional)\
-If the field should match a pattern, provide that pattern.
-
-* * *
-### Attribute Information Columns
-
-#### isAttribute
-(Boolean, Optional)\
-If the value for the field is retrieved from an element's attribute rather than element content.
-
-#### attributeName
-(String, Required if `isAttribute == T`)\
-The name of the attribute tag to use for the field's value.
-* * * 
-
-### UI Metadata/Control Columns
-
-#### uiControl
-(String, Optional)\
-Helper for downstream user for how to render data.
-
-#### unit
-(String, Optional)\
-The unit corresponding to the field, used for display.
-
-#### displayOrder
-(Integer, Optional)\
-The order that fields should appear in. Order should be ascending from the anchor element, with children having a higher
-value than their parents.\
-\
-Included for the sake of downstream UI, but not this column's value is not used by the parser.
-
-
-#### validationMessage
-(String, Optional)\
-A custom error message to log if this field fails to be parsed successfully, in addition to any system errors logged.
 * * *
 
-### Import Behavior Columns
+## Project status and further reading
 
-#### skipImport
-(Boolean, Optional)\
-Indicates that the field should be skipped during import, for example if the field corresponds to user instructions not 
-part of the form.\
-\
-This differs from an inactive field in that the skipped field's relationships will be bridged (the parent of this field 
-will receive this record's children and vice versa). 
-> [!WARNING]\
-> Skip import should not be used on fields whose children are active. This may lead be unexpected tree bridging.
+This project is under active development; development notes and open design questions that don't fit
+the schema reference live in [TODO.md](TODO.md). [ROADMAP.md](ROADMAP.md) tracks the current phase of
+work and what's planned next.
 
-#### groupingType
-(Enum [NONE, COMPOSITE, CONSTITUENT, CONTAINER], Optional)\
-Determines the form of the parsed field.\
-\
-Behavior:
-> `NONE` -> a simple field is created\
-> `COMPOSITE` -> composite field\
-> `CONSTITUENT` -> contributes its value to a composite field\
-> `CONTAINTER` -> structural field with no value, may have children\
+## License
 
-Defaults to `None`.
-
-#### componentOf
-(String, Required if `groupingType == CONSTITUENT`)
-
-* * *
-## System Behavior
-The anchor element is determined by an empty parentId.\
-\
-The form root is set in system configuration.\
-
-
-
-* * *
-### Self Notes
-- Consider removing displayOrder, or specifying that it is provided for UI to implement downstream.
-- Consider removing hierarchy level or specifying that it is provided for UI to implement downstream.
-- Handle fields that are active but have an expiration date set.
-- Confirm default of fieldRepeated is F, and min/max is 1 if blank.
-- Add grouping type
-- Enter expected input format for Boolean
-- Add expanded expireDate functionality to project plans.
-- Ensure root data type no longer referenced
-- Add details on how root derived/anchor element derived.
-- Update range properties
+[MIT](LICENSE)

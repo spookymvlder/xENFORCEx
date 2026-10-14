@@ -19,6 +19,11 @@ public class FieldPropertyRow {
     //TODO error checking if the fieldName is a duplicate for something at the same hierarchy level and is not repeating.
     @CsvBindByName (required = true)
     private String fieldName;
+    // Optional: the namespace URI this field's element must be in, to disambiguate elements that
+    // share a local name across different XML namespaces. Blank means "match by local name only,
+    // regardless of namespace" - the same behavior as before this column existed.
+    @CsvBindByName
+    private String namespaceUri;
     @CsvBindByName
     private String displayName;
 
@@ -54,9 +59,8 @@ public class FieldPropertyRow {
     private String condRepeatedLogic;
 
     // REQUIRED FIELD COLUMNS
-    //TODO change to Char or enum, or process later
-    @CsvCustomBindByName(column="required", converter = FieldPropertyConverter.RepeatConverter.class)
-    private Character required;
+    @CsvBindByName
+    private String required;
 
     //TODO import separate conditionally mandatory logic if complicated.
     @CsvBindAndSplitByName(elementType=String.class, splitOn = ",")
@@ -83,9 +87,9 @@ public class FieldPropertyRow {
     @CsvBindByName (column = "dataType", required = false)
     private String dataType;
     @CsvBindByName
-    private Double rangeStart;
+    private String rangeStart;
     @CsvBindByName
-    private Double rangeEnd;
+    private String rangeEnd;
     @CsvCustomBindByName (column="rangeStartInclusive", converter = FieldPropertyConverter.TFBooleanConverter.class)
     private Boolean rangeStartInclusive;
     @CsvCustomBindByName (column="rangeEndInclusive", converter = FieldPropertyConverter.TFBooleanConverter.class)
@@ -94,7 +98,9 @@ public class FieldPropertyRow {
     private Integer minLength;
     @CsvBindByName
     private Integer maxLength;
-    @CsvBindByName
+    // Column is singular; the field is plural. Needs the split binding like the other list columns,
+    // otherwise the pipe-delimited value never becomes a list.
+    @CsvBindAndSplitByName(elementType=String.class, splitOn = "\\|", column="enumeration")
     private List<String> enumerations;
 
     @CsvBindByName
@@ -130,8 +136,6 @@ public class FieldPropertyRow {
     @CsvBindByName
     private String componentOf;
 
-    //TODO namespace support
-
 
     public String getFieldId() {
         return fieldId;
@@ -139,6 +143,10 @@ public class FieldPropertyRow {
 
     public String getFieldName() {
         return fieldName;
+    }
+
+    public String getNamespaceUri() {
+        return namespaceUri;
     }
 
     public String getDisplayName() {
@@ -185,7 +193,7 @@ public class FieldPropertyRow {
         return condRepeatedLogic;
     }
 
-    public Character getRequired() {
+    public String getRequired() {
         return required;
     }
 
@@ -221,11 +229,11 @@ public class FieldPropertyRow {
         return dataType;
     }
 
-    public Double getRangeStart() {
+    public String getRangeStart() {
         return rangeStart;
     }
 
-    public Double getRangeEnd() {
+    public String getRangeEnd() {
         return rangeEnd;
     }
 

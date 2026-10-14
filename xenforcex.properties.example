@@ -1,0 +1,42 @@
+# Example xENFORCEx CLI settings file.
+#
+# This is personal/local configuration, not project source - see .gitignore, which excludes
+# xenforcex.properties itself for exactly that reason. Copy this file to
+# "xenforcex.properties" in the project root and edit the values for your own setup, or just
+# run the CLI once: it will prompt you through the Settings menu and can write this file for you
+# ("Apply and save" from the Settings menu).
+
+# Path to the CSV schema that defines the form's shape. field_property_template_driver_short.csv is a
+# real, working sample shipped with the project.
+specFilePath=src/main/resources/Documentation/field_property_template_driver_short.csv
+
+# Path to the XML document to validate against that schema. There is no sample shipped in the public
+# repo (src/main/resources/local-only/ is gitignored) - point this at your own file.
+xmlFilePath=
+
+# Path to an XSD to validate the XML against before the CSV-driven validation runs. Optional - see
+# skipXsdValidation below.
+xsdFilePath=
+
+# The fieldId (from the CSV) to start parsing from - see ImportSpec.txt's HIERARCHY section and
+# ROADMAP.md's note on finding a sensible default for this.
+rootId=
+
+# Skip XSD validation even if xsdFilePath is set. Useful while iterating on the XML/CSV together,
+# since the two can drift out of sync with each other.
+skipXsdValidation=false
+
+# yyyy-MM-dd (ISO-8601) is the format every other date-family type in the schema uses; only change
+# this if you have a specific reason to.
+dateFormat=yyyy-MM-dd
+
+# How strict a run is before it halts a stage: FATAL (default - only stops for unrecoverable schema
+# problems), ERROR, WARNING, or NOTIFICATION. See ImportSpec.txt's ERROR SEVERITY section.
+errorThreshold=FATAL
+
+# Where committed JSON output is written. Blank means "next to the source XML."
+outputDirectory=
+
+# Dumps the full parsed field tree to the console during Review mode. Off by default - noisy, meant
+# for troubleshooting the parser itself rather than everyday use.
+verbose=false

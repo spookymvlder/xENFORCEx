@@ -1,2 +1,4 @@
+rootProject.name = 'xENFORCEx'
+
 include 'src'
 

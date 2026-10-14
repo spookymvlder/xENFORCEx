@@ -22,7 +22,11 @@ public class ErrorSettings {
     private ErrorSettings() {
         this.logCount = 0;
         this.currentLogId = null;
-        this.errorThreshold = ErrorSeverity.ERROR;
+        // FATAL, not ERROR, so a stage boundary only halts when continuing would be meaningless
+        // (unreadable input, no single root/anchor, duplicate fieldId, unresolvable parentId, cycle).
+        // ERROR is per-field and independent by contract, so later stages still run and report,
+        // letting one pass surface every fixable problem instead of just the first stage's worth.
+        this.errorThreshold = ErrorSeverity.FATAL;
         this.errorLogs = new HashMap<>();
         this.logSeverity = new HashMap<>();
     }
@@ -36,6 +40,10 @@ public class ErrorSettings {
 
     public Integer getLogCount() {
         return this.logCount;
+    }
+
+    public Integer getCurrentLogId() {
+        return this.currentLogId;
     }
 
     public ErrorSeverity getErrorThreshold() {

@@ -4,6 +4,7 @@ import com.spookymvlder.formtools.datatypes.ConditionalBool;
 import com.spookymvlder.formtools.datatypes.FieldDataType;
 import com.spookymvlder.formtools.datatypes.GroupingType;
 import com.spookymvlder.formtools.datatypes.LinkLogic;
+import com.spookymvlder.formtools.datatypes.Usage;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -12,6 +13,7 @@ import java.util.List;
 public record ResolvedFieldPropertyRow (
     String fieldId,
     String fieldName,
+    String namespaceUri,
     String displayName,
 
     String parentId,
@@ -26,7 +28,7 @@ public record ResolvedFieldPropertyRow (
     List<String> condRepeatedValues,
     LinkLogic condRepeatedLogic,
 
-    ConditionalBool required,
+    Usage required,
     List<String> condRequiredSourceIds,
     List<String> condRequiredValues,
     LinkLogic condRequiredLogic,
@@ -37,8 +39,8 @@ public record ResolvedFieldPropertyRow (
     String codeSystemCode,
 
     FieldDataType dataType,
-    Double rangeStart,
-    Double rangeEnd,
+    String rangeStart,
+    String rangeEnd,
     Boolean rangeStartInclusive,
     Boolean rangeEndInclusive,
     Integer minLength,

@@ -20,7 +20,11 @@ public class ProcessingOverrides {
     private Map<String, Boolean> skipImportOverrides;
 
     private ProcessingOverrides() {
-        this.dateFormat = "dd-MM-yyyy";
+        // ISO-8601, matching CustomDateConverter's own default and every other date-family type
+        // (DATE, DATETIME, GYEAR, ...) elsewhere in the pipeline. This previously read "dd-MM-yyyy",
+        // silently overriding CustomDateConverter's correct default via setConverters() and making
+        // the documented yyyy-MM-dd format actually fail to parse.
+        this.dateFormat = "yyyy-MM-dd";
         this.displayNameOverrides = new HashMap<>();
         this.activeOverrides = new HashMap<>();
         this.skipImportOverrides = new HashMap<>();
