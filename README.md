@@ -41,6 +41,9 @@ setting, documented inline). From the main menu:
 - **Commit** writes the reviewed form out (currently as JSON); declining to overwrite an existing file,
   or a write failure, leaves the form held so you can retry rather than losing the review.
 
+### Example Files
+Example files to test the program can be found in [examples](src/main/resources/examples/).
+
 ## Schema reference
 
 The full CSV column-by-column reference — every column's type, default, and validation rules — lives
