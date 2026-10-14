@@ -21,6 +21,7 @@ public class FieldPropertyFactory {
         return new ResolvedFieldPropertyRow(
                 normalizeBlank(row.getFieldId()),
                 normalizeBlank(row.getFieldName()),
+                normalizeBlank(row.getNamespaceUri()),
                 normalizeBlank(row.getDisplayName()),
 
                 normalizeBlank(row.getParentId()),
@@ -108,6 +109,7 @@ public class FieldPropertyFactory {
         return new ResolvedFieldPropertyRow(
                 row.fieldId(),
                 row.fieldName(),
+                row.namespaceUri(),
                 row.displayName(),
 
                 row.parentId(),
@@ -173,6 +175,7 @@ public class FieldPropertyFactory {
         return new ResolvedFieldPropertyRow(
                 row.fieldId(),
                 row.fieldName(),
+                row.namespaceUri(),
                 displayName != null ? displayName : row.displayName(),
 
                 row.parentId(),
@@ -245,6 +248,7 @@ public class FieldPropertyFactory {
         return new FieldIdentity(
                 row.fieldId(),
                 row.fieldName(),
+                row.namespaceUri(),
                 row.displayName(),
                 row.active(),
                 row.expireDate(),

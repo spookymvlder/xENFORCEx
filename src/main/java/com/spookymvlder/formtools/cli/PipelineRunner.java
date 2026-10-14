@@ -56,7 +56,9 @@ public class PipelineRunner {
             Document doc = ImportXml.importXML();
             FormParser parser = new FormParser(doc, settings.getRootField());
             List<FormInstance> forms = parser.parseForm();
-            FormDebugPrinter.printForms(forms);
+            if (settings.isVerbose()) {
+                FormDebugPrinter.printForms(forms);
+            }
             processForms(forms, settings.getRootField());
             validateForm(forms, settings.getRootField());
             return new PipelineResult(true, forms, ErrorSettings.getInstance().getCurrentLogId());

@@ -17,6 +17,19 @@ a default the engine treats as a normal, unremarkable choice, with no error and 
 IDENTITY
 fieldId (String, Required) - If import is part of a specification, the id linking this field to that specification. Else, a unique ID for the field that can be referenced by the parentId column. The id should not contain commas. Duplicate fieldIds are FATAL.
 fieldName (String, Required) - The name of the field as it appears within the XML.
+namespaceUri (String, Optional) - The XML namespace URI the fieldName element must be in. Blank means
+    match by fieldName alone, regardless of namespace - the same behavior as before this column
+    existed, and still the right choice for an unnamespaced document. Set it when the same local name
+    is used for different things in different namespaces, or when a document uses a default xmlns:
+    without this column, matching is by local name only, and an unprefixed path can only ever match
+    an element with no namespace at all, so a document with a default namespace on its root would
+    silently fail to match anything.
+    -Applies to element matching only. It does not extend to a namespace-qualified ATTRIBUTE (e.g. an
+     xsi: attribute) - that remains unsupported; isAttribute/attributeName values are read unprefixed,
+     which is correct for the common case (XML attributes are never implicitly in an element's own
+     default namespace) but not for a genuinely namespace-qualified attribute.
+    -Each field's namespaceUri is independent, so a document can mix namespaced and unnamespaced
+     fields, or several different namespaces, as needed.
 displayName (String, Optional) - A longer, more descriptive name for the field, if necessary. fieldName is used if left blank.
 displayOrder (Integer, Optional) - The order the fields should appear in. Will be respected if possible. A node's children should have a lower value than any unprocessed sibling nodes. Currently imported and retained as UI metadata; no stage sorts by it yet.
 
@@ -183,6 +196,11 @@ OPEN QUESTIONS
  that EVERY instance of that shared ancestor satisfy the whole per-instance AND (rather than any one
  instance being sufficient, the current behavior) has no token yet. It only has meaning when there are
  2+ sources with a real shared repeating ancestor, so it was deferred rather than folded into **ALL.
+-namespaceUri covers element matching only, not a namespace-qualified attribute (e.g. xsi:type).
+ isAttribute/attributeName values are read unprefixed. This is the common case (attributes are never
+ implicitly in an element's own default namespace), but a field genuinely needing to match a prefixed
+ attribute has no way to express that yet. Not implemented speculatively since it's a separate concept
+ from element namespacing, not an extension of this column.
 -FieldPropertyRow still declares a componentOf binding with no corresponding column, kept as a slot
  in case a COMPOSITE ever needs constituents nested below its direct children. Do not add the column
  back without also consuming it: the composite link is derived from parentId, so a column value that
@@ -225,3 +243,10 @@ with no warning, unlike dataType's warned STRING default. Fixed parentId's ancho
 told authors to write the literal value "root" - that string isn't treated specially by anything
 currently active in the code (only by a commented-out check); the anchor is identified by parentId
 being left blank, and the working fixtures already do this. Left blank, not "root", is correct.
+Added namespaceUri (per-field, optional). Covers element matching: FormParser's DOM child-matching
+now compares local name plus an exact namespace check when set, and XPath-string construction
+(buildRelativePath, constituent lookups) qualifies the path with an internally-generated prefix bound
+to that URI via a new NamespaceRegistry. Blank behaves exactly as before this column existed - no
+namespace constraint at all - which is what keeps every existing schema's matching behavior unchanged.
+Previously, an unprefixed XPath path segment could only ever match a null-namespace element, so any
+document with a default xmlns on its root would have silently matched nothing.

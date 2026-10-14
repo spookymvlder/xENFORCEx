@@ -20,6 +20,9 @@ public class ImportSettings {
     private String rootId;
     // Blank/null means "next to the source XML" - see PipelineRunner.commit.
     private String outputDirectory;
+    // Gates FormDebugPrinter's full internal field-tree dump in the full pipeline. Off by default:
+    // nothing in the CLI's menu or README advertises that output, so it shouldn't run unasked.
+    private boolean verbose;
 
     private ImportSettings() {
         this.xmlFilePath = null;
@@ -32,6 +35,7 @@ public class ImportSettings {
         this.rootField = null;
         this.rootId = null;
         this.outputDirectory = null;
+        this.verbose = false;
     }
 
     public static ImportSettings getInstance() {
@@ -119,5 +123,13 @@ public class ImportSettings {
 
     public void setOutputDirectory(String outputDirectory) {
         this.outputDirectory = outputDirectory;
+    }
+
+    public boolean isVerbose() {
+        return verbose;
+    }
+
+    public void setVerbose(boolean verbose) {
+        this.verbose = verbose;
     }
 }

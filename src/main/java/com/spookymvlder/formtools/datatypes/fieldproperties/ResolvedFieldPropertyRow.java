@@ -13,6 +13,7 @@ import java.util.List;
 public record ResolvedFieldPropertyRow (
     String fieldId,
     String fieldName,
+    String namespaceUri,
     String displayName,
 
     String parentId,

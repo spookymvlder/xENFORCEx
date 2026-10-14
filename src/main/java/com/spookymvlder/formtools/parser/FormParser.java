@@ -22,6 +22,9 @@ public class FormParser {
     private static XPath xpath;         // TODO see if static xpath would cause problems going forward. Possible issues include multiple forms or building FormParser multiple times before parsing different forms.
     private final FieldProperty instanceRootProperty;
     private final Document xmlDoc;
+    // Built fresh per FormParser (per document parse) - see NamespaceRegistry's own javadoc for why
+    // its prefix assignments shouldn't persist or be shared across parses.
+    private final NamespaceRegistry namespaceRegistry = new NamespaceRegistry();
 
 
 
@@ -32,6 +35,7 @@ public class FormParser {
      */
     public FormParser(Document xmlDoc, FieldProperty instanceRootProperty) {
         xpath = XPathFactory.newInstance().newXPath();
+        xpath.setNamespaceContext(namespaceRegistry);
         this.xmlDoc = xmlDoc;
         this.instanceRootProperty = instanceRootProperty;
 
@@ -195,11 +199,12 @@ public class FormParser {
         }
         FieldProperty parent = property.getRelation().getParentField();
         if (parent != null) {
-            return buildRelativePath(parent) + '/' + property.getFieldName();
+            return buildRelativePath(parent) + '/'
+                    + namespaceRegistry.qualify(property.getFieldName(), property.getIdentity().getNamespaceUri());
         }
         // Should be document anchor. Should have already been validated
         else if (property.getFieldName().equals(ImportSettings.getInstance().getAnchorElementName())) {
-            return property.getFieldName();
+            return namespaceRegistry.qualify(property.getFieldName(), property.getIdentity().getNamespaceUri());
         } else {
             String message = "Field property '" + property.getFieldName() + "' is not the document anchor but lacks a parent element.";
             errors.addToCurrentLog(new ErrorEntry(ErrorSource.PARSE_ERROR, message, ErrorSeverity.FATAL));
@@ -225,7 +230,7 @@ public class FormParser {
         }
 
         // Match all child elements with this name (repeats handled here)
-        List<Node> matches = childElementsByName(parentNode, name);
+        List<Node> matches = childElementsByName(parentNode, name, prop.getIdentity().getNamespaceUri());
 
         if (matches.isEmpty()) return Collections.emptyList();
 
@@ -287,16 +292,33 @@ public class FormParser {
         return results;
     }
 
-    private static List<Node> childElementsByName(Node parent, String name) {
+    /**
+     * Matches by local name (not {@link Node#getNodeName()}, which includes any source-document
+     * prefix) plus, when {@code namespaceUri} is non-null/blank, an exact namespace match. A null/
+     * blank namespaceUri imposes no namespace constraint at all - this is what keeps every existing,
+     * un-namespaced schema's matching behavior byte-identical to before this parameter existed.
+     */
+    private static List<Node> childElementsByName(Node parent, String name, String namespaceUri) {
 
         List<Node> out = new ArrayList<>();
         NodeList kids = parent.getChildNodes();
 
         for (int i = 0; i < kids.getLength(); i++) {
             Node k = kids.item(i);
-            if (k.getNodeType() == Node.ELEMENT_NODE && name.equals(k.getNodeName())) {
-                out.add(k);
+            if (k.getNodeType() != Node.ELEMENT_NODE) {
+                continue;
             }
+            // getLocalName() is null for a node obtained without namespace-aware parsing; this
+            // codebase's DocumentBuilderFactory always sets namespace-awareness, so the fallback is
+            // defensive rather than expected to trigger.
+            String localName = k.getLocalName() != null ? k.getLocalName() : k.getNodeName();
+            if (!name.equals(localName)) {
+                continue;
+            }
+            if (namespaceUri != null && !namespaceUri.isBlank() && !namespaceUri.equals(k.getNamespaceURI())) {
+                continue;
+            }
+            out.add(k);
         }
         return out;
     }
@@ -331,7 +353,8 @@ public class FormParser {
                 if (attr != null && !attr.isBlank()) v = safeEvaluate(thisNode, "@" + attr);
             } else {
                 // constituent elements are typically children of the composite node
-                v = safeEvaluate(thisNode, name + "/text()");
+                String qualifiedName = namespaceRegistry.qualify(name, constituent.getIdentity().getNamespaceUri());
+                v = safeEvaluate(thisNode, qualifiedName + "/text()");
             }
 
             constituents.put(constituent.getIdentity().getDisplayName(),

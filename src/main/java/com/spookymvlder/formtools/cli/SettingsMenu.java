@@ -71,6 +71,7 @@ public class SettingsMenu {
         System.out.println("6. dateFormat         = " + c.getDateFormat());
         System.out.println("7. errorThreshold     = " + c.getErrorThreshold());
         System.out.println("8. outputDirectory    = " + display(c.getOutputDirectory()) + " (blank = next to the source XML)");
+        System.out.println("9. verbose            = " + c.isVerbose() + " (dumps the full parsed field tree during Review)");
     }
 
     private static String display(String value) {
@@ -88,6 +89,7 @@ public class SettingsMenu {
             case "6" -> working.setDateFormat(promptString(scanner, "dateFormat", working.getDateFormat()));
             case "7" -> working.setErrorThreshold(promptSeverity(scanner, working.getErrorThreshold()));
             case "8" -> working.setOutputDirectory(promptDirectory(scanner, working.getOutputDirectory()));
+            case "9" -> working.setVerbose(promptBoolean(scanner, "verbose", working.isVerbose()));
             default -> System.out.println("Unrecognized option: " + input);
         }
     }

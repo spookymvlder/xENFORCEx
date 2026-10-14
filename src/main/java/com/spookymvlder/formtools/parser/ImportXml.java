@@ -68,7 +68,9 @@ public class ImportXml {
         Document doc = builder.parse(xmlFile);
         doc.getDocumentElement().normalize();
         //TODO ensure comments are stripped out too
-        stripEmptyElements(doc.getElementsByTagName(settings.getAnchorElementName()).item(settings.getAnchorElementIndex()));
+        // "*" matches any namespace: this lookup is purely to find a node to start whitespace-stripping
+        // from, by local name, so it shouldn't start silently missing namespaced anchor elements.
+        stripEmptyElements(doc.getElementsByTagNameNS("*", settings.getAnchorElementName()).item(settings.getAnchorElementIndex()));
         return doc;
     }
 

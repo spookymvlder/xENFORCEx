@@ -36,6 +36,7 @@ public class ConfigFileManager {
         config.setRootId(props.getProperty("rootId"));
         config.setOutputDirectory(props.getProperty("outputDirectory"));
         config.setSkipXsdValidation(Boolean.parseBoolean(props.getProperty("skipXsdValidation", "false")));
+        config.setVerbose(Boolean.parseBoolean(props.getProperty("verbose", "false")));
         config.setDateFormat(props.getProperty("dateFormat", "yyyy-MM-dd"));
         String thresholdRaw = props.getProperty("errorThreshold", "FATAL").trim().toUpperCase();
         try {
@@ -54,6 +55,7 @@ public class ConfigFileManager {
         putIfNotNull(props, "rootId", config.getRootId());
         putIfNotNull(props, "outputDirectory", config.getOutputDirectory());
         props.setProperty("skipXsdValidation", String.valueOf(config.isSkipXsdValidation()));
+        props.setProperty("verbose", String.valueOf(config.isVerbose()));
         props.setProperty("dateFormat", config.getDateFormat());
         props.setProperty("errorThreshold", config.getErrorThreshold().name());
         try (OutputStream out = new FileOutputStream(path)) {
@@ -77,6 +79,7 @@ public class ConfigFileManager {
         config.setRootId(importSettings.getRootId());
         config.setOutputDirectory(importSettings.getOutputDirectory());
         config.setSkipXsdValidation(importSettings.getSkipXsdValidation());
+        config.setVerbose(importSettings.isVerbose());
         config.setDateFormat(ProcessingOverrides.getInstance().getDateFormat());
         config.setErrorThreshold(ErrorSettings.getInstance().getErrorThreshold());
         return config;
@@ -91,6 +94,7 @@ public class ConfigFileManager {
         importSettings.setRootId(config.getRootId());
         importSettings.setOutputDirectory(config.getOutputDirectory());
         importSettings.setSkipXsdValidation(config.isSkipXsdValidation());
+        importSettings.setVerbose(config.isVerbose());
         ProcessingOverrides.getInstance().setDateFormat(config.getDateFormat());
         ProcessingOverrides.getInstance().setConverters();
         ErrorSettings.getInstance().updateErrorThreshold(config.getErrorThreshold());

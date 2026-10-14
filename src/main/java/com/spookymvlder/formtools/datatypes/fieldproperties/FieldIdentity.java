@@ -5,6 +5,10 @@ import java.time.LocalDate;
 public class FieldIdentity {
     private String fieldId;
     private String fieldName;
+    // Blank/null means "match by local name only, regardless of namespace" - see FormParser's use of
+    // this alongside NamespaceRegistry. Deliberately element-matching only: an isAttribute field's
+    // own namespaced-attribute case (e.g. xsi:type) isn't covered by this column.
+    private String namespaceUri;
     //TODO error checking if the fieldName is a duplicate for something at the same hierarchy level and is not repeating.
     private String displayName;
     //TODO figure out how to modularize
@@ -16,12 +20,14 @@ public class FieldIdentity {
 
     public FieldIdentity(String fieldId,
                          String fieldName,
+                         String namespaceUri,
                          String displayName,
                          Boolean active,
                          LocalDate expireDate,
                          Boolean skipImport) {
         this.fieldId = fieldId;
         this.fieldName = fieldName;
+        this.namespaceUri = namespaceUri;
         this.displayName = validateDisplayName(displayName);
         this.active = active;
         this.expireDate = expireDate;
@@ -41,6 +47,10 @@ public class FieldIdentity {
 
     public String getFieldName() {
         return fieldName;
+    }
+
+    public String getNamespaceUri() {
+        return namespaceUri;
     }
 
     public String getDisplayName() {

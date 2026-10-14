@@ -19,6 +19,11 @@ public class FieldPropertyRow {
     //TODO error checking if the fieldName is a duplicate for something at the same hierarchy level and is not repeating.
     @CsvBindByName (required = true)
     private String fieldName;
+    // Optional: the namespace URI this field's element must be in, to disambiguate elements that
+    // share a local name across different XML namespaces. Blank means "match by local name only,
+    // regardless of namespace" - the same behavior as before this column existed.
+    @CsvBindByName
+    private String namespaceUri;
     @CsvBindByName
     private String displayName;
 
@@ -131,8 +136,6 @@ public class FieldPropertyRow {
     @CsvBindByName
     private String componentOf;
 
-    //TODO namespace support
-
 
     public String getFieldId() {
         return fieldId;
@@ -140,6 +143,10 @@ public class FieldPropertyRow {
 
     public String getFieldName() {
         return fieldName;
+    }
+
+    public String getNamespaceUri() {
+        return namespaceUri;
     }
 
     public String getDisplayName() {

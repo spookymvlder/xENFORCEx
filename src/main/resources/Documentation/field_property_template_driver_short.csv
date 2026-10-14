@@ -1,37 +1,37 @@
-fieldId,fieldName,displayName,displayOrder,parentId,hierarchyLevel,sectionHeaderOverride,active,expireDate,fieldRepeated,minOccurs,maxOccurs,condRepeatedSourceIds,condRepeatedValues,condRepeatedLogic,required,condRequiredSourceIds,condRequiredValues,condRequiredLogic,codeSystemName,codeSystemId,codeSystemVersion,codeSystemCode,dataType,rangeStart,rangeEnd,rangeStartInclusive,rangeEndInclusive,minLength,maxLength,enumeration,unit,regexPattern,isAttribute,attributeName,uiControl,validationMessage,skipImport,groupingType
-0,prospectiveDrivers,Prospective Driver,0,,0,,T,,F,1,1,,,,R,,,,,,,,,,,,,,,,,,,,,,,Container
-1,application,Application,1,0,1,,T,,T,0,,,,,O,,,,,,,,,,,,,,,,,,,,,,F,Container
-2,driver,Driver,2,1,2,,T,,F,,,,,,R,,,,,,,,,,,,,,,,,,,,,,F,Container
-3,driverInfo,Driver Info,3,2,3,,T,,F,,,,,,R,,,,,,,,,,,,,,,,,,,,,,F,Container
-4,name,Driver Name,4,3,4,,T,,F,,,,,,R,,,,,,,,,,,,,,,,,,,,,,F,Container
-5,given,Driver Given Name,5,4,5,,T,,F,,,,,,R,,,,,,,,string,,,,,,,,,,,,,,,None
-6,family,Driver Family Name,6,4,5,,T,,F,,,,,,R,,,,,,,,string,,,,,,,,,,,,,,,None
-7,license,Driver License,7,2,3,,T,,F,,,,,,R,,,,,,,,,,,,,,,,,,,,,,F,Container
-8,licenseIdentifier,Driver License ID,8,7,4,,T,,F,,,,,,R,,,,,,,,string,,,,,,,,,,T,id,,,,None
-9,registeredRegion,Driver License State,9,8,5,,T,,F,,,,,,R,,,,,,,,string,,,,,,,,,,,,,,,None
-10,name,Driver License Name,10,7,4,,T,,F,,,,,,R,,,,,,,,,,,,,,,,,,,,,,F,Container
-11,given,Driver License Given Name,11,10,5, ,T,,F,,,,,,R,,,,,,,,string,,,,,,,,,,,,,,,None
-12,family,Driver License Family Name,12,10,5,,T,,F,,,,,,R,,,,,,,,string,,,,,,,,,,,,,,,None
-13,address,Driver License Address,13,7,4,,T,,F,,,,,,R,,,,,,,,,,,,,,,,,,,,,,F,Container
-14,street,Driver License Street,14,13,5,,T,,F,,,,,,R,,,,,,,,string,,,,,,,,,,,,,,,None
-15,town,Driver License Town,15,13,5,,T,,F,,,,,,R,,,,,,,,string,,,,,,,,,,,,,,,None
-16,region,Driver License Region,16,13,5,,T,,F,,,,,,R,,,,,,,,string,,,,,,,,,,,,,,,None
-17,post,Driver License  Zip,17,13,5,,T,,F,,,,,,R,,,,,,,,postal_code,,,,,,,,,,,,,,,None
-18,country,Driver License Country,18,13,5,,T,,F,,,,,,R,,,,,,,,,,,,,,,,,,,,,,F,Container
-19,code,Driver License Country Code,19,18,6,,T,,F,,,,,,R,,,,ISO 3166-1 alpha-3,,,code,coded_value,,,,,,,,,,T,code,,,,None
-20,issueDate,Driver License Issue Date,20,7,4,,T,,F,,,,,,R,,,,,,,,date,,,,,,,,,,,,,,,None
-21,expirationDate,Driver License Expiration Date,21,7,4,,T,,F,,,,,,R,,,,,,,,date,,,,,,,,,,,,,,,None
-22,birthDate,Driver License Birthdate,22,7,4,,T,,F,,,,,,R,,,,,,,,date,,,,,,,,,,,,,,,None
-23,driverHistory,Driver History,23,2,3,,T,,F,,,,,,R,,,,,,,,,,,,,,,,,,,,,,F,Container
-24,licenseIdentifier,Driver History Id,24,23,4,,T,,F,,,,,,R,,,,,,,,string,,,,,,,,,,T,id,,,,None
-25,registeredRegion,Driver History Id Region,25,24,5,,T,,F,,,,,,R,,,,,,,,string,,,,,,,,,,,,,,,None
-26,violation,Driver History Violation,26,23,4,,T,,T,1,,,,,R,,,,,,,,,,,,,,,,,,,,,,F,Container
-27,effectiveDate,Driver History Violation Date,27,26,5,,T,,F,,,,,,R,,,,,,,,date,,,,,,,,,,,,,,,None
-28,code,Driver History Violation Code,28,26,5,,T,,F,,,,,,R,,,,Driver Violations,,,code,coded_value,,,,,,,,,,T,code,,,,None
-29,code,Driver History Violation Code Type,29,26,5,,T,,F,,,,,,R,,,,Driver Violations,,,type,coded_value,,,,,,,,,,T,type,,,,None
-30,operator,Driver History Violation Operator,30,26,5,,T,,F,,,,,,R,,,,,,,,,,,,,,,,,,,,,,F,Container
-31,name,Driver History Operator Name,31,30,6,,T,,F,,,,,,R,,,,,,,,,,,,,,,,,,,,,,F,Container
-32,given,Driver History Violation Given Name,32,31,7,,T,,F,,,,,,R,,,,,,,,string,,,,,,,,,,,,,,,None
-33,family,Driver History Violation Family Name,33,31,7,,T,,F,,,,,,R,,,,,,,,string,,,,,,,,,,,,,,,None
-34,vehicleIdentifier,Driver History Violation Vehicle Identifier,34,26,5,,T,,F,,,,,,R,,,,,,,,string,,,,,,,,,,T,id,,,,None
-35,registeredRegion,Driver History Violation Vehicle Region,35,34,6,,T,,F,,,,,,R,,,,,,,,string,,,,,,,,,,,,,,,None
+fieldId,fieldName,namespaceUri,displayName,displayOrder,parentId,hierarchyLevel,sectionHeaderOverride,active,expireDate,fieldRepeated,minOccurs,maxOccurs,condRepeatedSourceIds,condRepeatedValues,condRepeatedLogic,required,condRequiredSourceIds,condRequiredValues,condRequiredLogic,codeSystemName,codeSystemId,codeSystemVersion,codeSystemCode,dataType,rangeStart,rangeEnd,rangeStartInclusive,rangeEndInclusive,minLength,maxLength,enumeration,unit,regexPattern,isAttribute,attributeName,uiControl,validationMessage,skipImport,groupingType
+0,prospectiveDrivers,,Prospective Driver,0,,0,,T,,F,1,1,,,,R,,,,,,,,,,,,,,,,,,,,,,,Container
+1,application,,Application,1,0,1,,T,,T,0,,,,,O,,,,,,,,,,,,,,,,,,,,,,F,Container
+2,driver,,Driver,2,1,2,,T,,F,,,,,,R,,,,,,,,,,,,,,,,,,,,,,F,Container
+3,driverInfo,,Driver Info,3,2,3,,T,,F,,,,,,R,,,,,,,,,,,,,,,,,,,,,,F,Container
+4,name,,Driver Name,4,3,4,,T,,F,,,,,,R,,,,,,,,,,,,,,,,,,,,,,F,Container
+5,given,,Driver Given Name,5,4,5,,T,,F,,,,,,R,,,,,,,,string,,,,,,,,,,,,,,,None
+6,family,,Driver Family Name,6,4,5,,T,,F,,,,,,R,,,,,,,,string,,,,,,,,,,,,,,,None
+7,license,,Driver License,7,2,3,,T,,F,,,,,,R,,,,,,,,,,,,,,,,,,,,,,F,Container
+8,licenseIdentifier,,Driver License ID,8,7,4,,T,,F,,,,,,R,,,,,,,,string,,,,,,,,,,T,id,,,,None
+9,registeredRegion,,Driver License State,9,8,5,,T,,F,,,,,,R,,,,,,,,string,,,,,,,,,,,,,,,None
+10,name,,Driver License Name,10,7,4,,T,,F,,,,,,R,,,,,,,,,,,,,,,,,,,,,,F,Container
+11,given,,Driver License Given Name,11,10,5, ,T,,F,,,,,,R,,,,,,,,string,,,,,,,,,,,,,,,None
+12,family,,Driver License Family Name,12,10,5,,T,,F,,,,,,R,,,,,,,,string,,,,,,,,,,,,,,,None
+13,address,,Driver License Address,13,7,4,,T,,F,,,,,,R,,,,,,,,,,,,,,,,,,,,,,F,Container
+14,street,,Driver License Street,14,13,5,,T,,F,,,,,,R,,,,,,,,string,,,,,,,,,,,,,,,None
+15,town,,Driver License Town,15,13,5,,T,,F,,,,,,R,,,,,,,,string,,,,,,,,,,,,,,,None
+16,region,,Driver License Region,16,13,5,,T,,F,,,,,,R,,,,,,,,string,,,,,,,,,,,,,,,None
+17,post,,Driver License  Zip,17,13,5,,T,,F,,,,,,R,,,,,,,,postal_code,,,,,,,,,,,,,,,None
+18,country,,Driver License Country,18,13,5,,T,,F,,,,,,R,,,,,,,,,,,,,,,,,,,,,,F,Container
+19,code,,Driver License Country Code,19,18,6,,T,,F,,,,,,R,,,,ISO 3166-1 alpha-3,,,code,coded_value,,,,,,,,,,T,code,,,,None
+20,issueDate,,Driver License Issue Date,20,7,4,,T,,F,,,,,,R,,,,,,,,date,,,,,,,,,,,,,,,None
+21,expirationDate,,Driver License Expiration Date,21,7,4,,T,,F,,,,,,R,,,,,,,,date,,,,,,,,,,,,,,,None
+22,birthDate,,Driver License Birthdate,22,7,4,,T,,F,,,,,,R,,,,,,,,date,,,,,,,,,,,,,,,None
+23,driverHistory,,Driver History,23,2,3,,T,,F,,,,,,R,,,,,,,,,,,,,,,,,,,,,,F,Container
+24,licenseIdentifier,,Driver History Id,24,23,4,,T,,F,,,,,,R,,,,,,,,string,,,,,,,,,,T,id,,,,None
+25,registeredRegion,,Driver History Id Region,25,24,5,,T,,F,,,,,,R,,,,,,,,string,,,,,,,,,,,,,,,None
+26,violation,,Driver History Violation,26,23,4,,T,,T,1,,,,,R,,,,,,,,,,,,,,,,,,,,,,F,Container
+27,effectiveDate,,Driver History Violation Date,27,26,5,,T,,F,,,,,,R,,,,,,,,date,,,,,,,,,,,,,,,None
+28,code,,Driver History Violation Code,28,26,5,,T,,F,,,,,,R,,,,Driver Violations,,,code,coded_value,,,,,,,,,,T,code,,,,None
+29,code,,Driver History Violation Code Type,29,26,5,,T,,F,,,,,,R,,,,Driver Violations,,,type,coded_value,,,,,,,,,,T,type,,,,None
+30,operator,,Driver History Violation Operator,30,26,5,,T,,F,,,,,,R,,,,,,,,,,,,,,,,,,,,,,F,Container
+31,name,,Driver History Operator Name,31,30,6,,T,,F,,,,,,R,,,,,,,,,,,,,,,,,,,,,,F,Container
+32,given,,Driver History Violation Given Name,32,31,7,,T,,F,,,,,,R,,,,,,,,string,,,,,,,,,,,,,,,None
+33,family,,Driver History Violation Family Name,33,31,7,,T,,F,,,,,,R,,,,,,,,string,,,,,,,,,,,,,,,None
+34,vehicleIdentifier,,Driver History Violation Vehicle Identifier,34,26,5,,T,,F,,,,,,R,,,,,,,,string,,,,,,,,,,T,id,,,,None
+35,registeredRegion,,Driver History Violation Vehicle Region,35,34,6,,T,,F,,,,,,R,,,,,,,,string,,,,,,,,,,,,,,,None

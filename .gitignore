@@ -4,13 +4,9 @@ build/
 !**/src/main/**/build/
 !**/src/test/**/build/
 .idea/
-gradle/wrapper*
 *.class
 *.jar
 *.html
-gradlew
-gradlew.bat
-settings.gradle
 
 ### IntelliJ IDEA ###
 .idea/modules.xml
@@ -49,3 +45,8 @@ bin/
 ### Mac OS ###
 .DS_Store
 /src/main/resources/local-only/
+
+### xml-auto-validator CLI settings ###
+# Personal/local config (which files to point at, your preferred date format, etc.), written by the
+# CLI's Settings menu. Not source - see xml-auto-validator.properties.example for the file's shape.
+/xml-auto-validator.properties

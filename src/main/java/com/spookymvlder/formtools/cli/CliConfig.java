@@ -18,11 +18,13 @@ public class CliConfig {
     private String dateFormat;
     private ErrorSeverity errorThreshold;
     private String outputDirectory;
+    private boolean verbose;
 
     public CliConfig() {
         this.skipXsdValidation = false;
         this.dateFormat = "yyyy-MM-dd";
         this.errorThreshold = ErrorSeverity.FATAL;
+        this.verbose = false;
     }
 
     public CliConfig copy() {
@@ -35,6 +37,7 @@ public class CliConfig {
         copy.dateFormat = this.dateFormat;
         copy.errorThreshold = this.errorThreshold;
         copy.outputDirectory = this.outputDirectory;
+        copy.verbose = this.verbose;
         return copy;
     }
 
@@ -100,5 +103,13 @@ public class CliConfig {
 
     public void setOutputDirectory(String outputDirectory) {
         this.outputDirectory = outputDirectory;
+    }
+
+    public boolean isVerbose() {
+        return verbose;
+    }
+
+    public void setVerbose(boolean verbose) {
+        this.verbose = verbose;
     }
 }
