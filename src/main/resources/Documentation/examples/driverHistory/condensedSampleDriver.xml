@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+xsi:noNamespaceSchemaLocation="sampleDriverSchema.xsd"-->
+<prospectiveDrivers
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <application>
+        <driver>
+            <driverInfo>
+                <name>
+                    <given>Frank</given>
+                    <family>Tank</family>
+                </name>
+                <birthDate>1989-01-31</birthDate>
+            </driverInfo>
+            <license>
+                <licenseIdentifier id="1243142141">
+                    <registeredRegion>WA</registeredRegion>
+                </licenseIdentifier>
+                <name>
+                    <given>Frank</given>
+                    <family>Tank</family>
+                </name>
+                <address>
+                    <street>123 Fake St.</street>
+                    <town>Fake Town</town>
+                    <region>WA</region>
+                    <post>52985-1511</post>
+                    <country>
+                        <code code="USA" codeSystem="ISO 3166-1 alpha-3" displayName="United States of America (the)"/>
+                    </country>
+                </address>
+                <issueDate>2022-05-23</issueDate>
+                <expirationDate>2028-01-31</expirationDate>
+                <birthDate>1989-01-31</birthDate>
+            </license>
+            <driverHistory>
+                <licenseIdentifier id="1243142141">
+                    <registeredRegion>PA</registeredRegion>
+                </licenseIdentifier>
+                <violation>
+                    <effectiveDate>2023-01-05</effectiveDate>
+                    <code type="MV" code="DD" codeSystem="Driver Violations" displayName="Distracted Driving"/>
+                    <operator>
+                        <name>
+                            <given>Frank</given>
+                            <family>Tank</family>
+                        </name>
+                    </operator>
+                    <vehicleIdentifier id="1231-123">
+                        <registeredRegion>WA</registeredRegion>
+                    </vehicleIdentifier>
+                </violation>
+                <violation>
+                    <effectiveDate>2023-01-05</effectiveDate>
+                    <code type="NMV" code="PV" codeSystem="Driver Violations" displayName="Parking Violation"/>
+                    <operator>
+                        <name>
+                            <given>Frank</given>
+                            <family>Tank</family>
+                        </name>
+                    </operator>
+                    <vehicleIdentifier id="1231-123">
+                        <registeredRegion>WA</registeredRegion>
+                    </vehicleIdentifier>
+                </violation>
+            </driverHistory>
+        </driver>
+    </application>
+</prospectiveDrivers>

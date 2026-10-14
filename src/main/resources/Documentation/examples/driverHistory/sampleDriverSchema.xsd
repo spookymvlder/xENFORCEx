@@ -1,0 +1,250 @@
+<?xml version="1.0"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+elementFormDefault="qualified">
+
+<xs:complexType name="personName">
+	<xs:sequence>
+		<xs:element name="given" type="xs:string"/>
+		<xs:element name="family" type="xs:string"/>
+	</xs:sequence>
+</xs:complexType>
+
+<xs:complexType name="fullCountry">
+	<xs:sequence>
+		<xs:element name="code">
+			<xs:complexType>
+				<xs:attribute name="code" use="required">
+					<xs:simpleType>
+						<xs:restriction base="xs:string">
+							<xs:pattern value="[A-Z][A-Z][A-Z]"/>
+						</xs:restriction>
+					</xs:simpleType>
+				</xs:attribute>
+				<xs:attribute name="codeSystem" type="xs:string" use="optional"/>
+				<xs:attribute name="displayName" type="xs:string" use="optional"/>
+			</xs:complexType>
+		</xs:element>
+	</xs:sequence>
+</xs:complexType>
+
+<xs:complexType name="vehicleId">
+	<xs:sequence>
+		<xs:element name="registeredRegion" type="xs:string"/>
+	</xs:sequence>
+	<xs:attribute name="id" type="xs:string" use="required"/>
+</xs:complexType>
+
+<xs:complexType name="fullAddress">
+	<xs:sequence>
+		<xs:element name="street" type="xs:string"/>
+		<xs:element name="town" type="xs:string"/>
+		<xs:element name="region" type="xs:string"/>
+		<xs:element name="post" type="xs:string"/>
+		<xs:element name="country" type="fullCountry"/>
+	</xs:sequence>
+</xs:complexType>
+
+<xs:complexType name="licenseIdentifierType">
+	<xs:sequence>
+		<xs:element name="registeredRegion" type="xs:string"/>
+	</xs:sequence>
+	<xs:attribute name="id" type="xs:string" use="required"/>
+</xs:complexType>
+
+<xs:complexType name="fullLicense">
+	<xs:sequence>
+		<xs:element name="licenseIdentifier" type="licenseIdentifierType"/>
+		<xs:element name="name" type="personName"/>
+		<xs:element name="address" type="fullAddress"/>
+		<xs:element name="issueDate" type="xs:date"/>
+		<xs:element name="expirationDate" type="xs:date"/>
+		<xs:element name="birthDate" type="xs:date"/>
+	</xs:sequence>
+</xs:complexType>
+
+<xs:complexType name="fullVehicle">
+	<xs:sequence>
+		<xs:element name="make" type="xs:string"/>
+		<xs:element name="model" type="xs:string"/>
+		<xs:element name="year" type="xs:integer"/>
+		<xs:element name="color" type="xs:string"/>
+		<xs:element name="owner">
+			<xs:complexType>
+				<xs:sequence>
+					<xs:element name="name" type="personName"/>
+				</xs:sequence>
+			</xs:complexType>
+		</xs:element>
+		<xs:element name="vehicleIdentifier" type="vehicleId"/>
+	</xs:sequence>
+</xs:complexType>
+
+<xs:complexType name="fullInsurance">
+	<xs:sequence>
+		<xs:element name="policyHolder">
+			<xs:complexType>
+				<xs:sequence>
+					<xs:element name="name" type="personName"/>
+				</xs:sequence>
+			</xs:complexType>
+		</xs:element>
+		<xs:element name="additionalDrivers">
+			<xs:complexType>
+				<xs:sequence>
+					<xs:element name="driver" minOccurs="0" maxOccurs="3">
+						<xs:complexType>
+							<xs:sequence>
+								<xs:element name="name" type="personName"/>
+							</xs:sequence>
+						</xs:complexType>
+					</xs:element>
+				</xs:sequence>
+			</xs:complexType>
+		</xs:element>
+		<xs:element name="expirationDate" type="xs:date"/>
+		<xs:element name="coverage">
+			<xs:complexType>
+				<xs:sequence>
+					<xs:element name="vehicleIdentifier" type="vehicleId"/>
+				</xs:sequence>
+			</xs:complexType>
+		</xs:element>
+	</xs:sequence>
+</xs:complexType>
+
+<xs:complexType name="drivingViolation">
+	<xs:attribute name="code" use="required">
+		<xs:simpleType>
+			<xs:restriction base="xs:string">
+				<xs:enumeration value="DD"/>
+				<xs:enumeration value="RD"/>
+				<xs:enumeration value="SP"/>
+				<xs:enumeration value="DUI"/>
+				<xs:enumeration value="FRS"/>
+				<xs:enumeration value="DWD"/>
+				<xs:enumeration value="PV"/>
+				<xs:enumeration value="PI"/>
+				<xs:enumeration value="PWV"/>
+			</xs:restriction>
+		</xs:simpleType>
+	</xs:attribute>
+	<xs:attribute name="type" use="required">
+		<xs:simpleType>
+			<xs:restriction base="xs:string">
+				<xs:enumeration value="MV"/>
+				<xs:enumeration value="NMV"/>
+			</xs:restriction>
+		</xs:simpleType>
+	</xs:attribute>
+	<xs:attribute name="codeSystem" type="xs:string" use="optional"/>
+	<xs:attribute name="displayName" type="xs:string" use="optional"/>
+</xs:complexType>
+
+<xs:complexType name="vehicleIncident">
+	<xs:attribute name="code" use="required">
+		<xs:simpleType>
+			<xs:restriction base="xs:string">
+				<xs:enumeration value="FB"/>
+				<xs:enumeration value="CWB"/>
+				<xs:enumeration value="CIB"/>
+			</xs:restriction>
+		</xs:simpleType>
+	</xs:attribute>
+	<xs:attribute name="codeSystem" type="xs:string" use="optional"/>
+	<xs:attribute name="displayName" type="xs:string" use="optional"/>
+</xs:complexType>
+
+<xs:complexType name="fullDriver">
+	<xs:sequence>
+		<xs:element name="driverInfo" type="fullDriverInfo"/>
+		<xs:element name="license" type="fullLicense"/>
+		<xs:element name="driverHistory" type="fullDriverHistory" minOccurs="0"/>
+	</xs:sequence>
+</xs:complexType>
+
+<xs:complexType name="fullDriverInfo">
+	<xs:sequence>
+		<xs:element name="name" type="personName"/>
+		<xs:element name="birthDate" type="xs:date"/>
+	</xs:sequence>
+</xs:complexType>
+
+<xs:complexType name="fullAsset">
+	<xs:sequence>
+		<xs:element name="vehicle" maxOccurs="unbounded">
+			<xs:complexType>
+				<xs:sequence>
+					<xs:element name="vehicleInfo" type="fullVehicle"/>
+					<xs:element name="insurance" type="fullInsurance"/>
+					<xs:element name="vehicleHistory" type="fullVehicleHistory" minOccurs="0"/>
+				</xs:sequence>
+			</xs:complexType>
+		</xs:element>
+	</xs:sequence>
+
+</xs:complexType>
+
+<xs:complexType name="fullDriverHistory">
+	<xs:sequence>
+		<xs:element name="licenseIdentifier" type="licenseIdentifierType"/>
+		<xs:element name="violation" type="fullViolation" maxOccurs="unbounded"/>
+	</xs:sequence>
+</xs:complexType>
+
+
+<xs:complexType name="fullViolation">
+	<xs:sequence>
+		<xs:element name="effectiveDate" type="xs:date"/>
+		<xs:element name="code" type="drivingViolation"/>
+		<xs:element name="operator">
+			<xs:complexType>
+				<xs:sequence>
+					<xs:element name="name" type="personName"/>
+				</xs:sequence>
+			</xs:complexType>
+		</xs:element>
+		<xs:element name="vehicleIdentifier" type="vehicleId"/>
+	</xs:sequence>
+</xs:complexType>
+
+<xs:complexType name="fullVehicleHistory">
+	<xs:sequence>
+		<xs:element name="incident" minOccurs="0" maxOccurs="unbounded">
+			<xs:complexType>
+				<xs:sequence>
+					<xs:element name="effectiveDate" type="xs:date"/>
+					<xs:element name="code" type="vehicleIncident"/>
+					<xs:element name="operator">
+						<xs:complexType>
+							<xs:sequence>
+								<xs:element name="name" type="personName"/>
+							</xs:sequence>
+						</xs:complexType>
+					</xs:element>
+					<xs:element name="vehicleIdentifier" type="vehicleId"/>
+				</xs:sequence>
+			</xs:complexType>
+		</xs:element>
+		<xs:element name="violation" type="fullViolation" minOccurs="0" maxOccurs="unbounded"/>
+	</xs:sequence>
+</xs:complexType>
+
+
+<xs:element name="prospectiveDrivers">
+	<xs:complexType>
+		<xs:sequence>
+			<xs:element name="application" maxOccurs="unbounded">
+				<xs:complexType>
+						<xs:sequence>
+							<xs:element name="driver" type="fullDriver"/>
+							<!-- Nothing in the current CSV/XML models "assets" (vehicles/insurance)
+							     as a concept, so this is optional rather than removed outright -
+							     unlike foreignKey, nobody's confirmed this is dead. -->
+							<xs:element name="assets" type="fullAsset" minOccurs="0"/>
+						</xs:sequence>
+				</xs:complexType>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+</xs:element>
+</xs:schema>

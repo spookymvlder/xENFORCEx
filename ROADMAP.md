@@ -1,6 +1,6 @@
 # Roadmap
 
-Durable, cross-session backlog for xENFORCEx (formerly xml-auto-validator). Check items off as they land; append new
+Durable, cross-session backlog for xml-auto-validator. Check items off as they land; append new
 sub-items as they're discovered rather than guessing them in ahead of time. Within a single working
 session, granular sub-steps for whichever phase is active are also tracked with Claude Code's
 session-scoped task list — this file is the part that survives between sessions.

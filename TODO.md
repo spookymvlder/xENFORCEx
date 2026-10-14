@@ -3,7 +3,7 @@
 Lightweight, undated development notes that don't belong in either of the project's other two
 tracking documents:
 
-- [ROADMAP.md](src/main/resources/Documentation/ROADMAP.md) — the phased backlog, worked in order.
+- [ROADMAP.md](ROADMAP.md) — the phased backlog, worked in order.
 - [ImportSpec.txt](src/main/resources/Documentation/ImportSpec.txt)'s own OPEN QUESTIONS section —
   unresolved questions specific to CSV schema mechanics.
 

@@ -15,7 +15,7 @@ The conditional-requirement and value-restriction vocabulary draws conceptual in
 conformance methodology (presence vs. populated-ness as separate axes, for example), expressed in this
 project's own terms — it does not implement or claim conformance to any HL7 specification.
 
-There's no fixed output format yet; see [ROADMAP.md](src/main/resources/Documentation/ROADMAP.md) for what's planned and what's
+There's no fixed output format yet; see [ROADMAP.md](ROADMAP.md) for what's planned and what's
 currently in progress. A JSON export of a validated document already works via the CLI's commit step.
 
 ## Getting started
@@ -44,7 +44,7 @@ setting, documented inline). From the main menu:
 ## Schema reference
 
 The full CSV column-by-column reference — every column's type, default, and validation rules — lives
-in [ImportSpec.txt](src/main/resources/Documentation/ImportSpec.txt). It's kept in sync with the
+in [ImportSpec.txt](src/main/resources/documentation/ImportSpec.txt). It's kept in sync with the
 importer's actual behavior as the source of truth for the CSV format, including the condition-token
 grammar (`**ANY`, `**ALL`, `**!`, ranges, relative date offsets) used by conditional-requirement and
 conditional-repetition columns. This README doesn't duplicate it; what follows is the conceptual model
@@ -150,7 +150,7 @@ container field to reference the two simple fields. The two simple fields would 
 ## Project status and further reading
 
 This project is under active development; development notes and open design questions that don't fit
-the schema reference live in [TODO.md](TODO.md). [ROADMAP.md](src/main/resources/Documentation/ROADMAP.md) tracks the current phase of
+the schema reference live in [TODO.md](TODO.md). [ROADMAP.md](ROADMAP.md) tracks the current phase of
 work and what's planned next.
 
 ## License
