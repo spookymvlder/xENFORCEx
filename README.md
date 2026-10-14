@@ -1,4 +1,4 @@
-# xml-auto-validator
+# xENFORCEX
 
 A validation engine for structured XML documents whose shape, required fields, and business rules are
 defined in a CSV — not in compiled Java classes or a hand-authored XSD. Edit the CSV and the engine's
@@ -30,8 +30,8 @@ exactly).
 
 `./gradlew run` launches an interactive CLI. On first run it has no file paths configured yet — use
 the **Edit settings** menu to point `specFilePath` at your CSV schema and `xmlFilePath` at the document
-to validate, then **Apply and save** so those choices persist to `xml-auto-validator.properties` (see
-[xml-auto-validator.properties.example](xml-auto-validator.properties.example) for every available
+to validate, then **Apply and save** so those choices persist to `xenforcex.properties` (see
+[xenforcex.properties.example](xenforcex.properties.example) for every available
 setting, documented inline). From the main menu:
 
 - **Validate schema only** checks just the CSV for internal consistency, without touching an XML
@@ -86,7 +86,7 @@ expected that the first element in the document is the anchor element.
 
 #### Form Root
 The **form root** is the element that defines the beginning of a form instance, configured via the
-`rootId` setting (see [xml-auto-validator.properties.example](xml-auto-validator.properties.example)).
+`rootId` setting (see [xenforcex.properties.example](xenforcex.properties.example)).
 This element ***CAN*** repeat within the document, but ***CANNOT*** repeat *within* the form. It may be the anchor element as long as there is only one instance 
 of the form in the parsed document.
 ```

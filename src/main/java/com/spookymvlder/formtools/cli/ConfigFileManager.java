@@ -19,7 +19,7 @@ import java.util.Properties;
  */
 public class ConfigFileManager {
 
-    public static final String DEFAULT_CONFIG_PATH = "xml-auto-validator.properties";
+    public static final String DEFAULT_CONFIG_PATH = "xenforcex.properties";
 
     private ConfigFileManager() {
     }
@@ -59,7 +59,7 @@ public class ConfigFileManager {
         props.setProperty("dateFormat", config.getDateFormat());
         props.setProperty("errorThreshold", config.getErrorThreshold().name());
         try (OutputStream out = new FileOutputStream(path)) {
-            props.store(out, "xml-auto-validator settings");
+            props.store(out, "xENFORCEx settings");
         }
     }
 

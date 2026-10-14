@@ -1,8 +1,8 @@
-# Example xml-auto-validator CLI settings file.
+# Example xENFORCEx CLI settings file.
 #
 # This is personal/local configuration, not project source - see .gitignore, which excludes
-# xml-auto-validator.properties itself for exactly that reason. Copy this file to
-# "xml-auto-validator.properties" in the project root and edit the values for your own setup, or just
+# xenforcex.properties itself for exactly that reason. Copy this file to
+# "xenforcex.properties" in the project root and edit the values for your own setup, or just
 # run the CLI once: it will prompt you through the Settings menu and can write this file for you
 # ("Apply and save" from the Settings menu).
 

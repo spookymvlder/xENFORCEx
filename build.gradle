@@ -12,7 +12,7 @@ plugins {
     id 'jacoco'
 }
 
-group 'XML-Auto-Validate'
+group 'xENFORCEx'
 version '1.0'
 
 application {

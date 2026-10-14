@@ -46,9 +46,9 @@ bin/
 .DS_Store
 /src/main/resources/local-only/
 
-### xml-auto-validator CLI settings ###
+### xEnforceX CLI settings ###
 # Personal/local config (which files to point at, your preferred date format, etc.), written by the
-# CLI's Settings menu. Not source - see xml-auto-validator.properties.example for the file's shape.
-/xml-auto-validator.properties
+# CLI's Settings menu. Not source - see xenforcex.properties.example for the file's shape.
+/xenforcex.properties
 
 .claude
