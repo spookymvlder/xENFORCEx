@@ -50,3 +50,5 @@ bin/
 # Personal/local config (which files to point at, your preferred date format, etc.), written by the
 # CLI's Settings menu. Not source - see xml-auto-validator.properties.example for the file's shape.
 /xml-auto-validator.properties
+
+.claude
