@@ -42,7 +42,7 @@ setting, documented inline). From the main menu:
   or a write failure, leaves the form held so you can retry rather than losing the review.
 
 ### Example Files
-Example files to test the program can be found in [examples](src/main/resources/examples/).
+Example files to test the program can be found in [examples](src/main/resources/examples/). 
 
 ## Schema reference
 
