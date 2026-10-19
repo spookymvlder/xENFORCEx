@@ -1,4 +1,4 @@
-# xENFORCEX
+# xENFORCEx
 
 A validation engine for structured XML documents whose shape, required fields, and business rules are
 defined in a CSV — not in compiled Java classes or a hand-authored XSD. Edit the CSV and the engine's
