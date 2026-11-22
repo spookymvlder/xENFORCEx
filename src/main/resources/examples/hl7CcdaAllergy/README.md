@@ -21,6 +21,17 @@ project's engine currently matches by element name within a parent, not by a nes
 testing against the full, un-trimmed CCD document isn't yet practical (see Phase 3/roadmap notes on
 `CodeSystem`/`FieldCodeSpec`).
 
+## Why there's an XSD and Schematron here too
+
+A CSV schema that only checks itself against is making a claim nobody can verify. The base CDA XSD
+leaves almost everything about this observation optional (see `reference/`'s XSD excerpt); the real
+conformance rules — fixed codes, required cardinalities, nested structure — live entirely in HL7's
+Schematron instead (`reference/`'s rules file). The CSV schema here maps onto those real rules, not
+ones invented for the occasion: of the real rules for this template, all but the two bound to an
+external, dynamic value set (SNOMED CT / RxNorm — too large to enumerate in a CSV) have a direct CSV
+equivalent. Exactly which rule maps to which CSV row is detailed in
+[`reference/schematron_rules_allergy_observation.md`](reference/schematron_rules_allergy_observation.md).
+
 ## Files
 
 - [`field_property_template_hl7_allergy.csv`](field_property_template_hl7_allergy.csv) — the CSV
@@ -33,6 +44,13 @@ testing against the full, un-trimmed CCD document isn't yet practical (see Phase
   tiny, real-content Code System (just the one SNOMED code this fixture uses), in the same JSON shape
   the CLI's "Code Systems" feature reads/writes. Not wired in by default (`codesystems/` is gitignored,
   user-local data) — see below to try it.
+- [`reference/`](reference/) — the real, published alternative this example's CSV schema can be
+  checked against: the generic CDA XSD type an `<observation>` element is declared against, and the
+  actual Schematron conformance rules for this specific template, so there's something concrete to
+  compare the CSV schema to rather than taking it on faith. See
+  [`reference/xsd_excerpt_POCD_MT000040_Observation.xsd`](reference/xsd_excerpt_POCD_MT000040_Observation.xsd)
+  and
+  [`reference/schematron_rules_allergy_observation.md`](reference/schematron_rules_allergy_observation.md).
 
 ## Running it
 
