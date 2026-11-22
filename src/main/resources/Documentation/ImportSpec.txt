@@ -71,9 +71,28 @@ condRequiredLogic (Enum [AND, OR], Required if condRequiredSourceIds indicates m
 
 CODE SYSTEM METADATA
 codeSystemName (String, Optional) - The name of the code system as it would appear in the XML. If populated, the name that should be stored to metadata.
-codeSystemId (String, Optional) - If the value type corresponds with a specific code system, provide the code system's ID.
+codeSystemId (String, Required if "dataType" == CODED_VALUE) - The code system this field's value belongs
+    to (e.g. a SNOMED CT OID). Also the key a CODED_VALUE field uses to look up an imported code system
+    from Code Systems (see CODED VALUE below) - without it, "enforce against an imported list" has
+    nothing to look up, so it's required whenever dataType is CODED_VALUE, open or closed.
 codeSystemVersion (String, Optional) - The version of the code system to expect.
-codeSystemCode (String, Optional) - If the fieldId does not correspond with a corresponding code in the code system, provide the field's code.
+codeSystemCode (String[], Valid only when "dataType" == CODED_VALUE) - The field's own code
+    constraint: a comma-delimited list of tokens, checked unconditionally whenever populated,
+    independent of whether any code system has actually been imported. Each entry is one of:
+    -A literal code - exact, case-sensitive match. Codes are identifiers, not free-text labels, so
+     unlike the enumeration column there is no case-insensitive re-casing.
+    -A numeric range, start..end (e.g. 100..199) - only recognized when the token contains "..";
+     both ends must parse as numbers, or the token is a schema error at import. Reuses the same range
+     grammar as condRequiredValues/condRepeatedValues.
+    -A prefix wildcard, a single trailing * (e.g. R45.2* to accept any code starting with R45.2).
+    This column was previously documented as "the field's code in the code system" but was never
+    implemented under that meaning; this is its real, implemented purpose.
+codeSystemEnforceValues (Boolean, Valid only when "dataType" == CODED_VALUE) - T or F, defaults to F.
+    Opt-in: when T, the field's value is also checked against a fully imported Code System's code
+    list (see CODED VALUE below) for codeSystemId, if one has been imported. Leaving it F (or blank)
+    means only codeSystemCode (if populated) and ordinary presence (the required column) are checked -
+    this is deliberate, not an oversight, since most external vocabularies (SNOMED CT, LOINC, ...) are
+    far too large to enumerate in this CSV at all.
 
 
 VALUE RESTRICTION
@@ -82,7 +101,8 @@ dataType (String, Required) - Data type of field. Case-insensitive. Must be left
     DATETIME, DURATION, GYEAR, GYEARMONTH, GMONTH, GMONTHDAY, GDAY, ENUMERATION, CODED_VALUE,
     CUSTOM, LABEL, EMAIL, TELEPHONE, URL, ANYURI, POSTAL_CODE, COUNTRY_CODE, CURRENCY, PERCENTAGE,
     ID, IDREF, ENTITY, RAW_XML, ROOT
-    CODED_VALUE and CUSTOM are declared but their value-list mechanisms are not implemented yet.
+    CUSTOM is declared but its value-list mechanism is not implemented yet. CODED_VALUE is
+    implemented - see CODE SYSTEM METADATA above and CODED VALUE below.
 rangeStart (String, Optional) - If value should be limited to a range, start of that value range. Only valid for ordered types (the numeric types, DATE, TIME, DATETIME, GYEAR, GYEARMONTH, GMONTH, GDAY, GMONTHDAY, DURATION). Must parse as the field's dataType, or as a relative offset (DATE/DATETIME only, see below).
 rangeEnd (String, Optional) - If value should be limited to a range, end of that value range. Same constraints as rangeStart. Must be greater than rangeStart; equal values leave no valid input and are reported.
     -For DATE and DATETIME, a bound may instead be a signed relative offset: -P6M ("6 months before
@@ -110,6 +130,37 @@ enumeration (String[], Optional) - If only specific values should be accepted fo
     -A document may reference an entry by position using #N, 1-indexed. #2 against "A|B|C" resolves to B.
 unit (String, Optional) - The unit corresponding to the field, used for display.
 regexPattern (String, Optional) - If the field should match a pattern, provide that pattern. Applied to the whole value. Checked for valid regex syntax at CSV import time; an invalid pattern is a schema error there, not just a failure the first time a document happens to populate the field.
+
+
+CODED VALUE
+A CODED_VALUE field's value can be validated two independent ways, which may be used together:
+    -codeSystemCode (see CODE SYSTEM METADATA above) - a schema-declared literal/range/prefix
+     constraint, checked unconditionally, no import required.
+    -codeSystemEnforceValues=T plus an imported Code System - checks membership in a bulk-imported
+     list of codes, managed from the CLI's "Code Systems" menu, for cases where the full valid set
+     (e.g. a SNOMED CT value set) is too large to write into this CSV at all.
+A Code System may be a stub (identity known - codeSystemName/Version - but no code list loaded yet).
+Requesting enforcement against a stub is not a schema error: it's reported as a NOTIFICATION at
+document-validation time ("no code list is loaded yet"), not an ERROR, since the field may still be
+fully valid by every check that IS available (codeSystemCode, presence). Editing individual codes in
+an imported Code System is not supported - changing its values always means re-importing the whole
+CSV below.
+
+Code systems are stored as one JSON file per codeSystemId under a codesystems/ directory (relative to
+wherever the CLI is run from, the same convention xenforcex.properties already uses). That JSON shape
+is:
+    { "codeSystemId": "...", "codeSystemName": "...", "codeSystemVersion": "...",
+      "codeValues": [ { "code": "...", "displayName": "...", "active": true, "expireDate": null } ] }
+The same shape, with codeValues omitted or empty, is also what the CLI accepts when importing a code
+system's identity from a hand-authored JSON file - one schema serves both the persisted form and the
+import format.
+
+A code system's values are imported separately, from a CSV with columns:
+    code (String, Required), displayName (String, Required), active (Boolean, Optional, T or F,
+    defaults to active when blank), expireDate (LocalDate, Optional) - the same active/expireDate
+    retirement convention as the field-property CSV's own columns. displayName is carried through for
+    messages/UI only; matching is always on code alone, deliberately, since a display name can drift
+    independently of its code across a vocabulary's version updates.
 
 
 ATTRIBUTES
@@ -208,6 +259,14 @@ OPEN QUESTIONS
 
 
 CHANGE LOG
+11/21/26 Implemented CODED_VALUE. codeSystemId is now required when dataType is CODED_VALUE.
+codeSystemCode is repurposed (and changed from a single String to a comma-delimited list) to hold the
+field's own literal/range/prefix code constraint - its old documented meaning ("the field's code in
+the code system") was never implemented and is now replaced by this, its originally-intended purpose.
+Added codeSystemEnforceValues (new column) for opting a field into membership checking against a
+bulk-imported Code System. Added the Code Systems CLI feature (identity + values import/management,
+see CODED VALUE section above) and its codesystems/ JSON persistence, reusing the project's existing
+Gson dependency. CUSTOM remains unimplemented.
 3/4/26 Removed xpathOverride
 Replaced the required column's T/F/C with the R/RE/CR/CE/O Usage codes.
 Split rangeInclusive into rangeStartInclusive and rangeEndInclusive.
