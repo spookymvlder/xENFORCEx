@@ -46,7 +46,10 @@ setting, documented inline). From the main menu:
   [ImportSpec.txt](src/main/resources/documentation/ImportSpec.txt)'s CODED VALUE section.
 
 ### Example Files
-Example files to test the program can be found in [examples](src/main/resources/examples/).
+Example files to test the program can be found in [examples](src/main/resources/examples/), including
+a `CODED_VALUE` example built from a real, publicly published HL7 C-CDA document rather than invented
+data — see [examples/hl7CcdaAllergy](src/main/resources/examples/hl7CcdaAllergy/README.md) for details
+and attribution.
 
 ## Schema reference
 

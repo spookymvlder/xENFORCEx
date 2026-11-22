@@ -1,0 +1,11 @@
+{
+  "codeSystemId": "2.16.840.1.113883.6.96",
+  "codeSystemName": "SNOMED CT",
+  "codeSystemVersion": "",
+  "codeValues": [
+    {
+      "code": "419199007",
+      "displayName": "Allergy to substance"
+    }
+  ]
+}

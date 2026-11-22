@@ -1,0 +1,10 @@
+fieldId,fieldName,namespaceUri,displayName,displayOrder,parentId,hierarchyLevel,sectionHeaderOverride,active,expireDate,fieldRepeated,minOccurs,maxOccurs,condRepeatedSourceIds,condRepeatedValues,condRepeatedLogic,required,condRequiredSourceIds,condRequiredValues,condRequiredLogic,codeSystemName,codeSystemId,codeSystemVersion,codeSystemCode,codeSystemEnforceValues,dataType,rangeStart,rangeEnd,rangeStartInclusive,rangeEndInclusive,minLength,maxLength,enumeration,unit,regexPattern,isAttribute,attributeName,uiControl,validationMessage,skipImport,groupingType
+0,fragment,urn:hl7-org:v3,,,,,,T,,F,,,,,,O,,,,,,,,,,,,,,,,,,,,,,,,Container
+1,observation,urn:hl7-org:v3,,,0,,,T,,F,,,,,,R,,,,,,,,,,,,,,,,,,,,,,,,Container
+2,code,urn:hl7-org:v3,,,1,,,T,,F,,,,,,R,,,,HL7ActCode,,,,,ENUMERATION,,,,,,,ASSERTION,,,T,code,,,,
+3,statusCode,urn:hl7-org:v3,,,1,,,T,,F,,,,,,R,,,,,,,,,ENUMERATION,,,,,,,completed,,,T,code,,,,
+4,value,urn:hl7-org:v3,,,1,,,T,,F,,,,,,R,,,,SNOMED CT,2.16.840.1.113883.6.96,,,,CODED_VALUE,,,,,,,,,,T,code,,,,
+5,participant,urn:hl7-org:v3,,,1,,,T,,F,,,,,,R,,,,,,,,,,,,,,,,,,,,,,,,Container
+6,participantRole,urn:hl7-org:v3,,,5,,,T,,F,,,,,,R,,,,,,,,,,,,,,,,,,,,,,,,Container
+7,playingEntity,urn:hl7-org:v3,,,6,,,T,,F,,,,,,R,,,,,,,,,,,,,,,,,,,,,,,,Container
+8,code,urn:hl7-org:v3,,,7,,,T,,F,,,,,,R,,,,RxNorm,2.16.840.1.113883.6.88,,70618,,CODED_VALUE,,,,,,,,,,T,code,,,,
