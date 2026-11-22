@@ -137,6 +137,43 @@ beyond storage. A second, unrelated, entirely unreferenced class `CodeSystem.jav
 never instantiated anywhere. Both look like early groundwork for the planned CODED_VALUE feature (see
 memory: CODED_VALUE / CUSTOM plans). Decide what's actually needed, consolidate or remove the rest.
 
+Designed and implemented (2026-11-21), surfaced while mapping a real HL7 C-CDA template to a CSV
+schema for a validation poster: 11 of 13 real conformance rules mapped onto existing columns, but 2
+needed a value bound to an external coded vocabulary (SNOMED CT) too large to enumerate inline.
+
+- [x] **`dataType` CODED_VALUE implemented.** `codeSystemId` is now required when `dataType ==
+      CODED_VALUE` — mirrors `enumeration` being required for `ENUMERATION`: without an identity,
+      there's nothing to validate against, open or closed.
+- [x] **`codeSystemCode` repurposed, not duplicated.** It was documented as "the field's code in the
+      code system" but that meaning was never implemented. Rebuilt as its evident original intent: a
+      comma-delimited list of the field's own literal/numeric-range (`start..end`, reusing
+      `TypedPredicateFactory`)/prefix-wildcard (trailing `*`) code constraints, checked unconditionally
+      whenever populated — no import required. Changed from a single `String` to `List<String>`
+      (`FieldPropertyRow`, `ResolvedFieldPropertyRow`, `FieldCodeSpec`); see `CodeConstraintMatcher`.
+- [x] **`codeSystemEnforceValues` added** (new column, defaults `F`) — opt-in membership checking
+      against a bulk-imported Code System's code list, deliberately separate from `codeSystemCode`:
+      most real external vocabularies are too large to enumerate in this CSV at all, so enforcement
+      only happens when a schema author asks for it *and* a list has actually been imported. A
+      Code System that's only a stub (identity known, no list yet) reports a `NOTIFICATION`, not an
+      `ERROR`, when enforcement is requested against it — the field can still be fully valid by every
+      check that *is* available.
+- [x] **`CodeSystem.java` rebuilt** (identity + `List<CodeEntry>`, `CodeEntry` = code/displayName/
+      active/expireDate — the field-property CSV's own retirement convention) and wired up via a new
+      `CodeSystemRegistry` singleton (`settings` package), persisted as one JSON file per
+      `codeSystemId` under a `codesystems/` directory (bare CWD-relative, matching
+      `xenforcex.properties`'s own convention — this codebase has no app-data-directory mechanism).
+      Reuses Gson, already a dependency via `JsonFormWriter`; no new dependency added.
+- [x] **New CLI menu: "Code Systems"** (`CodeSystemMenu`) — view/edit identity/delete (with
+      confirmation)/view code values for existing Code Systems; add a new one via identity
+      (JSON import, with an offered blank-template save, or manual entry) then code values (CSV
+      import — new `code`/`displayName`/`active`/`expireDate` columns, reusing `ReadCSV`'s existing
+      `withBufferedReader`/`CsvToBeanBuilder` plumbing via a new, parallel `importCodeValuesCsv` — or
+      manual entry, or skip and stay a stub). Editing individual codes in place is explicitly
+      unsupported by design: changing a Code System's values always means re-importing the whole CSV.
+- Deferred, not part of this pass: `CUSTOM` (still unimplemented), referencing a `CODED_VALUE` field
+  as a condition-token source by code, and any database engine for Code System storage (flat JSON was
+  judged sufficiently light).
+
 ## Phase 4 — Design and implement program output
 
 No structured output exists today — `FormDebugPrinter` is a plain human-readable `println` tree

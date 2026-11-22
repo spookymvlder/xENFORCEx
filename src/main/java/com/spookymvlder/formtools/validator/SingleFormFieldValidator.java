@@ -1,8 +1,11 @@
 package com.spookymvlder.formtools.validator;
 
+import com.spookymvlder.formtools.datatypes.CodeConstraintMatcher;
+import com.spookymvlder.formtools.datatypes.CodeSystem;
 import com.spookymvlder.formtools.datatypes.ErrorEntry;
 import com.spookymvlder.formtools.datatypes.FieldDataType;
 import com.spookymvlder.formtools.datatypes.TypedPredicateFactory;
+import com.spookymvlder.formtools.datatypes.fieldproperties.FieldCodeSpec;
 import com.spookymvlder.formtools.datatypes.fieldproperties.FieldProperty;
 import com.spookymvlder.formtools.datatypes.fieldproperties.FieldValueRestriction;
 import com.spookymvlder.formtools.datatypes.fields.CompositeField;
@@ -10,10 +13,13 @@ import com.spookymvlder.formtools.datatypes.fields.ContainerField;
 import com.spookymvlder.formtools.datatypes.fields.FieldData;
 import com.spookymvlder.formtools.datatypes.fields.FormField;
 import com.spookymvlder.formtools.datatypes.fields.SimpleField;
+import com.spookymvlder.formtools.settings.CodeSystemRegistry;
 import com.spookymvlder.formtools.settings.ErrorSettings;
 import com.spookymvlder.formtools.utilities.ErrorSeverity;
 import com.spookymvlder.formtools.utilities.ErrorSource;
 import com.spookymvlder.formtools.utilities.StringUtils;
+
+import java.util.Optional;
 
 public class SingleFormFieldValidator {
     static final ErrorSettings errors = ErrorSettings.getInstance();
@@ -68,6 +74,8 @@ public class SingleFormFieldValidator {
                 validateOrderedValue(value, property, "ISO-8601 duration (PnDTnHnMn.nS)");
             } else if (dataType == FieldDataType.CHARACTER) {
                 validateCharacter(value, property);
+            } else if (dataType == FieldDataType.CODED_VALUE) {
+                validateCodedValue(value, property);
             }
         }
 
@@ -149,6 +157,50 @@ public class SingleFormFieldValidator {
             errors.addToCurrentLog(new ErrorEntry(ErrorSource.FORM_EXTRACT_VALIDATION,
                     "FieldProperty " + property.getFieldId() + " is typed as CHARACTER but has been " +
                             "assigned a value of length " + value.length() + ".",
+                    ErrorSeverity.ERROR));
+        }
+    }
+
+    /**
+     * codeSystemCode (a schema-declared literal/range/prefix constraint) is checked unconditionally
+     * whenever populated - it never depends on an import having happened. Membership against a fully
+     * imported CodeSystem is opt-in (codeSystemEnforceValues) and, per design, a code-system stub
+     * (identity known, no code list loaded yet) is not itself an error: it's reported as a
+     * NOTIFICATION so the gap is visible without blocking a document that's otherwise valid by every
+     * check that IS available.
+     */
+    private static void validateCodedValue(String value, FieldProperty property) {
+        FieldCodeSpec codeSpec = property.getCodeSpec();
+
+        if (codeSpec.getCodeSystemCode() != null && !codeSpec.getCodeSystemCode().isEmpty()) {
+            if (!CodeConstraintMatcher.matches(value, codeSpec.getCodeSystemCode())) {
+                errors.addToCurrentLog(new ErrorEntry(ErrorSource.FORM_EXTRACT_VALIDATION,
+                        "FieldProperty " + property.getFieldId() + " has a value that does not satisfy its "
+                                + "declared codeSystemCode constraint.",
+                        ErrorSeverity.ERROR));
+                return;
+            }
+        }
+
+        if (!codeSpec.getCodeSystemEnforceValues()) {
+            return;
+        }
+
+        Optional<CodeSystem> codeSystem = CodeSystemRegistry.getInstance().find(codeSpec.getCodeSystemId());
+        if (codeSystem.isEmpty() || codeSystem.get().isStub()) {
+            errors.addToCurrentLog(new ErrorEntry(ErrorSource.FORM_EXTRACT_VALIDATION,
+                    "Value validation was requested for codeSystemId " + codeSpec.getCodeSystemId()
+                            + " but no code list is loaded for it yet.",
+                    ErrorSeverity.NOTIFICATION));
+            return;
+        }
+
+        boolean found = codeSystem.get().getCodeValues().stream()
+                .anyMatch(entry -> value.equals(entry.getCode()));
+        if (!found) {
+            errors.addToCurrentLog(new ErrorEntry(ErrorSource.FORM_EXTRACT_VALIDATION,
+                    "FieldProperty " + property.getFieldId() + " has a value that is not a valid code in "
+                            + codeSystem.get().displayLabel() + ".",
                     ErrorSeverity.ERROR));
         }
     }

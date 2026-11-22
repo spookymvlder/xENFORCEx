@@ -36,7 +36,8 @@ public record ResolvedFieldPropertyRow (
     String codeSystemName,
     String codeSystemId,
     String codeSystemVersion,
-    String codeSystemCode,
+    List<String> codeSystemCode,
+    Boolean codeSystemEnforceValues,
 
     FieldDataType dataType,
     String rangeStart,

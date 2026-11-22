@@ -35,7 +35,8 @@ public class CliApp {
                 case "4" -> runCommit(scanner);
                 case "5" -> discardPending();
                 case "6" -> browseErrorLogs(scanner);
-                case "7" -> running = false;
+                case "7" -> CodeSystemMenu.run(scanner);
+                case "8" -> running = false;
                 default -> System.out.println("Unrecognized option: " + choice);
             }
         }
@@ -61,7 +62,8 @@ public class CliApp {
         System.out.println("4. Commit pending form" + (reviewSession.hasPending() ? "" : " (nothing pending)"));
         System.out.println("5. Discard pending form" + (reviewSession.hasPending() ? "" : " (nothing pending)"));
         System.out.println("6. Review error logs");
-        System.out.println("7. Exit");
+        System.out.println("7. Code Systems");
+        System.out.println("8. Exit");
     }
 
     private void runSchemaOnly() {

@@ -1,10 +1,12 @@
 package com.spookymvlder.formtools.processsor;
 
+import com.spookymvlder.formtools.datatypes.CodeConstraintMatcher;
 import com.spookymvlder.formtools.datatypes.ConditionalBool;
 import com.spookymvlder.formtools.datatypes.FieldDataType;
 import com.spookymvlder.formtools.datatypes.TypedPredicateFactory;
 import com.spookymvlder.formtools.datatypes.ErrorEntry;
 import com.spookymvlder.formtools.datatypes.fieldproperties.FieldCardinality;
+import com.spookymvlder.formtools.datatypes.fieldproperties.FieldCodeSpec;
 import com.spookymvlder.formtools.datatypes.fieldproperties.FieldIdentity;
 import com.spookymvlder.formtools.datatypes.fieldproperties.FieldProperty;
 import com.spookymvlder.formtools.datatypes.FieldPropertyValidationError;
@@ -32,6 +34,7 @@ public class SingleFieldPropertyValidator {
         validateActiveRange(field);
         validateGroupingType(field);
         validateEnumerations(field);
+        validateCodedValue(field);
         validateRegexPattern(field);
     }
 
@@ -113,6 +116,46 @@ public class SingleFieldPropertyValidator {
                     "The enumerations column is only valid when dataType is ENUMERATION. " +
                             "Use ENUMERATION (or the future CODED_VALUE / CUSTOM types) for restricted value sets.",
                     ErrorSeverity.ERROR, field.getFieldId(), field.getFieldName()));
+        }
+    }
+
+    // codeSystemId identifies the vocabulary; codeSystemCode (a schema-declared literal/range/prefix
+    // constraint) and codeSystemEnforceValues (opt-in membership check against an imported
+    // CodeSystem) are both meaningless without it - see FieldCodeSpec and CodeConstraintMatcher.
+    public static void validateCodedValue(FieldProperty field) {
+        FieldValueRestriction value = field.getValueRestriction();
+        FieldCodeSpec codeSpec = field.getCodeSpec();
+        boolean isCodedValueType = value.getDataType() == FieldDataType.CODED_VALUE;
+        boolean hasCodeSystemCode = codeSpec.getCodeSystemCode() != null && !codeSpec.getCodeSystemCode().isEmpty();
+
+        if (isCodedValueType && StringUtils.isNullOrEmpty(codeSpec.getCodeSystemId())) {
+            errors.addToCurrentLog(new FieldPropertyValidationError(
+                    ErrorSource.SCHEME_FIELD_PROPERTY_VALIDATION,
+                    "FieldProperty with dataType CODED_VALUE must declare codeSystemId.",
+                    ErrorSeverity.ERROR, field.getFieldId(), field.getFieldName()));
+        }
+        if (!isCodedValueType && hasCodeSystemCode) {
+            errors.addToCurrentLog(new FieldPropertyValidationError(
+                    ErrorSource.SCHEME_FIELD_PROPERTY_VALIDATION,
+                    "codeSystemCode is only valid when dataType is CODED_VALUE.",
+                    ErrorSeverity.ERROR, field.getFieldId(), field.getFieldName()));
+        }
+        if (!isCodedValueType && codeSpec.getCodeSystemEnforceValues()) {
+            errors.addToCurrentLog(new FieldPropertyValidationError(
+                    ErrorSource.SCHEME_FIELD_PROPERTY_VALIDATION,
+                    "codeSystemEnforceValues is only valid when dataType is CODED_VALUE.",
+                    ErrorSeverity.ERROR, field.getFieldId(), field.getFieldName()));
+        }
+        if (hasCodeSystemCode) {
+            for (String token : codeSpec.getCodeSystemCode()) {
+                if (!CodeConstraintMatcher.isValidToken(token)) {
+                    errors.addToCurrentLog(new FieldPropertyValidationError(
+                            ErrorSource.SCHEME_FIELD_PROPERTY_VALIDATION,
+                            "codeSystemCode entry '" + token + "' is not a valid literal code, numeric "
+                                    + "range (start..end), or prefix wildcard (ending in *).",
+                            ErrorSeverity.ERROR, field.getFieldId(), field.getFieldName()));
+                }
+            }
         }
     }
 
