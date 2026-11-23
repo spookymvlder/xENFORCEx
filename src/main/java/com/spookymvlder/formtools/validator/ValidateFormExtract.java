@@ -2,13 +2,17 @@ package com.spookymvlder.formtools.validator;
 
 import com.spookymvlder.formtools.datatypes.ErrorEntry;
 import com.spookymvlder.formtools.datatypes.FormInstance;
+import com.spookymvlder.formtools.datatypes.GroupingType;
 import com.spookymvlder.formtools.datatypes.Usage;
 import com.spookymvlder.formtools.datatypes.fieldproperties.FieldCardinality;
 import com.spookymvlder.formtools.datatypes.fieldproperties.FieldProperty;
+import com.spookymvlder.formtools.datatypes.fields.CompositeField;
+import com.spookymvlder.formtools.datatypes.fields.FieldData;
 import com.spookymvlder.formtools.datatypes.fields.FormField;
 import com.spookymvlder.formtools.settings.ErrorSettings;
 import com.spookymvlder.formtools.utilities.ErrorSeverity;
 import com.spookymvlder.formtools.utilities.ErrorSource;
+import com.spookymvlder.formtools.utilities.StringUtils;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -138,6 +142,12 @@ public class ValidateFormExtract {
     private static void walkRequiredFields(FormField formNode, FieldProperty propertyNode,
                                            ExtractValidatorContext context) {
         for (FieldProperty childProperty : propertyNode.getRelation().getChildFields()) {
+            // A constituent is never its own FormField tree node - its value lives on the composite's
+            // own data map (CompositeField.getConstituent), not as a separate child to search for
+            // below. Handled instead, once per composite instance, in the block after this loop.
+            if (childProperty.getRelation().getGroupingType() == GroupingType.CONSTITUENT) {
+                continue;
+            }
             Usage usage = childProperty.getCardinality().getRequired();
             if (usage == null || usage == Usage.O) {
                 continue;
@@ -170,8 +180,43 @@ public class ValidateFormExtract {
                 }
             }
         }
+
+        if (formNode instanceof CompositeField composite) {
+            for (FieldProperty constituent : composite.getProperty().getRelation().getConstituents()) {
+                checkConstituentRequired(composite, constituent, formNode, context);
+            }
+        }
+
         for (FormField childField : formNode.getChildren()) {
             walkRequiredFields(childField, childField.getProperty(), context);
+        }
+    }
+
+    /**
+     * A constituent's element (the composite's own matched node) is already known to exist by the
+     * time this runs - the composite itself was already found, or we wouldn't be here - so presence
+     * is never the question for a constituent, only whether its value is populated. RE/CE constituents
+     * therefore need no check at all: "required, may be empty" is automatically satisfied once
+     * presence is a given.
+     */
+    private static void checkConstituentRequired(CompositeField composite, FieldProperty constituentProperty,
+                                                  FormField formNode, ExtractValidatorContext context) {
+        Usage usage = constituentProperty.getCardinality().getRequired();
+        if (usage == null || usage == Usage.O || !usage.requiresPopulated()) {
+            return;
+        }
+        boolean conditionMet = !usage.isConditional()
+                || ConditionalRequirementEvaluator.isConditionRequired(formNode, constituentProperty, context);
+        if (!conditionMet) {
+            return;
+        }
+
+        FieldData data = composite.getConstituent(constituentProperty.getIdentity().getDisplayName());
+        if (data == null || StringUtils.isNullOrEmpty(data.getValue())) {
+            errors.addToCurrentLog(new ErrorEntry(ErrorSource.FORM_EXTRACT_VALIDATION,
+                    "FieldProperty " + constituentProperty.getFieldId() + " is required and must be populated, " +
+                            "but is present-but-empty under FormField " + formNode.getProperty().getFieldId() + ".",
+                    ErrorSeverity.ERROR));
         }
     }
 
@@ -194,6 +239,12 @@ public class ValidateFormExtract {
         }
 
         for (FieldProperty childProperty : propertyNode.getRelation().getChildFields()) {
+            // A constituent is read directly off the composite's own matched element, not matched as
+            // a repeatable child element in its own right - "how many times does it appear" isn't a
+            // meaningful question for it, so it has no cardinality of its own to check here.
+            if (childProperty.getRelation().getGroupingType() == GroupingType.CONSTITUENT) {
+                continue;
+            }
             FieldCardinality cardinality = childProperty.getCardinality();
             int count = childCounts.getOrDefault(childProperty.getFieldId(), 0);
 

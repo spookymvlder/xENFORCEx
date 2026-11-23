@@ -5,6 +5,7 @@ import com.spookymvlder.formtools.datatypes.FieldDataType;
 import com.spookymvlder.formtools.datatypes.FormInstance;
 import com.spookymvlder.formtools.datatypes.fieldproperties.FieldProperty;
 import com.spookymvlder.formtools.datatypes.fieldproperties.FieldValueRestriction;
+import com.spookymvlder.formtools.datatypes.fields.CompositeField;
 import com.spookymvlder.formtools.datatypes.fields.FieldData;
 import com.spookymvlder.formtools.datatypes.fields.FormField;
 import com.spookymvlder.formtools.datatypes.fields.SimpleField;
@@ -14,6 +15,7 @@ import com.spookymvlder.formtools.utilities.ErrorSource;
 import com.spookymvlder.formtools.utilities.StringUtils;
 
 import java.util.List;
+import java.util.function.Consumer;
 
 /**
  * Form-side counterpart to {@link ProcessFieldProperties}. Runs canonicalization steps on parsed
@@ -52,6 +54,14 @@ public class ProcessFormExtract {
     private static void walkNormalizeEnums(FormField node) {
         if (node instanceof SimpleField simple) {
             normalizeEnumValue(simple);
+        } else if (node instanceof CompositeField composite) {
+            // A constituent's value lives on the composite's own data map, not as its own FormField
+            // tree node, so it needs its own walk here rather than being reached by the recursion
+            // below - the same reason ValidateFormExtract checks constituents separately from its
+            // ordinary child-field walk.
+            for (FieldProperty constituent : composite.getProperty().getRelation().getConstituents()) {
+                normalizeEnumConstituent(composite, constituent);
+            }
         }
         for (FormField child : node.getChildren()) {
             walkNormalizeEnums(child);
@@ -63,6 +73,21 @@ public class ProcessFormExtract {
         if (property == null) {
             return;
         }
+        normalizeEnumFieldData(property, field.getValue(), newData -> field.setValue(newData));
+    }
+
+    private static void normalizeEnumConstituent(CompositeField composite, FieldProperty constituent) {
+        String key = constituent.getIdentity().getDisplayName();
+        normalizeEnumFieldData(constituent, composite.getConstituent(key),
+                newData -> composite.setConstituent(key, newData));
+    }
+
+    /**
+     * Shared by both a plain field and a composite's constituent: same ENUMERATION semantics
+     * (#N index reference, case-insensitive match normalized to declared casing) either way - only
+     * where the value is read from and written back to differs, captured by {@code replace}.
+     */
+    private static void normalizeEnumFieldData(FieldProperty property, FieldData data, Consumer<FieldData> replace) {
         FieldValueRestriction restriction = property.getValueRestriction();
         if (restriction.getDataType() != FieldDataType.ENUMERATION) {
             return;
@@ -72,7 +97,6 @@ public class ProcessFormExtract {
             return;
         }
 
-        FieldData data = field.getValue();
         if (data == null) {
             return;
         }
@@ -103,7 +127,7 @@ public class ProcessFormExtract {
                         ErrorSeverity.ERROR));
                 return;
             }
-            replaceValue(field, data, enumerations.get(idx - 1));
+            replace.accept(new FieldData(enumerations.get(idx - 1), data.getDataType(), data.getPosition()));
             return;
         }
 
@@ -111,7 +135,7 @@ public class ProcessFormExtract {
         for (String entry : enumerations) {
             if (entry.equalsIgnoreCase(trimmed)) {
                 if (!entry.equals(raw)) {
-                    replaceValue(field, data, entry);
+                    replace.accept(new FieldData(entry, data.getDataType(), data.getPosition()));
                 }
                 return;
             }
@@ -121,9 +145,5 @@ public class ProcessFormExtract {
                 "Form field for FieldProperty " + property.getFieldId() +
                         " has value " + raw + ", which does not match any entry in the enumeration list.",
                 ErrorSeverity.ERROR));
-    }
-
-    private static void replaceValue(SimpleField field, FieldData oldData, String newValue) {
-        field.setValue(new FieldData(newValue, oldData.getDataType(), oldData.getPosition()));
     }
 }

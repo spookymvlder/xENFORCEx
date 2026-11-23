@@ -175,13 +175,28 @@ needed a value bound to an external coded vocabulary (SNOMED CT) too large to en
   judged sufficiently light).
 
 **Discovered while building the `hl7CcdaAllergy` example (2026-11-22)**, verified by actually running
-the engine, not inferred from reading code — three real, durable limitations, not specific to
-`CODED_VALUE`, worth recording here rather than rediscovering later:
-- **One attribute per `FieldProperty`.** A schema row can match an element and read exactly one of its
-  attributes as that field's value; a second attribute on the same element (e.g. a `code` element's
-  `code` *and* `codeSystem`) needs a second row that would collide with the first, so only one can be
-  checked. The existing `driverHistory` example already works around this (treat the rest as
-  descriptive metadata); `hl7CcdaAllergy` hits it repeatedly and documents it explicitly.
+the engine, not inferred from reading code — three real, durable findings, not specific to
+`CODED_VALUE`, worth recording here rather than rediscovering later. One ("multi-attribute elements")
+turned out to be a fixable bug once pointed at the mechanism already meant for it, not a wall; two
+remain real boundaries.
+
+- [x] **Multi-attribute elements: `COMPOSITE`/`CONSTITUENT`, fixed, not worked around.** A schema row
+      matches an element and reads exactly one of its attributes as that field's value; a second
+      attribute on the same element (e.g. a `code` element's `code` *and* `codeSystem`) needs a second
+      row. `groupingType=COMPOSITE` plus `CONSTITUENT` children was already built for exactly this -
+      `FormParser.parseConstituentsFromNode` correctly reads every constituent's attribute off the
+      same composite element - but two pieces were missing: `ValidateFormExtract`'s required/
+      cardinality checks iterated constituents as if they were separate `FormField` tree children
+      (which they never are), producing false "missing" errors, and `SingleFormFieldValidator`'s
+      `CompositeField` branch was a `//TODO` no-op, so a wrong constituent value went unchecked.
+      Fixed: `walkRequiredFields`/`walkCardinality` now skip constituents in the ordinary child-search
+      loop and check presence/populated-ness against the composite's own data instead
+      (`checkConstituentRequired`); `SingleFormFieldValidator.validateCompositeField` validates each
+      constituent against its own `FieldProperty` (the same `validateValueAgainstProperty` a
+      `SimpleField` uses); `ProcessFormExtract`'s `ENUMERATION` canonicalization pass now also walks a
+      composite's constituents, not just `SimpleField`s. `hl7CcdaAllergy`'s schema uses `COMPOSITE`
+      throughout as a result - every `classCode`/`moodCode` and `code`/`codeSystem` pair, not one
+      attribute picked per element.
 - **No `templateId`-based disambiguation.** The engine matches a child by element name at a given
   parent position, with no way to say "this schema row applies only when the child's nested
   `templateId` is X." This never bites within one section's own vertical nesting (each nesting depth
