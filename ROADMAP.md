@@ -174,6 +174,44 @@ needed a value bound to an external coded vocabulary (SNOMED CT) too large to en
   as a condition-token source by code, and any database engine for Code System storage (flat JSON was
   judged sufficiently light).
 
+**Discovered while building the `hl7CcdaAllergy` example (2026-11-22)**, verified by actually running
+the engine, not inferred from reading code — three real, durable findings, not specific to
+`CODED_VALUE`, worth recording here rather than rediscovering later. One ("multi-attribute elements")
+turned out to be a fixable bug once pointed at the mechanism already meant for it, not a wall; two
+remain real boundaries.
+
+- [x] **Multi-attribute elements: `COMPOSITE`/`CONSTITUENT`, fixed, not worked around.** A schema row
+      matches an element and reads exactly one of its attributes as that field's value; a second
+      attribute on the same element (e.g. a `code` element's `code` *and* `codeSystem`) needs a second
+      row. `groupingType=COMPOSITE` plus `CONSTITUENT` children was already built for exactly this -
+      `FormParser.parseConstituentsFromNode` correctly reads every constituent's attribute off the
+      same composite element - but two pieces were missing: `ValidateFormExtract`'s required/
+      cardinality checks iterated constituents as if they were separate `FormField` tree children
+      (which they never are), producing false "missing" errors, and `SingleFormFieldValidator`'s
+      `CompositeField` branch was a `//TODO` no-op, so a wrong constituent value went unchecked.
+      Fixed: `walkRequiredFields`/`walkCardinality` now skip constituents in the ordinary child-search
+      loop and check presence/populated-ness against the composite's own data instead
+      (`checkConstituentRequired`); `SingleFormFieldValidator.validateCompositeField` validates each
+      constituent against its own `FieldProperty` (the same `validateValueAgainstProperty` a
+      `SimpleField` uses); `ProcessFormExtract`'s `ENUMERATION` canonicalization pass now also walks a
+      composite's constituents, not just `SimpleField`s. `hl7CcdaAllergy`'s schema uses `COMPOSITE`
+      throughout as a result - every `classCode`/`moodCode` and `code`/`codeSystem` pair, not one
+      attribute picked per element.
+- **No `templateId`-based disambiguation.** The engine matches a child by element name at a given
+  parent position, with no way to say "this schema row applies only when the child's nested
+  `templateId` is X." This never bites within one section's own vertical nesting (each nesting depth
+  has a different parent, so no collision) — confirmed by `hl7CcdaAllergy` successfully validating a
+  full, 3-level-deep, 2-entry repeating section. It would bite modeling a *whole* CCD document at once,
+  since every clinical section (Problems, Medications, Allergies, ...) is generically
+  `<component><section>` under the same `structuredBody` parent, and the engine has no way to tell
+  them apart. Scope a schema to one section (or one template) at a time, not the whole document, until
+  this exists.
+- **HL7's native timestamp format isn't ISO-8601.** A real CDA `effectiveTime` value like
+  `199805011145-0800` (`yyyyMMddHHmm±zzzz`) does not parse as `DATE` or `DATETIME` (both are
+  ISO-8601-only via `TypedPredicateFactory`). Model a field holding this shape as `STRING` (optionally
+  with a `regexPattern`) rather than `DATE`/`DATETIME` until/unless an HL7-TS-aware type or converter
+  is added.
+
 ## Phase 4 — Design and implement program output
 
 No structured output exists today — `FormDebugPrinter` is a plain human-readable `println` tree

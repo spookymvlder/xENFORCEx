@@ -27,8 +27,8 @@ public class SingleFormFieldValidator {
     public static void validateWithErrors(FormField field) {
         if (field instanceof SimpleField simpleField) {
             validateSimpleField(simpleField);
-        } else if (field instanceof CompositeField) {
-            //TODO composite/constituent value validation
+        } else if (field instanceof CompositeField compositeField) {
+            validateCompositeField(compositeField);
         } else if (field instanceof ContainerField) {
             // No value to validate.
         }
@@ -45,7 +45,30 @@ public class SingleFormFieldValidator {
         if (StringUtils.isNullOrEmpty(value)) {
             return;
         }
+        validateValueAgainstProperty(value, property);
+    }
 
+    /**
+     * Each constituent is validated independently against its own FieldProperty, exactly as a
+     * SimpleField's value would be - required/populated-ness for a constituent is checked
+     * separately, in ValidateFormExtract (which has access to the whole form tree); this only
+     * validates a value already known to be present.
+     */
+    public static void validateCompositeField(CompositeField field) {
+        for (FieldProperty constituent : field.getProperty().getRelation().getConstituents()) {
+            FieldData data = field.getConstituent(constituent.getIdentity().getDisplayName());
+            if (data == null) {
+                continue;
+            }
+            String value = data.getValue();
+            if (StringUtils.isNullOrEmpty(value)) {
+                continue;
+            }
+            validateValueAgainstProperty(value, constituent);
+        }
+    }
+
+    private static void validateValueAgainstProperty(String value, FieldProperty property) {
         FieldValueRestriction restriction = property.getValueRestriction();
         FieldDataType dataType = restriction.getDataType();
 
