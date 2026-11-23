@@ -96,7 +96,14 @@ public final class FormValueBuilder {
 
     private static Object buildField(FormField field) {
         if (field instanceof CompositeField composite) {
-            return buildConstituents(composite.getValue());
+            // A COMPOSITE's own data (its CONSTITUENT attributes) lives on composite.getValue(), but
+            // it can also have ordinary child elements of its own (e.g. <act classCode="ACT"
+            // moodCode="EVN"><id .../><code .../>...) - dropping field.getChildren() here would
+            // silently lose every nested element under a composite, which is the common case
+            // throughout this engine's real-world (HL7) usage, not an edge case.
+            Map<String, Object> merged = buildConstituents(composite.getValue());
+            merged.putAll(buildChildren(field.getChildren()));
+            return merged;
         }
         if (field instanceof SimpleField simple) {
             Object scalar = buildScalar(simple.getValue());
