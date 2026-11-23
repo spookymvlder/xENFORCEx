@@ -29,8 +29,8 @@ public class ImportXml {
     public static Document importXML() throws Exception {
         //TODO put in specification version ID for xml so can validate that against our xpaths saved. Also put in xml id and store that temporarily so we don't double parse.
         File xmlFile = new File(settings.getXmlFilePath());
-        File xsdFile = new File(settings.getXsdFilePath());
         if(!settings.getSkipXsdValidation()) {
+            File xsdFile = new File(settings.getXsdFilePath());
             validateXML(xmlFile, xsdFile);
         }
         return getDocument(xmlFile);

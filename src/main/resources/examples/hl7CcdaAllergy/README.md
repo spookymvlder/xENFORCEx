@@ -109,6 +109,10 @@ rootId=0
 skipXsdValidation=true
 ```
 
+Leave `xsdFilePath` unset. Do **not** point it at `reference/xsd_excerpt_POCD_MT000040_Observation.xsd` -
+that file is a reading excerpt only (see its own header comment) and will fail to parse, since it
+deliberately leaves every referenced type (`NullFlavor`, `CS`, `II`, ...) undefined.
+
 **Validate schema only** and **Review** both pass cleanly as shipped, across both repeating entries.
 The three `value` constituents (allergy type, reaction, severity - fieldIds `26`, `49`, `62`) are
 `CODED_VALUE` in open mode (identity + presence only — real external vocabularies like SNOMED CT are
