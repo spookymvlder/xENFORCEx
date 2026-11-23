@@ -6,6 +6,22 @@
     {
       "code": "419199007",
       "displayName": "Allergy to substance"
+    },
+    {
+      "code": "422587007",
+      "displayName": "Nausea"
+    },
+    {
+      "code": "255604002",
+      "displayName": "Mild"
+    },
+    {
+      "code": "56018004",
+      "displayName": "Wheezing"
+    },
+    {
+      "code": "6736007",
+      "displayName": "Moderate"
     }
   ]
 }
