@@ -2,6 +2,12 @@
 <!--
   EXCERPT, for reference/comparison only - not a complete, standalone schema.
 
+  Do NOT point this project's xsdFilePath at this file. It will fail to parse: every type it
+  references (NullFlavor, CS, II, CD, ActClassObservation, ...) is deliberately left undefined below
+  (see "Referenced types" further down), so a real parser hits an unresolved-type error on the very
+  first attribute. This example's documented config (../README.md, "Running it") never sets xsdFilePath
+  - it uses skipXsdValidation=true instead, which is correct and intentional, not a shortcut.
+
   Two complexTypes from HL7's public CDA Release 2.0 core schema, the generic types every <observation>
   and <act> element in a CDA document is declared against, independent of which specific clinical
   template (allergy, problem, vital sign, ...) that element represents. This fixture's four templates
