@@ -30,15 +30,17 @@ times over), not because they're out of reach.
 ## Why there's an XSD and Schematron here too
 
 A CSV schema that only checks itself against is making a claim nobody can verify. The base CDA XSD
-leaves almost everything about an observation optional (see `reference/`'s XSD excerpt); the real
-conformance rules — fixed codes, required cardinalities, nested structure — live entirely in HL7's
-Schematron instead (`reference/`'s rules file). The CSV schema here maps onto those real rules for the
-Allergy Intolerance Observation template specifically (one of the four templates this fixture covers):
-of its real rules, all but the two bound to an external, dynamic value set (SNOMED CT / RxNorm — too
-large to enumerate in a CSV) have a direct CSV equivalent. The Concern Act, Reaction Observation, and
-Severity Observation templates each have their own Schematron pattern too, not transcribed here — this
-comparison is scoped to the one template worth the detail, not padded out for coverage's sake. See
-[`reference/schematron_rules_allergy_observation.md`](reference/schematron_rules_allergy_observation.md).
+leaves almost everything about an act or observation optional (see `reference/`'s XSD excerpt, which
+covers both the `Act` and `Observation` generic types this fixture's four templates are declared
+against); the real conformance rules — fixed codes, required cardinalities, nested structure — live
+entirely in HL7's Schematron instead (`reference/`'s rules file). The CSV schema here maps onto those
+real rules for **all four** templates this fixture covers (Allergy Concern Act, Allergy - Intolerance
+Observation, Reaction Observation, Severity Observation): of their real rules combined, all but the four
+bound to an external, dynamic value set (SNOMED CT / RxNorm, plus one HL7-internal dynamic status-code
+value set on the Concern Act — all too large or too open-ended to enumerate in a CSV) have a direct CSV
+equivalent. See
+[`reference/schematron_rules_allergy_observation.md`](reference/schematron_rules_allergy_observation.md)
+for the full, per-template rule-by-rule comparison.
 
 ## Where the real limitations are (and one that got fixed)
 
