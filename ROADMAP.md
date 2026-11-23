@@ -174,6 +174,29 @@ needed a value bound to an external coded vocabulary (SNOMED CT) too large to en
   as a condition-token source by code, and any database engine for Code System storage (flat JSON was
   judged sufficiently light).
 
+**Discovered while building the `hl7CcdaAllergy` example (2026-11-22)**, verified by actually running
+the engine, not inferred from reading code — three real, durable limitations, not specific to
+`CODED_VALUE`, worth recording here rather than rediscovering later:
+- **One attribute per `FieldProperty`.** A schema row can match an element and read exactly one of its
+  attributes as that field's value; a second attribute on the same element (e.g. a `code` element's
+  `code` *and* `codeSystem`) needs a second row that would collide with the first, so only one can be
+  checked. The existing `driverHistory` example already works around this (treat the rest as
+  descriptive metadata); `hl7CcdaAllergy` hits it repeatedly and documents it explicitly.
+- **No `templateId`-based disambiguation.** The engine matches a child by element name at a given
+  parent position, with no way to say "this schema row applies only when the child's nested
+  `templateId` is X." This never bites within one section's own vertical nesting (each nesting depth
+  has a different parent, so no collision) — confirmed by `hl7CcdaAllergy` successfully validating a
+  full, 3-level-deep, 2-entry repeating section. It would bite modeling a *whole* CCD document at once,
+  since every clinical section (Problems, Medications, Allergies, ...) is generically
+  `<component><section>` under the same `structuredBody` parent, and the engine has no way to tell
+  them apart. Scope a schema to one section (or one template) at a time, not the whole document, until
+  this exists.
+- **HL7's native timestamp format isn't ISO-8601.** A real CDA `effectiveTime` value like
+  `199805011145-0800` (`yyyyMMddHHmm±zzzz`) does not parse as `DATE` or `DATETIME` (both are
+  ISO-8601-only via `TypedPredicateFactory`). Model a field holding this shape as `STRING` (optionally
+  with a `regexPattern`) rather than `DATE`/`DATETIME` until/unless an HL7-TS-aware type or converter
+  is added.
+
 ## Phase 4 — Design and implement program output
 
 No structured output exists today — `FormDebugPrinter` is a plain human-readable `println` tree
