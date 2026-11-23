@@ -16,7 +16,7 @@
 
   Why this is here: compare this generic, almost entirely optional type against the real conformance
   rules a specific template layers on top of it (reference/schematron_rules_allergy_observation.md)
-  and against this project's CSV equivalent (../field_property_template_hl7_allergy.csv). See
+  and against this project's CSV equivalent (../field_property_template_hl7_allergies_section.csv). See
   ../README.md for the full comparison.
 -->
 <xs:schema targetNamespace="urn:hl7-org:v3" xmlns:mif="urn:hl7-org:v3/mif" xmlns="urn:hl7-org:v3" xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">

@@ -35,21 +35,30 @@ unconstrained, that this one Schematron pattern pins down instead.
 
 Two further rules in the same pattern apply only to a branch of this template used for a *negated*
 finding (`inversionInd="true"` on a nested `SUBJ` `entryRelationship`) — out of scope for this example,
-since the allergy entry used here (`../condensedHl7AllergyObservation.xml`) isn't a negated finding.
+since the allergy entries used here (`../condensedHl7AllergiesSection.xml`) aren't negated findings.
 
 ## How this maps to the project's CSV schema
 
-[`../field_property_template_hl7_allergy.csv`](../field_property_template_hl7_allergy.csv) reproduces
-most of the rules above directly: `classCode`/`moodCode`/`code`/`statusCode` as fixed-value `ENUMERATION`
-attributes, the nested `participant`/`participantRole`/`playingEntity`/`code` structure as container
-fields, and the two coded values (`value`'s code, `playingEntity/code`'s code) as `CODED_VALUE` fields.
+[`../field_property_template_hl7_allergies_section.csv`](../field_property_template_hl7_allergies_section.csv)
+reproduces most of the rules above directly. `classCode`/`moodCode` and `code`/`codeSystem` are each
+modeled as a `COMPOSITE` element with two `CONSTITUENT` attribute fields (fixed-value `ENUMERATION`
+on each), rather than one row per attribute — this is the allergy observation's own `fieldId 15`
+(`classCode`/`moodCode`) and `fieldId 19` (`code`/`codeSystem`) in the CSV. `statusCode` stays a plain
+`ENUMERATION` attribute (only one attribute worth checking). The nested
+`participant`/`participantRole`/`playingEntity`/`code` structure is modeled as container fields down to
+`playingEntity`, with its `code`/`codeSystem` pair again a `COMPOSITE`/`CONSTITUENT` (`fieldId 31`). The
+two coded values this pattern binds to a dynamic value set (`value`'s code at `fieldId 26`,
+`playingEntity/code`'s code at `fieldId 32`) are each the `CODED_VALUE` constituent of their pair.
 
 The two value-set-bound rules (CONF 1098-7390 and 1098-7402/7419) are exactly the gap `CODED_VALUE`
 was built to close, but only partially: a value set like "Allergy and Intolerance Type" or "Substance
 Reactant for Intolerance" is **dynamic** and backed by a real external terminology (SNOMED CT,
 RxNorm) — far too large to enumerate as a literal list in a CSV cell. The shipped schema instead
-validates those two fields in open mode (identity + presence only) or against a schema-declared
-`codeSystemCode` constraint, and documents (`../README.md`) how to opt into real membership
-enforcement by importing an actual code list via the engine's "Code Systems" CLI feature.
-`templateId`, `id`, and `effectiveTime`/`low` aren't modeled in this example at all (dropped when the
-XML fixture was trimmed — see `../README.md`), so those rules have no CSV equivalent here.
+validates those two fields in open mode (identity + presence only, `fieldId 26`) or against a
+schema-declared `codeSystemCode` constraint (`fieldId 32`), and documents (`../README.md`) how to opt
+into real membership enforcement by importing an actual code list via the engine's "Code Systems" CLI
+feature.
+`templateId` and `id` aren't modeled in this example at all (dropped when the XML fixture was
+trimmed — see `../README.md`); `effectiveTime`/`low` **is** modeled (`fieldId 23`/`24`, as `STRING` —
+see limitation 3 in `../README.md`), so CONF 1098-7387/1098-31538 do have a CSV equivalent, just not a
+`DATE`-typed one.
