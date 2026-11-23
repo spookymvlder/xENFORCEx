@@ -1,0 +1,27 @@
+{
+  "codeSystemId": "2.16.840.1.113883.6.96",
+  "codeSystemName": "SNOMED CT",
+  "codeSystemVersion": "",
+  "codeValues": [
+    {
+      "code": "419199007",
+      "displayName": "Allergy to substance"
+    },
+    {
+      "code": "422587007",
+      "displayName": "Nausea"
+    },
+    {
+      "code": "255604002",
+      "displayName": "Mild"
+    },
+    {
+      "code": "56018004",
+      "displayName": "Wheezing"
+    },
+    {
+      "code": "6736007",
+      "displayName": "Moderate"
+    }
+  ]
+}

@@ -2,6 +2,8 @@ package com.spookymvlder.formtools.parser;
 
 import com.opencsv.CSVReader;
 import com.opencsv.bean.CsvToBeanBuilder;
+import com.spookymvlder.formtools.datatypes.CodeEntry;
+import com.spookymvlder.formtools.datatypes.CodeValueRow;
 import com.spookymvlder.formtools.datatypes.ErrorEntry;
 import com.spookymvlder.formtools.datatypes.fieldproperties.FieldProperty;
 import com.spookymvlder.formtools.datatypes.fieldproperties.FieldPropertyRow;
@@ -211,6 +213,62 @@ public class ReadCSV {
         );
     }
 
+    // A parallel import path for a code system's "values" CSV - deliberately not a modification of
+    // importBeanCSV above, since the two CSVs have unrelated shapes and unrelated downstream
+    // processing (CodeEntry objects here, not FieldProperty objects). Reuses withBufferedReader and
+    // the CsvToBeanBuilder pattern as-is.
+    public static List<CodeEntry> importCodeValuesCsv(String filePath) {
+        ErrorSettings errors = ErrorSettings.getInstance();
+        errors.startNewLog();
+        ProcessingOverrides.getInstance().setConverters();
 
+        validateCodeValueCsvHeaders(filePath);
+        if (errors.checkCurrentLogOverThreshold()) {
+            return List.of();
+        }
+
+        List<CodeValueRow> rows = parseCodeValueCsv(filePath);
+        List<CodeEntry> entries = new ArrayList<>();
+        for (CodeValueRow row : rows) {
+            entries.add(new CodeEntry(row.getCode(), row.getDisplayName(), row.getActive(), row.getExpireDate()));
+        }
+        return entries;
+    }
+
+    private static void validateCodeValueCsvHeaders(String filePath) {
+        withBufferedReader(filePath, reader -> {
+            CSVReader csvReader = new CSVReader(reader);
+            String[] headers = csvReader.readNext();
+
+            if (headers == null) {
+                ErrorSettings.getInstance().addToCurrentLog(new ErrorEntry(
+                        ErrorSource.IMPORT_SCHEME, "CSV file is empty", ErrorSeverity.FATAL));
+                return null;
+            }
+
+            Set<String> headerSet = Arrays.stream(headers).map(String::trim).collect(Collectors.toSet());
+            List<String> requiredHeaders = List.of("code", "displayName");
+            List<String> missing = requiredHeaders.stream().filter(h -> !headerSet.contains(h)).toList();
+            if (!missing.isEmpty()) {
+                ErrorSettings.getInstance().addToCurrentLog(new ErrorEntry(
+                        ErrorSource.IMPORT_SCHEME,
+                        "Code values CSV is missing required columns: " + String.join(", ", missing),
+                        ErrorSeverity.FATAL));
+            }
+            return null;
+        }, null);
+    }
+
+    private static List<CodeValueRow> parseCodeValueCsv(String filePath) {
+        return withBufferedReader(filePath, reader ->
+                        new CsvToBeanBuilder<CodeValueRow>(reader)
+                                .withType(CodeValueRow.class)
+                                .withIgnoreLeadingWhiteSpace(true)
+                                .withSeparator(',')
+                                .build()
+                                .parse(),
+                List.of()
+        );
+    }
 
 }

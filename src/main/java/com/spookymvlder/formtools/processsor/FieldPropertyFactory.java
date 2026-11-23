@@ -44,7 +44,8 @@ public class FieldPropertyFactory {
                 normalizeBlank(row.getCodeSystemName()),
                 normalizeBlank(row.getCodeSystemId()),
                 normalizeBlank(row.getCodeSystemVersion()),
-                normalizeBlank(row.getCodeSystemCode()),
+                normalizeList(row.getCodeSystemCode()),
+                row.getCodeSystemEnforceValues(),
 
                 parseDataType(row.getDataType()),
                 normalizeBlank(row.getRangeStart()),
@@ -93,6 +94,11 @@ public class FieldPropertyFactory {
 
         GroupingType groupingType = row.groupingType() != null ? row.groupingType() : GroupingType.NONE;
 
+        // Opt-in by design: a blank cell means "don't check against an imported code system's list",
+        // not "I forgot to say". codeSystemCode (the field's own constraint) is unaffected by this -
+        // it's always checked when populated, regardless of this flag.
+        Boolean codeSystemEnforceValues = row.codeSystemEnforceValues() != null ? row.codeSystemEnforceValues() : false;
+
         // CONTAINER/COMPOSITE carry no value of their own, so a blank dataType there is correct and
         // silent. Every other grouping type (including CONSTITUENT, which is a leaf value within a
         // composite) needs a real dataType for validation to mean anything, so defaulting it silently
@@ -133,6 +139,7 @@ public class FieldPropertyFactory {
                 row.codeSystemId(),
                 row.codeSystemVersion(),
                 row.codeSystemCode(),
+                codeSystemEnforceValues,
 
                 dataType,
                 row.rangeStart(),
@@ -199,6 +206,7 @@ public class FieldPropertyFactory {
                 row.codeSystemId(),
                 row.codeSystemVersion(),
                 row.codeSystemCode(),
+                row.codeSystemEnforceValues(),
 
                 row.dataType(),
                 row.rangeStart(),
@@ -300,7 +308,8 @@ public class FieldPropertyFactory {
                 row.codeSystemName(),
                 row.codeSystemId(),
                 row.codeSystemVersion(),
-                row.codeSystemCode()
+                row.codeSystemCode(),
+                row.codeSystemEnforceValues()
         );
     }
 

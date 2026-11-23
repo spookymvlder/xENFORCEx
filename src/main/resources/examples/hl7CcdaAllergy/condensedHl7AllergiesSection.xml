@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Trimmed excerpt of the real Allergies and Intolerances Section from HL7's public C-CDA 2.1 sample
+  document (HL7/CDA-ccda-2.1, examples/C-CDA_R2-1_CCD.xml, fictional patient) - the WHOLE section,
+  both real allergy entries (Penicillin/Nausea/Mild, Codeine/Wheezing/Moderate), each with its full
+  real Allergy Concern Act -> Allergy Intolerance Observation -> Reaction Observation -> Severity
+  Observation nesting. Every code, OID, UUID, and nullFlavor use below is real and unmodified; only
+  templateId, id's extension-less duplicate lines, the human-readable <text> table, and
+  author/assignedAuthor blocks were trimmed (see ../README.md for why).
+  Source: https://raw.githubusercontent.com/HL7/CDA-ccda-2.1/master/examples/C-CDA_R2-1_CCD.xml
+-->
+<section xmlns="urn:hl7-org:v3" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <code code="48765-2"/>
+    <title>ALLERGIES AND ADVERSE REACTIONS</title>
+    <entry typeCode="DRIV">
+        <act classCode="ACT" moodCode="EVN">
+            <id root="36e3e930-7b14-11db-9fe1-0800200c9a66"/>
+            <code code="CONC" codeSystem="2.16.840.1.113883.5.6"/>
+            <statusCode code="active"/>
+            <effectiveTime>
+                <low value="199805011145-0800"/>
+            </effectiveTime>
+            <entryRelationship typeCode="SUBJ">
+                <observation classCode="OBS" moodCode="EVN">
+                    <id root="4adc1020-7b14-11db-9fe1-0800200c9a66"/>
+                    <code code="ASSERTION" codeSystem="2.16.840.1.113883.5.4"/>
+                    <statusCode code="completed"/>
+                    <effectiveTime>
+                        <low value="19980501"/>
+                    </effectiveTime>
+                    <value xsi:type="CD" code="419199007" displayName="Allergy to substance" codeSystem="2.16.840.1.113883.6.96" codeSystemName="SNOMED CT"/>
+                    <participant typeCode="CSM">
+                        <participantRole classCode="MANU">
+                            <playingEntity classCode="MMAT">
+                                <code code="70618" displayName="Penicillin" codeSystem="2.16.840.1.113883.6.88" codeSystemName="RxNorm"/>
+                            </playingEntity>
+                        </participantRole>
+                    </participant>
+                    <entryRelationship typeCode="MFST" inversionInd="true">
+                        <observation classCode="OBS" moodCode="EVN">
+                            <id root="4adc1020-7b14-11db-9fe1-0800200c9a64"/>
+                            <code code="ASSERTION" codeSystem="2.16.840.1.113883.5.4"/>
+                            <statusCode code="completed"/>
+                            <effectiveTime>
+                                <low value="200802260805-0800"/>
+                                <high value="200802281205-0800"/>
+                            </effectiveTime>
+                            <value xsi:type="CD" code="422587007" codeSystem="2.16.840.1.113883.6.96" displayName="Nausea"/>
+                            <entryRelationship typeCode="SUBJ" inversionInd="true">
+                                <observation classCode="OBS" moodCode="EVN">
+                                    <code code="SEV" displayName="Severity Observation" codeSystem="2.16.840.1.113883.5.4" codeSystemName="ActCode"/>
+                                    <statusCode code="completed"/>
+                                    <value xsi:type="CD" code="255604002" displayName="Mild" codeSystem="2.16.840.1.113883.6.96" codeSystemName="SNOMED CT"/>
+                                </observation>
+                            </entryRelationship>
+                        </observation>
+                    </entryRelationship>
+                </observation>
+            </entryRelationship>
+        </act>
+    </entry>
+    <entry typeCode="DRIV">
+        <act classCode="ACT" moodCode="EVN">
+            <id root="b03805bd-2eb6-4ab8-a9ff-473c6653971a"/>
+            <code code="CONC" codeSystem="2.16.840.1.113883.5.6"/>
+            <statusCode code="active"/>
+            <effectiveTime>
+                <low value="199805011145-0800"/>
+            </effectiveTime>
+            <entryRelationship typeCode="SUBJ">
+                <observation classCode="OBS" moodCode="EVN">
+                    <id root="901db0f8-9355-4794-81cd-fd951ef07917"/>
+                    <code code="ASSERTION" codeSystem="2.16.840.1.113883.5.4"/>
+                    <statusCode code="completed"/>
+                    <effectiveTime>
+                        <low nullFlavor="UNK"/>
+                    </effectiveTime>
+                    <value xsi:type="CD" code="419199007" displayName="Allergy to substance" codeSystem="2.16.840.1.113883.6.96" codeSystemName="SNOMED CT"/>
+                    <participant typeCode="CSM">
+                        <participantRole classCode="MANU">
+                            <playingEntity classCode="MMAT">
+                                <code code="2670" displayName="Codeine" codeSystem="2.16.840.1.113883.6.88" codeSystemName="RxNorm"/>
+                            </playingEntity>
+                        </participantRole>
+                    </participant>
+                    <entryRelationship typeCode="MFST" inversionInd="true">
+                        <observation classCode="OBS" moodCode="EVN">
+                            <id root="38c63dea-1a43-4f84-ab71-1ffd04f6a1dd"/>
+                            <code code="ASSERTION" codeSystem="2.16.840.1.113883.5.4"/>
+                            <statusCode code="completed"/>
+                            <effectiveTime>
+                                <low nullFlavor="UNK"/>
+                            </effectiveTime>
+                            <value xsi:type="CD" code="56018004" displayName="Wheezing" codeSystem="2.16.840.1.113883.6.96" codeSystemName="SNOMED CT"/>
+                            <entryRelationship typeCode="SUBJ" inversionInd="true">
+                                <observation classCode="OBS" moodCode="EVN">
+                                    <code code="SEV" displayName="Severity Observation" codeSystem="2.16.840.1.113883.5.4" codeSystemName="ActCode"/>
+                                    <statusCode code="completed"/>
+                                    <value xsi:type="CD" code="6736007" displayName="Moderate" codeSystem="2.16.840.1.113883.6.96" codeSystemName="SNOMED CT"/>
+                                </observation>
+                            </entryRelationship>
+                        </observation>
+                    </entryRelationship>
+                </observation>
+            </entryRelationship>
+        </act>
+    </entry>
+</section>

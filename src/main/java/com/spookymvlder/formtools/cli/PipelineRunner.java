@@ -89,6 +89,8 @@ public class PipelineRunner {
             String fileName = scanner.nextLine().trim();
             if (fileName.isEmpty()) {
                 fileName = suggested;
+            } else if (!fileName.toLowerCase().endsWith(".json")) {
+                fileName = fileName + ".json";
             }
 
             Path outputPath = resolveOutputPath(xmlPath, fileName);

@@ -80,8 +80,14 @@ public class FieldPropertyRow {
     private String codeSystemId;
     @CsvBindByName
     private String codeSystemVersion;
-    @CsvBindByName
-    private String codeSystemCode;
+    // The field's own code constraint: comma-delimited literal/range/prefix tokens (see
+    // CodeConstraintMatcher). Comma, not pipe, to match the existing condRequiredSourceIds/
+    // condRepeatedSourceIds precedent for multi-value id/code lists - pipe is reserved for
+    // enumeration's flat label list.
+    @CsvBindAndSplitByName(elementType=String.class, splitOn = ",", column="codeSystemCode")
+    private List<String> codeSystemCode;
+    @CsvCustomBindByName(column="codeSystemEnforceValues", converter = FieldPropertyConverter.TFBooleanConverter.class)
+    private Boolean codeSystemEnforceValues;
 
     // FIELD VALUE RESTRICTION COLUMNS
     @CsvBindByName (column = "dataType", required = false)
@@ -221,8 +227,12 @@ public class FieldPropertyRow {
         return codeSystemVersion;
     }
 
-    public String getCodeSystemCode() {
+    public List<String> getCodeSystemCode() {
         return codeSystemCode;
+    }
+
+    public Boolean getCodeSystemEnforceValues() {
+        return codeSystemEnforceValues;
     }
 
     public String getDataType() {

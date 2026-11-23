@@ -137,6 +137,81 @@ beyond storage. A second, unrelated, entirely unreferenced class `CodeSystem.jav
 never instantiated anywhere. Both look like early groundwork for the planned CODED_VALUE feature (see
 memory: CODED_VALUE / CUSTOM plans). Decide what's actually needed, consolidate or remove the rest.
 
+Designed and implemented (2026-11-21), surfaced while mapping a real HL7 C-CDA template to a CSV
+schema for a validation poster: 11 of 13 real conformance rules mapped onto existing columns, but 2
+needed a value bound to an external coded vocabulary (SNOMED CT) too large to enumerate inline.
+
+- [x] **`dataType` CODED_VALUE implemented.** `codeSystemId` is now required when `dataType ==
+      CODED_VALUE` — mirrors `enumeration` being required for `ENUMERATION`: without an identity,
+      there's nothing to validate against, open or closed.
+- [x] **`codeSystemCode` repurposed, not duplicated.** It was documented as "the field's code in the
+      code system" but that meaning was never implemented. Rebuilt as its evident original intent: a
+      comma-delimited list of the field's own literal/numeric-range (`start..end`, reusing
+      `TypedPredicateFactory`)/prefix-wildcard (trailing `*`) code constraints, checked unconditionally
+      whenever populated — no import required. Changed from a single `String` to `List<String>`
+      (`FieldPropertyRow`, `ResolvedFieldPropertyRow`, `FieldCodeSpec`); see `CodeConstraintMatcher`.
+- [x] **`codeSystemEnforceValues` added** (new column, defaults `F`) — opt-in membership checking
+      against a bulk-imported Code System's code list, deliberately separate from `codeSystemCode`:
+      most real external vocabularies are too large to enumerate in this CSV at all, so enforcement
+      only happens when a schema author asks for it *and* a list has actually been imported. A
+      Code System that's only a stub (identity known, no list yet) reports a `NOTIFICATION`, not an
+      `ERROR`, when enforcement is requested against it — the field can still be fully valid by every
+      check that *is* available.
+- [x] **`CodeSystem.java` rebuilt** (identity + `List<CodeEntry>`, `CodeEntry` = code/displayName/
+      active/expireDate — the field-property CSV's own retirement convention) and wired up via a new
+      `CodeSystemRegistry` singleton (`settings` package), persisted as one JSON file per
+      `codeSystemId` under a `codesystems/` directory (bare CWD-relative, matching
+      `xenforcex.properties`'s own convention — this codebase has no app-data-directory mechanism).
+      Reuses Gson, already a dependency via `JsonFormWriter`; no new dependency added.
+- [x] **New CLI menu: "Code Systems"** (`CodeSystemMenu`) — view/edit identity/delete (with
+      confirmation)/view code values for existing Code Systems; add a new one via identity
+      (JSON import, with an offered blank-template save, or manual entry) then code values (CSV
+      import — new `code`/`displayName`/`active`/`expireDate` columns, reusing `ReadCSV`'s existing
+      `withBufferedReader`/`CsvToBeanBuilder` plumbing via a new, parallel `importCodeValuesCsv` — or
+      manual entry, or skip and stay a stub). Editing individual codes in place is explicitly
+      unsupported by design: changing a Code System's values always means re-importing the whole CSV.
+- Deferred, not part of this pass: `CUSTOM` (still unimplemented), referencing a `CODED_VALUE` field
+  as a condition-token source by code, and any database engine for Code System storage (flat JSON was
+  judged sufficiently light).
+
+**Discovered while building the `hl7CcdaAllergy` example (2026-11-22)**, verified by actually running
+the engine, not inferred from reading code — three real, durable findings, not specific to
+`CODED_VALUE`, worth recording here rather than rediscovering later. One ("multi-attribute elements")
+turned out to be a fixable bug once pointed at the mechanism already meant for it, not a wall; two
+remain real boundaries.
+
+- [x] **Multi-attribute elements: `COMPOSITE`/`CONSTITUENT`, fixed, not worked around.** A schema row
+      matches an element and reads exactly one of its attributes as that field's value; a second
+      attribute on the same element (e.g. a `code` element's `code` *and* `codeSystem`) needs a second
+      row. `groupingType=COMPOSITE` plus `CONSTITUENT` children was already built for exactly this -
+      `FormParser.parseConstituentsFromNode` correctly reads every constituent's attribute off the
+      same composite element - but two pieces were missing: `ValidateFormExtract`'s required/
+      cardinality checks iterated constituents as if they were separate `FormField` tree children
+      (which they never are), producing false "missing" errors, and `SingleFormFieldValidator`'s
+      `CompositeField` branch was a `//TODO` no-op, so a wrong constituent value went unchecked.
+      Fixed: `walkRequiredFields`/`walkCardinality` now skip constituents in the ordinary child-search
+      loop and check presence/populated-ness against the composite's own data instead
+      (`checkConstituentRequired`); `SingleFormFieldValidator.validateCompositeField` validates each
+      constituent against its own `FieldProperty` (the same `validateValueAgainstProperty` a
+      `SimpleField` uses); `ProcessFormExtract`'s `ENUMERATION` canonicalization pass now also walks a
+      composite's constituents, not just `SimpleField`s. `hl7CcdaAllergy`'s schema uses `COMPOSITE`
+      throughout as a result - every `classCode`/`moodCode` and `code`/`codeSystem` pair, not one
+      attribute picked per element.
+- **No `templateId`-based disambiguation.** The engine matches a child by element name at a given
+  parent position, with no way to say "this schema row applies only when the child's nested
+  `templateId` is X." This never bites within one section's own vertical nesting (each nesting depth
+  has a different parent, so no collision) — confirmed by `hl7CcdaAllergy` successfully validating a
+  full, 3-level-deep, 2-entry repeating section. It would bite modeling a *whole* CCD document at once,
+  since every clinical section (Problems, Medications, Allergies, ...) is generically
+  `<component><section>` under the same `structuredBody` parent, and the engine has no way to tell
+  them apart. Scope a schema to one section (or one template) at a time, not the whole document, until
+  this exists.
+- **HL7's native timestamp format isn't ISO-8601.** A real CDA `effectiveTime` value like
+  `199805011145-0800` (`yyyyMMddHHmm±zzzz`) does not parse as `DATE` or `DATETIME` (both are
+  ISO-8601-only via `TypedPredicateFactory`). Model a field holding this shape as `STRING` (optionally
+  with a `regexPattern`) rather than `DATE`/`DATETIME` until/unless an HL7-TS-aware type or converter
+  is added.
+
 ## Phase 4 — Design and implement program output
 
 No structured output exists today — `FormDebugPrinter` is a plain human-readable `println` tree

@@ -27,4 +27,8 @@ public class CompositeField extends EntryField {
         return constituents.get(key);
     }
 
+    public void setConstituent(String key, FieldData data) {
+        constituents.put(key, data);
+    }
+
 }

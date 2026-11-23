@@ -51,4 +51,8 @@ bin/
 # CLI's Settings menu. Not source - see xenforcex.properties.example for the file's shape.
 /xenforcex.properties
 
+# Imported/entered Code Systems (one JSON file per codeSystemId) - personal/local data, not source,
+# same reasoning as xenforcex.properties above. See ImportSpec.txt's CODED VALUE section.
+/codesystems/
+
 .claude

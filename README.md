@@ -40,9 +40,16 @@ setting, documented inline). From the main menu:
   can look at every error and warning first.
 - **Commit** writes the reviewed form out (currently as JSON); declining to overwrite an existing file,
   or a write failure, leaves the form held so you can retry rather than losing the review.
+- **Code Systems** manages imported/entered code systems (e.g. SNOMED CT, or a local vocabulary) that a
+  `CODED_VALUE` field can validate against — identity via a JSON import or manual entry, codes via a CSV
+  import or manual entry, stored as one JSON file per `codeSystemId` under `codesystems/`. See
+  [ImportSpec.txt](src/main/resources/documentation/ImportSpec.txt)'s CODED VALUE section.
 
 ### Example Files
-Example files to test the program can be found in [examples](src/main/resources/examples/).
+Example files to test the program can be found in [examples](src/main/resources/examples/), including
+a `CODED_VALUE` example built from a real, publicly published HL7 C-CDA document rather than invented
+data — see [examples/hl7CcdaAllergy](src/main/resources/examples/hl7CcdaAllergy/README.md) for details
+and attribution.
 
 ## Schema reference
 
