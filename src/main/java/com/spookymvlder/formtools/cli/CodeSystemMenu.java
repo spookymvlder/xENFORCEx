@@ -209,12 +209,16 @@ public class CodeSystemMenu {
         return manualIdentity(scanner);
     }
 
+    /** Returns null if the user cancels out via a blank codeSystemId - matching this app's "blank to
+     * go back" convention everywhere else, rather than reprompting forever for a field that's
+     * genuinely required to save anything. */
     private CodeSystem manualIdentity(Scanner scanner) {
-        String id;
-        do {
-            System.out.print("codeSystemId (required): ");
-            id = scanner.nextLine().trim();
-        } while (id.isEmpty());
+        System.out.print("codeSystemId (required, blank to cancel): ");
+        String id = scanner.nextLine().trim();
+        if (id.isEmpty()) {
+            System.out.println("Canceled.");
+            return null;
+        }
 
         System.out.print("codeSystemName (optional): ");
         String name = scanner.nextLine().trim();
